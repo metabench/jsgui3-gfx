@@ -31,7 +31,6 @@ class Pixel_Buffer {
     // Setting bits per pixel to 8
     //  greyscale 256
 
-
     constructor(spec) {
         //spec.__type_name = spec.__type_name || 'pixel_buffer';
         //super(spec);
@@ -41,7 +40,8 @@ class Pixel_Buffer {
             //this.size = spec.buffer.length;
         }
         if (spec.size) {
-            this.size = spec.size;
+            //this.size = spec.size;
+            this.size = new Uint32Array(spec.size);
         } else {
             throw 'Expected: size [x, y] property in the Pixel_Buffer specification';
         }
@@ -65,29 +65,203 @@ class Pixel_Buffer {
     }
     // each_pixel((x, y, r, g, b, a, set, get_pixel_by_offset)
 
-    
-
     each_pixel(cb) {
         // y loop
         // x loop
 
-        let y, x, r, g, b, a, i;
-        const w = this.size[0],
-            h = this.size[1];
+        const ta_16_scratch = new Uint32Array(6);
+        ta_16_scratch[0] = this.bytes_per_pixel;
+        ta_16_scratch[1] = 0; // i
+        ta_16_scratch[2] = this.size[0];
+        ta_16_scratch[3] = this.size[1];
+        // 4 = x
+        // 5 = y
+        //let y, x, i;
+        // a px typed array... could give actual access to that typed array / view.
+        //const w = this.size[0],
+        //    h = this.size[1];
         const buf = this.buffer;
-        for (y = 0; y < h; y++) {
-            for (x = 0; x < w; x++) {
-                i = this.bytes_per_pixel * (x + y * w);
+        for (ta_16_scratch[5] = 0; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
+            for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
+                //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
+                //cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]), buf.readUInt8(ta_16_scratch[1] + 1), buf.readUInt8(ta_16_scratch[1] + 2), buf.readUInt8(ta_16_scratch[1] + 3));
+                //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
+                cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++));
+
+                /*
                 cb(x, y, buf.readUInt8(i), buf.readUInt8(i + 1), buf.readUInt8(i + 2), buf.readUInt8(i + 3),
-                    /*(r, g, b, a) => {
+                    / *(r, g, b, a) => {
                                        buf.writeUInt8(r, i), buf.writeUInt8(g, i + 1), buf.writeUInt8(b, i + 2), buf.writeUInt8(a, i + 3)
-                                   }, */
+                                   }, * /
                     (vx, vy) => {
                         //console.log('x, y, ', x, y, vx, vy);
+                        // Maybe too slow.
+                        // Vectored pixel.
+
                         return this.get_pixel(x + vx, y + vy);
                     })
+                    */
             }
         }
+    }
+    padded_each_pixel(padding, cb) {
+        // y loop
+        // x loop
+
+        const ta_16_scratch = new Uint32Array(6);
+        ta_16_scratch[0] = this.bytes_per_pixel;
+        ta_16_scratch[1] = 0; // i
+        ta_16_scratch[2] = this.size[0];
+        ta_16_scratch[3] = this.size[1];
+        // 4 = x
+        // 5 = y
+        //let y, x, i;
+        // a px typed array... could give actual access to that typed array / view.
+        //const w = this.size[0],
+        //    h = this.size[1];
+        const buf = this.buffer;
+        for (ta_16_scratch[5] = padding; ta_16_scratch[5] < ta_16_scratch[3] - padding; ta_16_scratch[5]++) {
+            for (ta_16_scratch[4] = padding; ta_16_scratch[4] < ta_16_scratch[2] - padding; ta_16_scratch[4]++) {
+                //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
+                cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++));
+
+                /*
+                cb(x, y, buf.readUInt8(i), buf.readUInt8(i + 1), buf.readUInt8(i + 2), buf.readUInt8(i + 3),
+                    / *(r, g, b, a) => {
+                                       buf.writeUInt8(r, i), buf.writeUInt8(g, i + 1), buf.writeUInt8(b, i + 2), buf.writeUInt8(a, i + 3)
+                                   }, * /
+                    (vx, vy) => {
+                        //console.log('x, y, ', x, y, vx, vy);
+                        // Maybe too slow.
+                        // Vectored pixel.
+
+                        return this.get_pixel(x + vx, y + vy);
+                    })
+                    */
+            }
+        }
+    }
+
+    // Custom convolution not working here.
+    // Iterating pixels for the line joining convolution sounds best.
+    // Custom convolution seems like the way to go, but it's hard to implement.
+
+    _custom_convolve(dimension_size, cb) {
+        if (dimension_size % 2 !== 1) {
+            throw 'dimension_size must be an odd integer';
+        }
+        const px = new Uint16Array(2);
+        const ta16 = new Int16Array(12);
+
+        // pixel x
+        // pixel y
+
+        // w
+        // h
+        [ta16[2], ta16[3]] = this.size;
+
+        // bytes per pixel
+        ta16[4] = this.bytes_per_pixel;
+        ta16[5] = ta16[2] * ta16[4] // bytes per row
+
+        // 6 - x convolution point
+        // 7 - y convolution point
+        ta16[8] = dimension_size;
+        ta16[9] = (ta16[8] - 1) / 2 // distance in direction.;
+
+        ta16[10] = 0; // the write position of the convolution.
+        // conve bytes per row
+        ta16[11] = ta16[8] * ta16[4];
+
+        // 32 bit
+        // pixel_component_index i
+
+        let ta32 = new Uint32Array(4);
+        ta32[0] = 0; // central pixel component index
+        ta32[1] = 0; // convolution pixel component index
+
+        ta32[2] = ta16[2] * ta16[3] * ta16[4] // image length in bytes
+
+
+        // a result object that is just declared once...
+
+        // conv pixel component write position
+
+        let conv_pixels = new Uint8Array(ta16[8] * ta16[8] * ta16[8]);
+        const buffer = this.buffer;
+        // an x, y iteration would be better still...
+
+        for (px[1] = 0; px[1] < ta16[3]; px[1]++) {
+            for (px[0] = 0; px[0] < ta16[2]; px[0]++) {
+
+                // check if its within bounds...
+                ta16[6] = px[0] - ta16[8];
+
+                //console.log('ta16[6]', ta16[6]);
+
+                if (ta16[6] > 0 && ta16[6] < ta16[2] - ta16[8]) {
+                    ta16[7] = px[1] - ta16[8];
+                    //console.log('ta16[7]', ta16[7]);
+                    if (ta16[7] > 0 && ta16[7] < ta16[3] - ta16[8]) {
+
+                        // doing ok, convolution matrix is within bounds.
+                        //  copy by providing a reference to the underlying data?
+
+                        // move to the start of the convolution.
+                        //  loop by convolution row length would be best.
+
+                        //console.log('');
+                        //console.log('ta16[9]', ta16[9]);
+                        //console.log('ta16[4]', ta16[4]);
+                        //console.log('ta16[5]', ta16[5]);
+
+                        ta32[1] = ta32[0] - /* w */ ta16[9] * ta16[4] - /* h */ ta16[9] * ta16[5];
+                        //console.log('ta32[0]', ta32[0]);
+                        //console.log('ta32[1]', ta32[1]);
+                        ta16[10] = 0;
+
+                        // Need to loop on the right variable - the convolution y point
+
+
+                        for (ta16[7] = ta16[1]; ta16[7] < ta16[1] + ta16[8]; ta16[7]++) {
+                            // then copy the row to the typed array
+                            //console.log('ta32[1]', ta32[1]);
+                            //console.log('ta16[7]', ta16[7]);
+                            //console.log('ta16[8]', ta16[8]);
+                            //console.log('ta16[10]', ta16[10]);
+                            //console.log('ta16[11]', ta16[11]);
+
+                            // 
+                            //buffer.copy(conv_pixels, ta32[1], ta16[10], ta16[10] + ta16[11]);
+
+                            let sl = buffer.slice(ta32[1], ta32[1] + ta16[11]);
+
+                            // then copy the slice...
+
+                            // convolution write index
+
+                            console.log('px', px);
+
+                            for (let c = 0; c < ta16[11]; c++) {
+                                conv_pixels[ta16[10] + c] = sl.readUInt8(c);
+                            }
+
+                            ta16[10] += ta16[11];
+                            ta32[1] += ta16[5];
+
+                            // ta32[1] = 
+
+                        }
+                        cb(px, conv_pixels);
+                    }
+                }
+                ta32[0] += ta16[4];
+            }
+        }
+        // iterate through the pixels...
+
+        // get pixel index
+        // start a loop 
     }
 
     'set_pixel'() {
@@ -163,7 +337,6 @@ class Pixel_Buffer {
             [x, y, r, g, b, alpha] = a;
             //console.log('[x, y, r, g, b, alpha]', [x, y, r, g, b, alpha]);
         }
-
         var pixel_buffer_pos = bytes_per_pixel * (x + y * w);
         var buffer = this.buffer;
 
@@ -184,28 +357,37 @@ class Pixel_Buffer {
         }
     }
     'get_pixel'(x, y) {
-        const bytes_per_pixel = this.bits_per_pixel / 8;
+        const ta_16_scratch = new Uint32Array(6);
+        ta_16_scratch[0] = this.bytes_per_pixel;
+        ta_16_scratch[1] = 0; // i
+        ta_16_scratch[2] = this.size[0];
+        ta_16_scratch[3] = this.size[1];
+        ta_16_scratch[4] = x;
+        ta_16_scratch[5] = y;
+        // 4 = x
+        // 5 = y
+
+        //const bytes_per_pixel = this.bits_per_pixel / 8;
         // will return [r, g, b] or [r, g, b, a];
-        let pixel_buffer_pos = bytes_per_pixel * (x + y * this.size[0]);
+        ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
         const buffer = this.buffer;
         //var r, g, b, a;
         //console.log('pixel_buffer_pos', pixel_buffer_pos);
         //console.log('x, y', x, y);
 
         //const check = this.check_rect_bounds(x, y);
-        if (this.check_rect_bounds(x, y)) {
-            if (this.bits_per_pixel == 24) {
-                return [buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++)];
-            } else if (this.bits_per_pixel == 32) {
-                return [buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++)];
+        if (this.check_rect_bounds(ta_16_scratch[4], ta_16_scratch[5])) {
+            if (ta_16_scratch[0] === 3) {
+                return [buffer.readUInt8(ta_16_scratch[1]++), buffer.readUInt8(ta_16_scratch[1]++), buffer.readUInt8(ta_16_scratch[1]++)];
+            } else if (ta_16_scratch[0] === 4) {
+                return [buffer.readUInt8(ta_16_scratch[1]++), buffer.readUInt8(ta_16_scratch[1]++), buffer.readUInt8(ta_16_scratch[1]++), buffer.readUInt8(ta_16_scratch[1]++)];
             } else {
-                var stack = new Error().stack;
+                //var stack = new Error().stack;
                 //console.log(stack);
                 throw 'Must have bits_per_pixel set to 24 or 32';
             }
         }
     }
-
     check_rect_bounds(x, y, w = 0, h = 0) {
         if (x < 0) return false;
         if (y < 0) return false;
@@ -213,6 +395,55 @@ class Pixel_Buffer {
         if (y + h >= this.size[1]) return false;
         return true;
     }
+
+    get_first_pixel_matching_color(r, g, b, a) {
+        let px = 0, py = 0;
+        let [w, h] = this.size;
+        let found = false;
+        let buf = this.buffer;
+        let pos_buf = 0;
+
+        for (py = 0; !found && py < h; py++) {
+            for (px = 0; !found && px < w; px++) {
+                //console.log('buf[pos_buf]', buf[pos_buf]);
+                //console.log('buf[pos_buf + 1]', buf[pos_buf + 1]);
+                //console.log('buf[pos_buf + 2]', buf[pos_buf + 2]);
+                //console.log('buf[pos_buf + 3]', buf[pos_buf + 3]);
+                if (buf[pos_buf] === r && buf[pos_buf + 1] === g && buf[pos_buf + 2] === b && buf[pos_buf + 3] === a) {
+                    found = true;
+                }
+                pos_buf += 4;
+            }
+        }
+        //console.log('found', found);
+        if (found) {
+            return [px, py];
+        }
+    }
+
+    apply_mask(pb_mask, mr, mg, mb, ma) {
+        let res = this.blank_copy();
+        res.flood_fill(0, 0, 255, 255, 255, 255);
+        let px;
+        pb_mask.each_pixel((x, y, r, g, b, a) => {
+            if (r === mr && g === mg && b === mb && a === ma) {
+                px = this.get_pixel(x, y);
+                res.set_pixel(x, y, px[0], px[1], px[2], px[3])
+            }
+        })
+        return res;
+    }
+
+    equals(other_pixel_buffer) {
+        let buf1 = this.buffer;
+        let buf2 = other_pixel_buffer.buffer;
+        if (buf1.length === buf2.length) {
+            return buf1.compare(buf2) === 0;
+        } else {
+            return false;
+        }
+    }
+
     // get (rectangle) view
     //  A rectangular square of pixels.
 
@@ -273,11 +504,9 @@ class Pixel_Buffer {
             //var pixel_buffer_pos = 
             //let bb = this.buffer.buffer;
             let cr, cg, cb, ca;
-
             let buf = this.buffer;
 
             //console.log('[w, h]', [w, h]);
-
 
             let res = new Pixel_Buffer({
                 size: [w, h],
@@ -369,6 +598,25 @@ class Pixel_Buffer {
             throw 'not currently supported';
         }
     }
+    'to_8bit_greyscale'() {
+        var res = new Pixel_Buffer({
+            'size': this.size,
+            'bits_per_pixel': 8
+        });
+
+        const bres = res.buffer;
+        // Then go over each of this pixel
+        //  take average rgb values
+        let i = 0;
+        this.each_pixel((x, y, r, g, b, a) => {
+            bres[i++] = Math.round((r + g + b) / 3);
+            //i++;
+        });
+
+        // 
+
+        return res;
+    }
     'blank_copy'() {
         var res = new Pixel_Buffer({
             'size': this.size,
@@ -378,7 +626,7 @@ class Pixel_Buffer {
         return res;
     }
     'clone'() {
-        console.log('1) this.bits_per_pixel', this.bits_per_pixel);
+        //console.log('1) this.bits_per_pixel', this.bits_per_pixel);
         var res = new Pixel_Buffer({
             'size': this.size,
             'bits_per_pixel': this.bits_per_pixel
@@ -395,26 +643,18 @@ class Pixel_Buffer {
     'flood_fill_small_color_blocks'(max_size, r, g, b, a) {
         // scans the whole document
         //  like despeckle.
-
         // Could do much faster iteration here,
         //  will test the size of a color block before flood filling
-
         // Could make a map of color block sizes
-
         // This is quite useful for despeckling.
 
-
-
         this.each_pixel((x, y, pr, pg, pb, pa) => {
-
             if ((r !== pr || g !== pg || b !== pb || a !== pa)) {
                 let s = this.measure_color_region_size(x, y, max_size);
                 if (s < max_size) {
                     this.flood_fill(x, y, r, g, b, a);
                 }
             }
-
-
             //if ((r === 255 && g === 255 && b === 255 && a === 255)) {
 
             // find out the color region size
@@ -548,9 +788,7 @@ class Pixel_Buffer {
             ta_16_scratch[0] += 4;
 
         }
-
         // Traverse the image quickly
-
         return res;
 
 
@@ -563,7 +801,6 @@ class Pixel_Buffer {
 
         // just iterate through the pixels.
         const buf_read = this.buffer;
-
         const scratch_32 = new Uint32Array(5);
         //scratch_32[0] = 0;
         scratch_32[0] = 0; // read pos
@@ -574,7 +811,7 @@ class Pixel_Buffer {
         //scratch_32[0] = 0; // read pos
         //scratch_32[1] = 0; // write pos
 
-        
+
         //const buf_write = res.buffer;
 
         const ta_16_scratch = new Uint16Array(8);
@@ -602,15 +839,12 @@ class Pixel_Buffer {
 
     }
 
-
     // Get as 32 bit bitmap... inefficient.
     'get_single_color_mask'(r, g, b, a) {
         // read pixel index
         // write pixel index
 
         // Create 8 bit result image. 1 bit would be preferable but unsure about it.
-
-
         var res = new Pixel_Buffer({
             'size': this.size,
             'bits_per_pixel': 8
@@ -638,22 +872,17 @@ class Pixel_Buffer {
             }
             ta_16_scratch[1]++;
         }
-
         // Traverse the image quickly
-
-
-
         return res;
-
-
     }
 
     // get mask by color
 
+    // greyscale pixel buffer would help a lot
+    //  discard alpha
+
     'measure_color_region_size'(x, y, max) {
-
         const buffer = this.buffer;
-
         //let pixel_buffer_pos = this.bytes_per_pixel * (x + y * this.size[0]);
 
 
@@ -687,14 +916,10 @@ class Pixel_Buffer {
 
         const ta16_pixels = new Uint8Array(4);
         const ta_pixels_visited = new Uint8Array(scratch_32[2]);
-
-
         // Initialise a sequence position buffer that's as long as the whole image
 
         const ta_visiting_pixels = new Uint16Array(scratch_32[2] * 2);
         // x y coords
-
-
 
         scratch_32[8] = scratch_32[3] * (x + (y * scratch_32[0]));
 
@@ -713,8 +938,6 @@ class Pixel_Buffer {
 
         //console.log('scratch_32[6]', scratch_32[6]);
         //console.log('scratch_32[7]', scratch_32[7]);
-
-
 
         while (scratch_32[6] < scratch_32[7] && scratch_32[10] < scratch_32[9]) {
             // 
@@ -805,20 +1028,16 @@ class Pixel_Buffer {
 
             scratch_32[10]++;
 
-
-
             // compare these arrays
 
             // Add adjacent pixels to the stack?
             //c_visited++;
             //scratch_32[7] += 2;
         }
-
         return scratch_32[10]; //scratch_32[10];
 
         //console.log('scratch_32[6]', scratch_32[6]);
         //console.log('c_visited', c_visited);
-
     }
 
 
@@ -828,19 +1047,12 @@ class Pixel_Buffer {
 
         // stack of pixels to visit
         // map of pixels visited
-
-
         // Could optimize this with typed arrays
-
-
 
 
         //const [w, h] = this.size;
 
         const [w, h] = this.size;
-
-
-
 
         let fast_stacked_mapped_flood_fill = () => {
             //const map_pixels_visited = {};
@@ -906,7 +1118,7 @@ class Pixel_Buffer {
             //console.log('scratch_32[6]', scratch_32[6]);
             //console.log('scratch_32[7]', scratch_32[7]);
 
-             //c_visited < 
+            //c_visited < 
 
             while (scratch_32[9] <= scratch_32[2]) {
                 // 
@@ -1073,15 +1285,8 @@ class Pixel_Buffer {
             //console.log('c_visited', c_visited);
         }
         //stacked_mapped_flood_fill();
-
     }
-
-
     // regional flood fill
-
-
-
-
 
 }
 /*
