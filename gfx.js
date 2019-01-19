@@ -4,7 +4,8 @@
 // gfx is both for client and server.
 
 const gfx = {
-    Pixel_Buffer: require('./pixel-buffer')
+    Pixel_Buffer: require('./pixel-buffer'),
+    convolution_kernels: require('./convolution-kernels/kernels')
 }
 
 module.exports = gfx;

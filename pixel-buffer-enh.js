@@ -49,10 +49,145 @@ class Pixel_Buffer_Enh extends Core {
     constructor(spec) {
         //spec.__type_name = spec.__type_name || 'pixel_buffer';
         super(spec);
-        
+
     }
     // each_pixel((x, y, r, g, b, a, set, get_pixel_by_offset)
 
+    // square convolution.
+    apply_square_convolution(f32a_convolution) {
+        const c_length = f32a_convolution.length;
+        const dimension_size = Math.sqrt(c_length);
+        // Can't convolve the very edges of the image.
+        console.log('dimension_size', dimension_size);
+        const padding = (dimension_size - 1) / 2;
+        console.log('padding', padding);
+
+        const res = this.blank_copy();
+
+        /*
+        const res = new Pixel_Buffer_Enh({
+            'size': [this.size[0] - (padding * 2), this.size[1] - (padding * 2)],
+            'bits_per_pixel': this.bits_per_pixel
+        })
+        */
+
+
+        // need the vector for each pixel in the convolution.
+        // the central pixel right in the middle...
+        // arrange the movement vectors according to the dimension_size;
+        // Faster convoluions could use a convolution-specific loop.
+        // find the midpoint.
+        const midpoint = padding;
+        const movement_vectors = new Int8Array(c_length * 2);
+        let x, y, pos = 0;
+        const bpp = this.bytes_per_pixel;
+        const bpr = this.bytes_per_row;
+        console.log('bpp', bpp);
+        console.log('bpr', bpr);
+        const idx_movement_vectors = new Int16Array(c_length);
+        //const convolved_pixels = new Int16Array(c_length);
+
+        for (y = -1 * padding; y <= padding; y++) {
+            for (x = -1 * padding; x <= padding; x++) {
+                // central 0, 0
+                //let offsetX = midpoint - x;
+                //let offsetY = midpoint - y;
+                //let offsetX = x;
+                //let offsetY = y;
+                movement_vectors[pos++] = x;
+                movement_vectors[pos++] = y;
+            }
+        }
+        //console.log('movement_vectors', movement_vectors);
+        pos = 0;
+        let ii, i;
+        for (i = 0; i < c_length; i++) {
+            x = movement_vectors[pos++];
+            y = movement_vectors[pos++];
+            idx_movement_vectors[i] = x * bpp + y * bpr;
+        }
+        //console.log('idx_movement_vectors', idx_movement_vectors);
+
+        //const l = 
+        let pr, pg, pb, pa;
+        let cpr, cpg, cpb, cpa;
+
+        let cr, cg, cb, ca;
+
+        const buf = this.buffer;
+        const buf_res = res.buffer;
+
+
+        // Try a for loop...
+        //  
+
+        // pixel index
+        this.padded_each_pixel(padding, (x, y, r, g, b, a, px_idx) => {
+            // get the pixels from each of these locations.
+            //  multiply the values by the pixel convolution number.
+
+            // need to keep tract of a convolution total
+
+            //console.log('px_idx', px_idx);
+
+            cr = 0;
+            cg = 0;
+            cb = 0;
+            //ca = 0;
+
+            for (ii = 0; ii < c_length; ii++) {
+                i = px_idx + idx_movement_vectors[ii];
+
+                /*
+                pr = buf[i++];
+                pg = buf[i++];
+                pb = buf[i++];
+                pa = buf[i++];
+
+                cpr = f32a_convolution[ii] * pr;
+                cpg = f32a_convolution[ii] * pg;
+                cpb = f32a_convolution[ii] * pb;
+                //cpa = f32a_convolution[ii] * pa;
+
+                cr += cpr;
+                cg += cpg;
+                cb += cpb;
+                */
+
+                cr += f32a_convolution[ii] * buf[i++];
+                cg += f32a_convolution[ii] * buf[i++];
+                cb += f32a_convolution[ii] * buf[i++];
+
+                pa = buf[i++];
+
+
+                //ca += cpa;
+            }
+            ca = a;
+
+            if (cr < 0) cr = 0;
+            if (cg < 0) cg = 0;
+            if (cb < 0) cb = 0;
+            if (ca < 0) ca = 0;
+
+            if (cr > 255) cr = 255;
+            if (cg > 255) cg = 255;
+            if (cb > 255) cb = 255;
+            if (ca > 255) ca = 255;
+
+            //cr = Math.round(cr);
+            //cg = Math.round(cg);
+            //cb = Math.round(cb);
+            //ca = Math.round(ca);
+
+            buf_res[px_idx++] = Math.round(cr);
+            buf_res[px_idx++] = Math.round(cb);
+            buf_res[px_idx++] = Math.round(cg);
+            buf_res[px_idx++] = Math.round(ca);
+
+        });
+        return res;
+    }
 
     // Custom convolution not working here.
     // Iterating pixels for the line joining convolution sounds best.
@@ -152,7 +287,7 @@ class Pixel_Buffer_Enh extends Core {
 
                             // convolution write index
 
-                            console.log('px', px);
+                            //console.log('px', px);
 
                             for (let c = 0; c < ta16[11]; c++) {
                                 conv_pixels[ta16[10] + c] = sl.readUInt8(c);
@@ -171,14 +306,14 @@ class Pixel_Buffer_Enh extends Core {
             }
         }
         // iterate through the pixels...
-
         // get pixel index
         // start a loop 
     }
 
 
     get_first_pixel_matching_color(r, g, b, a) {
-        let px = 0, py = 0;
+        let px = 0,
+            py = 0;
         let [w, h] = this.size;
         let found = false;
         let buf = this.buffer;
@@ -802,5 +937,8 @@ class Pixel_Buffer_Enh extends Core {
     // regional flood fill
 
 }
+
+
+
 
 module.exports = Pixel_Buffer_Enh;

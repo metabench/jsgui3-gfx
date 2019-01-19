@@ -6,6 +6,7 @@
     "lang-mini": "^0.0.8",
     "fnl": "^0.0.8",
     "fnlfs": "^0.0.6",
+    "gaussian-convolution-kernel": "^1.0.0",
     "obext": "^0.0.4"
   },
   "engines": {
@@ -17,5 +18,5 @@
     "type": "git",
     "url": "https://github.com/metabench/jsgui3-gfx.git"
   },
-  "version": "0.0.3"
+  "version": "0.0.4"
 }

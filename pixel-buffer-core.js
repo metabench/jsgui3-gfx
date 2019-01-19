@@ -70,6 +70,7 @@ class Pixel_Buffer_Core {
         }
         // then initialize the buffer itself.
         const bytes_per_pixel = this.bytes_per_pixel = this.bits_per_pixel / 8;
+        this.bytes_per_row = bytes_per_pixel * this.size[0];
         if (this.size && !this.buffer) {
             this.buffer = new Buffer(bytes_per_pixel * this.size[0] * this.size[1]);
         }
@@ -119,7 +120,7 @@ class Pixel_Buffer_Core {
         // y loop
         // x loop
 
-        const ta_16_scratch = new Uint32Array(6);
+        const ta_16_scratch = new Uint32Array(7);
         ta_16_scratch[0] = this.bytes_per_pixel;
         ta_16_scratch[1] = 0; // i
         ta_16_scratch[2] = this.size[0];
@@ -134,7 +135,8 @@ class Pixel_Buffer_Core {
         for (ta_16_scratch[5] = padding; ta_16_scratch[5] < ta_16_scratch[3] - padding; ta_16_scratch[5]++) {
             for (ta_16_scratch[4] = padding; ta_16_scratch[4] < ta_16_scratch[2] - padding; ta_16_scratch[4]++) {
                 //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
-                cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++));
+                ta_16_scratch[6] = ta_16_scratch[1];
+                cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), ta_16_scratch[6]);
 
                 /*
                 cb(x, y, buf.readUInt8(i), buf.readUInt8(i + 1), buf.readUInt8(i + 2), buf.readUInt8(i + 3),
@@ -477,19 +479,8 @@ class Pixel_Buffer_Core {
         //res.buffer.fill(0);
         return res;
     }
-    apply_mask(pb_mask, mr, mg, mb, ma) {
-        let res = this.blank_copy();
-        res.flood_fill(0, 0, 255, 255, 255, 255);
-        let px;
-        pb_mask.each_pixel((x, y, r, g, b, a) => {
-            if (r === mr && g === mg && b === mb && a === ma) {
-                px = this.get_pixel(x, y);
-                res.set_pixel(x, y, px[0], px[1], px[2], px[3])
-            }
-        })
-        return res;
-    }
 
+    // then need to be able to save as 8 bit bitmaps too.
     'to_8bit_greyscale'() {
         var res = new Pixel_Buffer_Core({
             'size': this.size,
@@ -505,9 +496,9 @@ class Pixel_Buffer_Core {
             //i++;
         });
         // 
-
         return res;
     }
+
 }
 
 module.exports = Pixel_Buffer_Core;
