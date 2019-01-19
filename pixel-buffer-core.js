@@ -59,6 +59,9 @@ class Pixel_Buffer_Core {
 
         // bit-depth - could follow PNG.
         //  rgba color mode.
+
+        if (spec.bytes_per_pixel && !spec.bits_per_pixel) spec.bits_per_pixel = spec.bytes_per_pixel * 8;
+
         spec.bits_per_pixel = spec.bits_per_pixel || 32;
 
         if (spec.bits_per_pixel) {
@@ -77,6 +80,104 @@ class Pixel_Buffer_Core {
     }
     // each_pixel((x, y, r, g, b, a, set, get_pixel_by_offset)
 
+    each_pixel_index(cb) {
+        const ta_16_scratch = new Uint32Array(6);
+        ta_16_scratch[0] = this.bytes_per_pixel;
+        ta_16_scratch[1] = 0; // i
+        ta_16_scratch[2] = this.size[0];
+        ta_16_scratch[3] = this.size[1];
+        // 4 = x
+        // 5 = y
+        //let y, x, i;
+        // a px typed array... could give actual access to that typed array / view.
+        //const w = this.size[0],
+        //    h = this.size[1];
+        //const buf = this.buffer;
+        const bpp = this.bits_per_pixel;
+
+        if (bpp === 32) {
+            (() => {
+                for (ta_16_scratch[5] = 0; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
+                    for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
+                        cb(ta_16_scratch[1]);
+                        ta_16_scratch[1] += 4;
+                    }
+                }
+            })();
+        }
+        if (bpp === 24) {
+            (() => {
+                for (ta_16_scratch[5] = 0; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
+                    for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
+                        cb(ta_16_scratch[1]);
+                        ta_16_scratch[1] += 3;
+                    }
+                }
+            })();
+        } else if (bpp === 8) {
+            (() => {
+                for (ta_16_scratch[5] = 0; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
+                    for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
+                        cb(ta_16_scratch[1]);
+                        ta_16_scratch[1] += 1;
+                    }
+                }
+            })();
+        }
+    }
+
+    padded_each_pixel_index(padding, cb) {
+        const ta_16_scratch = new Uint32Array(9);
+        ta_16_scratch[0] = this.bytes_per_pixel;
+        ta_16_scratch[1] = 0; // i
+        ta_16_scratch[2] = this.size[0] - padding;
+        ta_16_scratch[3] = this.size[1] - padding;
+
+        ta_16_scratch[7] = this.size[0];
+        //ta_16_scratch[8] = 
+
+        // 4 = x
+        // 5 = y
+        //let y, x, i;
+        // a px typed array... could give actual access to that typed array / view.
+        //const w = this.size[0],
+        //    h = this.size[1];
+        //const buf = this.buffer;
+        const bpp = this.bits_per_pixel;
+
+        if (bpp === 32) {
+            ((cb) => {
+                for (ta_16_scratch[5] = padding; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
+                    for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
+                        //ta_16_scratch[1] = (ta_16_scratch[5] * this.size[0] + ta_16_scratch[4]) * ta_16_scratch[0];
+                        cb((ta_16_scratch[5] * ta_16_scratch[7] + ta_16_scratch[4]) * ta_16_scratch[0]);
+                        //ta_16_scratch[1] += 4;
+                    }
+                }
+            })(cb);
+        }
+        if (bpp === 24) {
+            ((cb) => {
+                for (ta_16_scratch[5] = padding; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
+                    for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
+                        //ta_16_scratch[1] = (ta_16_scratch[5] * this.size[0] + ta_16_scratch[4]) * ta_16_scratch[0];
+                        cb((ta_16_scratch[5] * ta_16_scratch[7] + ta_16_scratch[4]) * ta_16_scratch[0]);
+                        //ta_16_scratch[1] += 3;
+                    }
+                }
+            })(cb);
+        } else if (bpp === 8) {
+            ((cb) => {
+                for (ta_16_scratch[5] = padding; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
+                    for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
+                        cb((ta_16_scratch[5] * ta_16_scratch[7] + ta_16_scratch[4]) * ta_16_scratch[0]);
+                        //ta_16_scratch[1] += 1;
+                    }
+                }
+            })(cb);
+        }
+    }
+
     each_pixel(cb) {
         // y loop
         // x loop
@@ -93,28 +194,83 @@ class Pixel_Buffer_Core {
         //const w = this.size[0],
         //    h = this.size[1];
         const buf = this.buffer;
-        for (ta_16_scratch[5] = 0; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
-            for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
-                //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
-                //cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]), buf.readUInt8(ta_16_scratch[1] + 1), buf.readUInt8(ta_16_scratch[1] + 2), buf.readUInt8(ta_16_scratch[1] + 3));
-                //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
-                cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++));
 
-                /*
-                cb(x, y, buf.readUInt8(i), buf.readUInt8(i + 1), buf.readUInt8(i + 2), buf.readUInt8(i + 3),
-                    / *(r, g, b, a) => {
-                                       buf.writeUInt8(r, i), buf.writeUInt8(g, i + 1), buf.writeUInt8(b, i + 2), buf.writeUInt8(a, i + 3)
-                                   }, * /
-                    (vx, vy) => {
-                        //console.log('x, y, ', x, y, vx, vy);
-                        // Maybe too slow.
-                        // Vectored pixel.
+        const bpp = this.bits_per_pixel;
 
-                        return this.get_pixel(x + vx, y + vy);
-                    })
-                    */
+        if (bpp === 32) {
+            for (ta_16_scratch[5] = 0; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
+                for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
+                    //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
+                    //cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]), buf.readUInt8(ta_16_scratch[1] + 1), buf.readUInt8(ta_16_scratch[1] + 2), buf.readUInt8(ta_16_scratch[1] + 3));
+                    //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
+                    cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++));
+
+                    /*
+                    cb(x, y, buf.readUInt8(i), buf.readUInt8(i + 1), buf.readUInt8(i + 2), buf.readUInt8(i + 3),
+                        / *(r, g, b, a) => {
+                                           buf.writeUInt8(r, i), buf.writeUInt8(g, i + 1), buf.writeUInt8(b, i + 2), buf.writeUInt8(a, i + 3)
+                                       }, * /
+                        (vx, vy) => {
+                            //console.log('x, y, ', x, y, vx, vy);
+                            // Maybe too slow.
+                            // Vectored pixel.
+    
+                            return this.get_pixel(x + vx, y + vy);
+                        })
+                        */
+                }
             }
         }
+        if (bpp === 24) {
+            for (ta_16_scratch[5] = 0; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
+                for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
+                    //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
+                    //cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]), buf.readUInt8(ta_16_scratch[1] + 1), buf.readUInt8(ta_16_scratch[1] + 2), buf.readUInt8(ta_16_scratch[1] + 3));
+                    //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
+                    cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++));
+
+                    /*
+                    cb(x, y, buf.readUInt8(i), buf.readUInt8(i + 1), buf.readUInt8(i + 2), buf.readUInt8(i + 3),
+                        / *(r, g, b, a) => {
+                                           buf.writeUInt8(r, i), buf.writeUInt8(g, i + 1), buf.writeUInt8(b, i + 2), buf.writeUInt8(a, i + 3)
+                                       }, * /
+                        (vx, vy) => {
+                            //console.log('x, y, ', x, y, vx, vy);
+                            // Maybe too slow.
+                            // Vectored pixel.
+    
+                            return this.get_pixel(x + vx, y + vy);
+                        })
+                        */
+                }
+            }
+        } else if (bpp === 8) {
+            for (ta_16_scratch[5] = 0; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
+                for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
+                    //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
+                    //cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]), buf.readUInt8(ta_16_scratch[1] + 1), buf.readUInt8(ta_16_scratch[1] + 2), buf.readUInt8(ta_16_scratch[1] + 3));
+                    //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
+                    cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++));
+
+                    /*
+                    cb(x, y, buf.readUInt8(i), buf.readUInt8(i + 1), buf.readUInt8(i + 2), buf.readUInt8(i + 3),
+                        / *(r, g, b, a) => {
+                                           buf.writeUInt8(r, i), buf.writeUInt8(g, i + 1), buf.writeUInt8(b, i + 2), buf.writeUInt8(a, i + 3)
+                                       }, * /
+                        (vx, vy) => {
+                            //console.log('x, y, ', x, y, vx, vy);
+                            // Maybe too slow.
+                            // Vectored pixel.
+    
+                            return this.get_pixel(x + vx, y + vy);
+                        })
+                        */
+                }
+            }
+        }
+
+
+
     }
     padded_each_pixel(padding, cb) {
         // y loop
@@ -123,8 +279,8 @@ class Pixel_Buffer_Core {
         const ta_16_scratch = new Uint32Array(7);
         ta_16_scratch[0] = this.bytes_per_pixel;
         ta_16_scratch[1] = 0; // i
-        ta_16_scratch[2] = this.size[0];
-        ta_16_scratch[3] = this.size[1];
+        ta_16_scratch[2] = this.size[0] - padding;
+        ta_16_scratch[3] = this.size[1] - padding;
         // 4 = x
         // 5 = y
         //let y, x, i;
@@ -132,27 +288,54 @@ class Pixel_Buffer_Core {
         //const w = this.size[0],
         //    h = this.size[1];
         const buf = this.buffer;
-        for (ta_16_scratch[5] = padding; ta_16_scratch[5] < ta_16_scratch[3] - padding; ta_16_scratch[5]++) {
-            for (ta_16_scratch[4] = padding; ta_16_scratch[4] < ta_16_scratch[2] - padding; ta_16_scratch[4]++) {
-                //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
-                ta_16_scratch[6] = ta_16_scratch[1];
-                cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), ta_16_scratch[6]);
+        console.log('buf', buf);
 
-                /*
-                cb(x, y, buf.readUInt8(i), buf.readUInt8(i + 1), buf.readUInt8(i + 2), buf.readUInt8(i + 3),
-                    / *(r, g, b, a) => {
-                                       buf.writeUInt8(r, i), buf.writeUInt8(g, i + 1), buf.writeUInt8(b, i + 2), buf.writeUInt8(a, i + 3)
-                                   }, * /
-                    (vx, vy) => {
-                        //console.log('x, y, ', x, y, vx, vy);
-                        // Maybe too slow.
-                        // Vectored pixel.
+        console.log('this.bytes_per_pixel', this.bytes_per_pixel);
 
-                        return this.get_pixel(x + vx, y + vy);
-                    })
-                    */
+        if (ta_16_scratch[0] === 3) {
+
+            // need to work out the index?
+
+            for (ta_16_scratch[5] = padding; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
+                for (ta_16_scratch[4] = padding; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
+                    //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
+                    //ta_16_scratch[6] = ta_16_scratch[1];
+
+                    ta_16_scratch[1] = ta_16_scratch[6] = (ta_16_scratch[5] * this.size[0] + ta_16_scratch[4]) * ta_16_scratch[0];
+                    
+
+
+                    cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), ta_16_scratch[6]);
+                }
+            }
+        } else if (ta_16_scratch[0] === 4) {
+            for (ta_16_scratch[5] = padding; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
+                for (ta_16_scratch[4] = padding; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
+                    //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
+                    //ta_16_scratch[6] = ta_16_scratch[1];
+                    ta_16_scratch[1] = ta_16_scratch[6] = (ta_16_scratch[5] * this.size[0] + ta_16_scratch[4]) * ta_16_scratch[0];
+                    //ta_16_scratch[6] = ta_16_scratch[5] * (this.size[0] + ta_16_scratch[4]) * ta_16_scratch[0];
+                    cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), ta_16_scratch[6]);
+
+                    /*
+                    cb(x, y, buf.readUInt8(i), buf.readUInt8(i + 1), buf.readUInt8(i + 2), buf.readUInt8(i + 3),
+                        / *(r, g, b, a) => {
+                                           buf.writeUInt8(r, i), buf.writeUInt8(g, i + 1), buf.writeUInt8(b, i + 2), buf.writeUInt8(a, i + 3)
+                                       }, * /
+                        (vx, vy) => {
+                            //console.log('x, y, ', x, y, vx, vy);
+                            // Maybe too slow.
+                            // Vectored pixel.
+    
+                            return this.get_pixel(x + vx, y + vy);
+                        })
+                        */
+                }
             }
         }
+
+
+
     }
 
     'set_pixel'() {
@@ -169,14 +352,24 @@ class Pixel_Buffer_Core {
         //console.log('set_pixel a ' + stringify(a));
 
         let x, y, r, g, b, alpha;
+
+        x = a[0];
+        y = a[1];
+
         const w = this.size[0];
+
+        var pixel_buffer_pos = bytes_per_pixel * (x + y * w);
+        var buffer = this.buffer;
+
         // x, y, [r, g, b, a] l = 3
         // x, y, [r, g, b]    l = 3
         if (l === 3) {
-            x = a[0];
-            y = a[1];
-            var arr_pixel = a[2];
+
+
+            // pixel
+
             if (this.bits_per_pixel === 24) {
+                var arr_pixel = a[2];
                 if (arr_pixel.length != 3) {
                     var stack = new Error().stack;
                     //console.log(stack);
@@ -188,6 +381,7 @@ class Pixel_Buffer_Core {
                 [r, g, b] = arr_pixel;
             }
             if (this.bits_per_pixel === 32) {
+                var arr_pixel = a[2];
                 //console.log('arr_pixel ' + stringify(arr_pixel));
                 if (arr_pixel.length != 4) {
                     //console.log('arr_pixel.length ' + arr_pixel.length);
@@ -228,8 +422,7 @@ class Pixel_Buffer_Core {
             [x, y, r, g, b, alpha] = a;
             //console.log('[x, y, r, g, b, alpha]', [x, y, r, g, b, alpha]);
         }
-        var pixel_buffer_pos = bytes_per_pixel * (x + y * w);
-        var buffer = this.buffer;
+
 
         if (this.bits_per_pixel === 24) {
             buffer.writeUInt8(r, pixel_buffer_pos);
@@ -241,6 +434,8 @@ class Pixel_Buffer_Core {
             buffer.writeUInt8(g, pixel_buffer_pos + 1);
             buffer.writeUInt8(b, pixel_buffer_pos + 2);
             buffer.writeUInt8(alpha, pixel_buffer_pos + 3);
+        } else if (this.bits_per_pixel === 8) {
+            buffer.writeUInt8(a[2], pixel_buffer_pos);
         } else {
             var stack = new Error().stack;
             //console.log(stack);
@@ -294,7 +489,7 @@ class Pixel_Buffer_Core {
     // Custom convolution seems like the way to go, but it's hard to implement.
 
 
-    
+
 
 
     equals(other_pixel_buffer) {
@@ -479,10 +674,46 @@ class Pixel_Buffer_Core {
         //res.buffer.fill(0);
         return res;
     }
+    'add_alpha_channel'() {
+        console.log('add_alpha_channel this.bytes_per_pixel', this.bytes_per_pixel);
+        if (this.bytes_per_pixel === 3) {
+
+
+            var res = new this.constructor({
+                'size': this.size,
+                'bytes_per_pixel': 4
+            });
+
+            /*
+            this.each_pixel((x, y, r, g, b) => {
+                //console.log('x, y, r, g, b', x, y, r, g, b);
+                res.set_pixel(x, y, r, g, b, 255);
+            });
+            */
+            const buf = this.buffer,
+                res_buf = res.buffer;
+            const px_count = this.size[0] * this.size[1];
+            let i = 0,
+                ir = 0;
+            for (let p = 0; p < px_count; p++) {
+                res_buf[ir++] = buf[i++];
+                res_buf[ir++] = buf[i++];
+                res_buf[ir++] = buf[i++];
+                res_buf[ir++] = 255;
+            }
+
+            return res;
+
+
+        }
+        if (this.bytes_per_pixel === 4) {
+            return this;
+        }
+    }
 
     // then need to be able to save as 8 bit bitmaps too.
     'to_8bit_greyscale'() {
-        var res = new Pixel_Buffer_Core({
+        var res = new this.constructor({
             'size': this.size,
             'bits_per_pixel': 8
         });
