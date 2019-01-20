@@ -106,6 +106,14 @@ class Pixel_Buffer_Enh extends Core {
 
     }
 
+    /*
+    
+    process(fn) {
+        let res = this.clone();
+        return fn(this, res);
+    }
+    */
+
     blur(size = 3, sigma = 2) {
         let kernel = kernels.get_gauss(size, sigma);
         return this.apply_square_convolution(kernel);
@@ -119,89 +127,95 @@ class Pixel_Buffer_Enh extends Core {
 
     // square convolution.
     apply_square_convolution(f32a_convolution) {
-        const c_length = f32a_convolution.length;
-        const dimension_size = Math.sqrt(c_length);
-        // Can't convolve the very edges of the image.
-        //console.log('dimension_size', dimension_size);
-        const padding = (dimension_size - 1) / 2;
-        //console.log('padding', padding);
 
-        const res = this.clone();
-        //const midpoint = padding;
-        //const movement_vectors = new Int8Array(c_length * 2);
-        let x, y, pos = 0, ii, i;
-        const bpp = this.bytes_per_pixel;
-        const bpr = this.bytes_per_row;
-        //console.log('bpp', bpp);
-        //console.log('bpr', bpr);
-        const idx_movement_vectors = get_idx_movement_vectors(f32a_convolution, bpp, bpr);
-        //const convolved_pixels = new Int16Array(c_length);
+        return this.process((orig, res) => {
 
-        //let pr, pg, pb, pa;
-        //let cpr, cpg, cpb, cpa;
-        
+            // could replace this with orig.
 
-        let cr, cg, cb, ca;
+            const c_length = f32a_convolution.length;
+            const dimension_size = Math.sqrt(c_length);
+            // Can't convolve the very edges of the image.
+            //console.log('dimension_size', dimension_size);
+            const padding = (dimension_size - 1) / 2;
+            //console.log('padding', padding);
 
-        const buf = this.buffer;
-        const buf_res = res.buffer;
+            //const res = this.clone();
+            //const midpoint = padding;
+            //const movement_vectors = new Int8Array(c_length * 2);
+            let x, y, pos = 0,
+                ii, i;
+            const bpp = this.bytes_per_pixel;
+            const bpr = this.bytes_per_row;
+            //console.log('bpp', bpp);
+            //console.log('bpr', bpr);
+            const idx_movement_vectors = get_idx_movement_vectors(f32a_convolution, bpp, bpr);
+            //const convolved_pixels = new Int16Array(c_length);
+
+            //let pr, pg, pb, pa;
+            //let cpr, cpg, cpb, cpa;
 
 
-        // Try a for loop...
-        //  
+            let cr, cg, cb, ca;
 
-        // pixel index
+            const buf = this.buffer;
+            const buf_res = res.buffer;
 
-        if (bpp === 3) {
-            //this.padded_each_pixel(padding, (x, y, r, g, b, px_idx) => {
-            this.padded_each_pixel_index(padding, (px_idx) => {
+
+            // Try a for loop...
+            //  
+
+            // pixel index
+
+            if (bpp === 3) {
+                //this.padded_each_pixel(padding, (x, y, r, g, b, px_idx) => {
+                this.padded_each_pixel_index(padding, (px_idx) => {
                     // get the pixels from each of these locations.
-                //  multiply the values by the pixel convolution number.
+                    //  multiply the values by the pixel convolution number.
 
-                // need to keep tract of a convolution total
-                //console.log('px_idx', px_idx);
-                cr = 0;
-                cg = 0;
-                cb = 0;
+                    // need to keep tract of a convolution total
+                    //console.log('px_idx', px_idx);
+                    cr = 0;
+                    cg = 0;
+                    cb = 0;
 
-                for (ii = 0; ii < c_length; ii++) {
-                    i = px_idx + idx_movement_vectors[ii];
-                    cr += f32a_convolution[ii] * buf[i++];
-                    cg += f32a_convolution[ii] * buf[i++];
-                    cb += f32a_convolution[ii] * buf[i++];
-                }
+                    for (ii = 0; ii < c_length; ii++) {
+                        i = px_idx + idx_movement_vectors[ii];
+                        cr += f32a_convolution[ii] * buf[i++];
+                        cg += f32a_convolution[ii] * buf[i++];
+                        cb += f32a_convolution[ii] * buf[i++];
+                    }
 
-                if (cr < 0) cr = 0;
-                if (cg < 0) cg = 0;
-                if (cb < 0) cb = 0;
+                    if (cr < 0) cr = 0;
+                    if (cg < 0) cg = 0;
+                    if (cb < 0) cb = 0;
 
-                if (cr > 255) cr = 255;
-                if (cg > 255) cg = 255;
-                if (cb > 255) cb = 255;
+                    if (cr > 255) cr = 255;
+                    if (cg > 255) cg = 255;
+                    if (cb > 255) cb = 255;
 
-                buf_res[px_idx++] = Math.round(cr);
-                buf_res[px_idx++] = Math.round(cg);
-                buf_res[px_idx++] = Math.round(cb);
-            });
-        }
+                    buf_res[px_idx++] = Math.round(cr);
+                    buf_res[px_idx++] = Math.round(cg);
+                    buf_res[px_idx++] = Math.round(cb);
+                });
+            }
 
-        if (bpp === 4) {
-            //this.padded_each_pixel(padding, (x, y, r, g, b, a, px_idx) => {
-            this.padded_each_pixel_index(padding, (px_idx) => {
+            if (bpp === 4) {
+                //this.padded_each_pixel(padding, (x, y, r, g, b, a, px_idx) => {
+                this.padded_each_pixel_index(padding, (px_idx) => {
                     // get the pixels from each of these locations.
-                //  multiply the values by the pixel convolution number.
+                    //  multiply the values by the pixel convolution number.
 
-                // need to keep tract of a convolution total
-                //console.log('px_idx', px_idx);
-                //cr = 0;
-                //cg = 0;
-                //cb = 0;
-                //ca = 0;
+                    // need to keep tract of a convolution total
+                    //console.log('px_idx', px_idx);
+                    //cr = 0;
+                    //cg = 0;
+                    //cb = 0;
+                    //ca = 0;
 
-                for (ii = 0; ii < c_length; ii++) {
-                    i = px_idx + idx_movement_vectors[ii];
+                    for (ii = 0; ii < c_length; ii++) {
+                        i = px_idx + idx_movement_vectors[ii];
 
-                    /*
+                        /*
                     pr = buf[i++];
                     pg = buf[i++];
                     pb = buf[i++];
@@ -217,36 +231,39 @@ class Pixel_Buffer_Enh extends Core {
                     cb += cpb;
                     */
 
-                    cr += f32a_convolution[ii] * buf[i++];
-                    cg += f32a_convolution[ii] * buf[i++];
-                    cb += f32a_convolution[ii] * buf[i++];
+                        cr += f32a_convolution[ii] * buf[i++];
+                        cg += f32a_convolution[ii] * buf[i++];
+                        cb += f32a_convolution[ii] * buf[i++];
 
-                    pa = buf[i++];
+                        pa = buf[i++];
 
-                    //ca += cpa;
-                }
-                ca = a;
+                        //ca += cpa;
+                    }
+                    ca = a;
 
-                if (cr < 0) cr = 0;
-                if (cg < 0) cg = 0;
-                if (cb < 0) cb = 0;
-                if (ca < 0) ca = 0;
+                    if (cr < 0) cr = 0;
+                    if (cg < 0) cg = 0;
+                    if (cb < 0) cb = 0;
+                    if (ca < 0) ca = 0;
 
-                if (cr > 255) cr = 255;
-                if (cg > 255) cg = 255;
-                if (cb > 255) cb = 255;
-                if (ca > 255) ca = 255;
-                //cr = Math.round(cr);
-                //cg = Math.round(cg);
-                //cb = Math.round(cb);
-                //ca = Math.round(ca);
-                buf_res[px_idx++] = Math.round(cr);
-                buf_res[px_idx++] = Math.round(cg);
-                buf_res[px_idx++] = Math.round(cb);
-                buf_res[px_idx++] = Math.round(ca);
-            });
-        }
-        return res;
+                    if (cr > 255) cr = 255;
+                    if (cg > 255) cg = 255;
+                    if (cb > 255) cb = 255;
+                    if (ca > 255) ca = 255;
+                    //cr = Math.round(cr);
+                    //cg = Math.round(cg);
+                    //cb = Math.round(cb);
+                    //ca = Math.round(ca);
+                    buf_res[px_idx++] = Math.round(cr);
+                    buf_res[px_idx++] = Math.round(cg);
+                    buf_res[px_idx++] = Math.round(cb);
+                    buf_res[px_idx++] = Math.round(ca);
+                });
+            }
+            return res;
+        })
+
+
     }
 
     threshold_gs(value) {

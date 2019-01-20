@@ -78,6 +78,9 @@ class Pixel_Buffer_Core {
             this.buffer = new Buffer(bytes_per_pixel * this.size[0] * this.size[1]);
         }
     }
+
+
+
     // each_pixel((x, y, r, g, b, a, set, get_pixel_by_offset)
 
     each_pixel_index(cb) {
@@ -489,6 +492,11 @@ class Pixel_Buffer_Core {
     // Custom convolution seems like the way to go, but it's hard to implement.
 
 
+    
+    process(fn) {
+        let res = this.clone();
+        return fn(this, res);
+    }
 
 
 
