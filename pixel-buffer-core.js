@@ -231,7 +231,6 @@ class Pixel_Buffer_Core {
                     //cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]), buf.readUInt8(ta_16_scratch[1] + 1), buf.readUInt8(ta_16_scratch[1] + 2), buf.readUInt8(ta_16_scratch[1] + 3));
                     //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
                     cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++));
-
                     /*
                     cb(x, y, buf.readUInt8(i), buf.readUInt8(i + 1), buf.readUInt8(i + 2), buf.readUInt8(i + 3),
                         / *(r, g, b, a) => {
@@ -736,6 +735,22 @@ class Pixel_Buffer_Core {
         });
         // 
         return res;
+    }
+
+    'invert_greyscale'() {
+        var res = new this.constructor({
+            'size': this.size,
+            'bits_per_pixel': 8
+        });
+        const bres = res.buffer;
+        // Then go over each of this pixel
+        //  take average rgb values
+        let i = 0;
+        this.each_pixel((x, y, v) => {
+            bres[i++] = 255 - v;
+        });
+        return res;
+
     }
 
 }

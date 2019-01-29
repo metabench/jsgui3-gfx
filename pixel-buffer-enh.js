@@ -122,14 +122,9 @@ class Pixel_Buffer_Enh extends Core {
 
     // new convolution version...
 
-
-
-
     // square convolution.
     apply_square_convolution(f32a_convolution) {
-
         return this.process((orig, res) => {
-
             // could replace this with orig.
 
             const c_length = f32a_convolution.length;
@@ -150,21 +145,16 @@ class Pixel_Buffer_Enh extends Core {
             //console.log('bpr', bpr);
             const idx_movement_vectors = get_idx_movement_vectors(f32a_convolution, bpp, bpr);
             //const convolved_pixels = new Int16Array(c_length);
-
             //let pr, pg, pb, pa;
             //let cpr, cpg, cpb, cpa;
-
-
             let cr, cg, cb, ca;
-
             const buf = this.buffer;
             const buf_res = res.buffer;
-
-
             // Try a for loop...
             //  
-
             // pixel index
+
+            //console.log('bpp', bpp);
 
             if (bpp === 3) {
                 //this.padded_each_pixel(padding, (x, y, r, g, b, px_idx) => {
@@ -202,44 +192,31 @@ class Pixel_Buffer_Enh extends Core {
             if (bpp === 4) {
                 //this.padded_each_pixel(padding, (x, y, r, g, b, a, px_idx) => {
                 this.padded_each_pixel_index(padding, (px_idx) => {
-                    // get the pixels from each of these locations.
-                    //  multiply the values by the pixel convolution number.
-
-                    // need to keep tract of a convolution total
-                    //console.log('px_idx', px_idx);
-                    //cr = 0;
-                    //cg = 0;
-                    //cb = 0;
-                    //ca = 0;
-
+                    cr = 0;
+                    cg = 0;
+                    cb = 0;
                     for (ii = 0; ii < c_length; ii++) {
+
+
+
                         i = px_idx + idx_movement_vectors[ii];
 
-                        /*
-                    pr = buf[i++];
-                    pg = buf[i++];
-                    pb = buf[i++];
-                    pa = buf[i++];
-    
-                    cpr = f32a_convolution[ii] * pr;
-                    cpg = f32a_convolution[ii] * pg;
-                    cpb = f32a_convolution[ii] * pb;
-                    //cpa = f32a_convolution[ii] * pa;
-    
-                    cr += cpr;
-                    cg += cpg;
-                    cb += cpb;
-                    */
+                        //console.log('i', i);
+
+                        //console.log('buf[i]', buf[i]);
 
                         cr += f32a_convolution[ii] * buf[i++];
+                        //console.log('buf[i]', buf[i]);
                         cg += f32a_convolution[ii] * buf[i++];
+                        //console.log('buf[i]', buf[i]);
                         cb += f32a_convolution[ii] * buf[i++];
 
-                        pa = buf[i++];
+                        //ca = buf[i++];
 
                         //ca += cpa;
                     }
-                    ca = a;
+                    ca = 255;
+                    //ca = a;
 
                     if (cr < 0) cr = 0;
                     if (cg < 0) cg = 0;
@@ -254,6 +231,14 @@ class Pixel_Buffer_Enh extends Core {
                     //cg = Math.round(cg);
                     //cb = Math.round(cb);
                     //ca = Math.round(ca);
+
+
+                    //console.log('cr', cr);
+                    //console.log('cg', cg);
+                    //console.log('cb', cb);
+                    //console.log('ca', ca);
+
+
                     buf_res[px_idx++] = Math.round(cr);
                     buf_res[px_idx++] = Math.round(cg);
                     buf_res[px_idx++] = Math.round(cb);
@@ -262,33 +247,26 @@ class Pixel_Buffer_Enh extends Core {
             }
             return res;
         })
-
-
     }
 
     threshold_gs(value) {
         // iterate all pixels...
-
         // better to make a copy of it.
         let res = this.clone();
-
+        //console.log('threshold_gs this.bytes_per_pixel', this.bytes_per_pixel);
         if (this.bytes_per_pixel === 1) {
-
 
             this.each_pixel((x, y, v, i) => {
                 //console.log('x, y, v, i', x, y, v, i);
-
                 if (v >= value) {
                     res.set_pixel(x, y, 255);
                 } else {
                     res.set_pixel(x, y, 0);
                 }
-
             });
 
         }
         return res;
-
     }
 
     // Custom convolution not working here.
