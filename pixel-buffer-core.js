@@ -304,7 +304,7 @@ class Pixel_Buffer_Core {
                     //ta_16_scratch[6] = ta_16_scratch[1];
 
                     ta_16_scratch[1] = ta_16_scratch[6] = (ta_16_scratch[5] * this.size[0] + ta_16_scratch[4]) * ta_16_scratch[0];
-                    
+
 
 
                     cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), ta_16_scratch[6]);
@@ -491,7 +491,7 @@ class Pixel_Buffer_Core {
     // Custom convolution seems like the way to go, but it's hard to implement.
 
 
-    
+
     process(fn) {
         let res = this.clone();
         return fn(this, res);
@@ -595,7 +595,6 @@ class Pixel_Buffer_Core {
             //let bbres = res.buffer.buffer;
             for (let y2 = y; y2 < bottom; y2++) {
                 //console.log('y', y);
-
                 //console.log('x < right', x < right);
 
                 //console.log('this.bytes_per_pixel', this.bytes_per_pixel);
@@ -684,8 +683,6 @@ class Pixel_Buffer_Core {
     'add_alpha_channel'() {
         console.log('add_alpha_channel this.bytes_per_pixel', this.bytes_per_pixel);
         if (this.bytes_per_pixel === 3) {
-
-
             var res = new this.constructor({
                 'size': this.size,
                 'bytes_per_pixel': 4
@@ -708,14 +705,70 @@ class Pixel_Buffer_Core {
                 res_buf[ir++] = buf[i++];
                 res_buf[ir++] = 255;
             }
-
             return res;
-
-
         }
         if (this.bytes_per_pixel === 4) {
             return this;
         }
+    }
+
+    'paint_solid_border'(thickness, color) {
+        return this.process((me, res) => {
+            let x, y;
+            const [w, h] = this.size;
+            if (this.bytes_per_pixel === 4) {
+                // top two rows
+                for (y = 0; y < thickness; y++) {
+                    for (x = 0; x < w; x++) {
+                        res.set_pixel(x, y, color[0], color[1], color[2], color[3]);
+                    }
+                }
+                for (y = h - thickness; y < h; y++) {
+                    for (x = 0; x < w; x++) {
+                        res.set_pixel(x, y, color[0], color[1], color[2], color[3]);
+                    }
+                }
+                for (y = 0; y < h; y++) {
+                    for (x = 0; x < thickness; x++) {
+                        res.set_pixel(x, y, color[0], color[1], color[2], color[3]);
+                    }
+                }
+                for (y = 0; y < h; y++) {
+                    for (x = w - thickness; x < w; x++) {
+                        res.set_pixel(x, y, color[0], color[1], color[2], color[3]);
+                    }
+                }
+
+            }
+            if (this.bytes_per_pixel === 3) {
+                // top two rows
+
+                for (y = 0; y < thickness; y++) {
+                    for (x = 0; x < w; x++) {
+                        res.set_pixel(x, y, color[0], color[1], color[2]);
+                    }
+                }
+                for (y = h - thickness; y < h; y++) {
+                    for (x = 0; x < w; x++) {
+                        res.set_pixel(x, y, color[0], color[1], color[2]);
+                    }
+                }
+                for (y = 0; y < h; y++) {
+                    for (x = 0; x < thickness; x++) {
+                        res.set_pixel(x, y, color[0], color[1], color[2]);
+                    }
+                }
+                for (y = 0; y < h; y++) {
+                    for (x = w - thickness; x < w; x++) {
+                        res.set_pixel(x, y, color[0], color[1], color[2]);
+                    }
+                }
+            }
+
+            return res;
+        })
+        
+
     }
 
     // then need to be able to save as 8 bit bitmaps too.
@@ -733,6 +786,28 @@ class Pixel_Buffer_Core {
             bres[i++] = Math.round((r + g + b) / 3);
             //i++;
         });
+        // 
+        return res;
+    }
+
+    'to_32bit_rgba'() {
+        var res = new this.constructor({
+            'size': this.size,
+            'bits_per_pixel': 32
+        });
+        const bres = res.buffer;
+        if (this.bytes_per_pixel === 1) {
+            // Then go over each of this pixel
+            //  take average rgb values
+            let i = 0;
+            this.each_pixel((x, y, v) => {
+                bres[i++] = v;
+                bres[i++] = v;
+                bres[i++] = v;
+                bres[i++] = 255;
+                //i++;
+            });
+        }
         // 
         return res;
     }

@@ -674,6 +674,10 @@ class Pixel_Buffer_Enh extends Core {
 
     'measure_color_region_size'(x, y, max) {
         const buffer = this.buffer;
+
+        // Would be good to make a greyscale version.
+
+
         //let pixel_buffer_pos = this.bytes_per_pixel * (x + y * this.size[0]);
 
 
