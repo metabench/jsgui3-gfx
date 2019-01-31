@@ -156,6 +156,11 @@ class Pixel_Buffer_Enh extends Core {
 
             //console.log('bpp', bpp);
 
+            // apply it to 1bpp image...
+
+            
+
+
             if (bpp === 3) {
                 //this.padded_each_pixel(padding, (x, y, r, g, b, px_idx) => {
                 this.padded_each_pixel_index(padding, (px_idx) => {
@@ -197,10 +202,7 @@ class Pixel_Buffer_Enh extends Core {
                     cb = 0;
                     for (ii = 0; ii < c_length; ii++) {
 
-
-
                         i = px_idx + idx_movement_vectors[ii];
-
                         //console.log('i', i);
 
                         //console.log('buf[i]', buf[i]);
@@ -255,7 +257,6 @@ class Pixel_Buffer_Enh extends Core {
         let res = this.clone();
         //console.log('threshold_gs this.bytes_per_pixel', this.bytes_per_pixel);
         if (this.bytes_per_pixel === 1) {
-
             this.each_pixel((x, y, v, i) => {
                 //console.log('x, y, v, i', x, y, v, i);
                 if (v >= value) {
@@ -308,7 +309,6 @@ class Pixel_Buffer_Enh extends Core {
         ta32[1] = 0; // convolution pixel component index
 
         ta32[2] = ta16[2] * ta16[3] * ta16[4] // image length in bytes
-
 
         // a result object that is just declared once...
 
@@ -463,11 +463,12 @@ class Pixel_Buffer_Enh extends Core {
         })
 
         // iterate the x, y
-
         // find the color block 
 
-
     }
+
+    // could do this using color pixels
+
 
     'replace_color'(r, g, b, a, tr, tg, tb, ta) {
         // Iterate over all pixels
@@ -497,7 +498,6 @@ class Pixel_Buffer_Enh extends Core {
 
         while (ta_16_scratch[0] < ta_16_scratch[2]) {
             //console.log('ta_u8', ta_u8);
-
 
             if (buf_read[ta_16_scratch[0]] === ta_u8[0] && buf_read[ta_16_scratch[0] + 1] === ta_u8[1] && buf_read[ta_16_scratch[0] + 2] === ta_u8[2] && buf_read[ta_16_scratch[0] + 3] === ta_u8[3]) {
                 buf_read[ta_16_scratch[0]] = ta_u8[4];
@@ -569,7 +569,6 @@ class Pixel_Buffer_Enh extends Core {
                 buf_write[ta_16_scratch[1]++] = 255;
             } else {
 
-
                 buf_write[ta_16_scratch[1]++] = 255;
                 buf_write[ta_16_scratch[1]++] = 255;
                 buf_write[ta_16_scratch[1]++] = 255;
@@ -581,8 +580,6 @@ class Pixel_Buffer_Enh extends Core {
         }
         // Traverse the image quickly
         return res;
-
-
     }
 
     count_pixels_with_color(r, g, b, a) {
@@ -672,14 +669,18 @@ class Pixel_Buffer_Enh extends Core {
     // greyscale pixel buffer would help a lot
     //  discard alpha
 
+    // Would definitely be faster on a greyscale image
+    //  Try despeckle on a greyscale image...
+
+
+
+
     'measure_color_region_size'(x, y, max) {
         const buffer = this.buffer;
 
         // Would be good to make a greyscale version.
 
-
         //let pixel_buffer_pos = this.bytes_per_pixel * (x + y * this.size[0]);
-
 
         // Could make a large typed array buffer of pixels to visit
 
@@ -735,7 +736,6 @@ class Pixel_Buffer_Enh extends Core {
         //console.log('scratch_32[7]', scratch_32[7]);
 
         while (scratch_32[6] < scratch_32[7] && scratch_32[10] < scratch_32[9]) {
-            // 
             //console.log('scratch_32[6]', scratch_32[6]);
             //[x, y] = arr_pixels_to_visit[c_visited];
             scratch_32[4] = ta_visiting_pixels[scratch_32[6]++]; // x
@@ -808,7 +808,6 @@ class Pixel_Buffer_Enh extends Core {
                     ta_visiting_pixels[scratch_32[7]++] = scratch_32[5];
                     //scratch_32[10]++;
                     //arr_pixels_to_visit.push([scratch_32[4] + 1, scratch_32[5]]);
-
                     ta_pixels_visited[scratch_32[4] + 1 + (scratch_32[0] * scratch_32[5])] = 255
                 }
                 if (scratch_32[5] + 1 >= 0 && scratch_32[5] + 1 < scratch_32[1] && ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] + 1))] === 0) {
@@ -816,52 +815,40 @@ class Pixel_Buffer_Enh extends Core {
                     ta_visiting_pixels[scratch_32[7]++] = scratch_32[5] + 1;
                     //scratch_32[10]++;
                     //arr_pixels_to_visit.push([scratch_32[4], scratch_32[5] + 1]);
-
                     ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] + 1))] = 255
                 }
             }
-
             scratch_32[10]++;
-
             // compare these arrays
-
             // Add adjacent pixels to the stack?
             //c_visited++;
             //scratch_32[7] += 2;
         }
         return scratch_32[10]; //scratch_32[10];
-
         //console.log('scratch_32[6]', scratch_32[6]);
         //console.log('c_visited', c_visited);
     }
 
-
     // flood fill
     // No toloerance for the moment
-    'flood_fill'(x, y, r, g, b, a) {
 
+    // benchmark and test versions using 'px'
+
+
+    'flood_fill'(x, y, r, g, b, a) {
         // stack of pixels to visit
         // map of pixels visited
         // Could optimize this with typed arrays
-
-
         //const [w, h] = this.size;
-
         const [w, h] = this.size;
-
         let fast_stacked_mapped_flood_fill = () => {
             //const map_pixels_visited = {};
             //const arr_pixels_to_visit = [[x, y]];
             //let c_visited = 0;
             const buffer = this.buffer;
-
             //let pixel_buffer_pos = this.bytes_per_pixel * (x + y * this.size[0]);
-
-
             // Could make a large typed array buffer of pixels to visit
-
             // An already visited typed array.
-
             const scratch_32 = new Uint32Array(16);
             // w, h
             scratch_32[0] = this.size[0]; // w

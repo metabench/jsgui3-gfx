@@ -28,14 +28,11 @@ const {
 
 
 // Core
-
-
 // Mixins
 //  Could make them for functions of some categories, and larger functions.
 //   Would help to make it replacable with more optimized functions.
 
 // Advanced / Enh
-
 
 class Pixel_Buffer_Core {
 
@@ -270,9 +267,6 @@ class Pixel_Buffer_Core {
                 }
             }
         }
-
-
-
     }
     padded_each_pixel(padding, cb) {
         // y loop
@@ -290,9 +284,8 @@ class Pixel_Buffer_Core {
         //const w = this.size[0],
         //    h = this.size[1];
         const buf = this.buffer;
-        console.log('buf', buf);
-
-        console.log('this.bytes_per_pixel', this.bytes_per_pixel);
+        //console.log('buf', buf);
+        //console.log('this.bytes_per_pixel', this.bytes_per_pixel);
 
         if (ta_16_scratch[0] === 3) {
 
@@ -302,11 +295,7 @@ class Pixel_Buffer_Core {
                 for (ta_16_scratch[4] = padding; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
                     //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
                     //ta_16_scratch[6] = ta_16_scratch[1];
-
                     ta_16_scratch[1] = ta_16_scratch[6] = (ta_16_scratch[5] * this.size[0] + ta_16_scratch[4]) * ta_16_scratch[0];
-
-
-
                     cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), ta_16_scratch[6]);
                 }
             }
@@ -334,10 +323,9 @@ class Pixel_Buffer_Core {
                         */
                 }
             }
+        } else {
+            throw 'Not supported: ' + ta_16_scratch[0] + ' bytes per pixel';
         }
-
-
-
     }
 
     'set_pixel'() {
@@ -357,19 +345,14 @@ class Pixel_Buffer_Core {
 
         x = a[0];
         y = a[1];
-
         const w = this.size[0];
 
         var pixel_buffer_pos = bytes_per_pixel * (x + y * w);
         var buffer = this.buffer;
-
         // x, y, [r, g, b, a] l = 3
         // x, y, [r, g, b]    l = 3
         if (l === 3) {
-
-
             // pixel
-
             if (this.bits_per_pixel === 24) {
                 var arr_pixel = a[2];
                 if (arr_pixel.length != 3) {
@@ -511,6 +494,8 @@ class Pixel_Buffer_Core {
 
     // get (rectangle) view
     //  A rectangular square of pixels.
+
+    // positions as UInt16Array?
 
     // x, y, w, h
     copy_rect(x, y, w, h, clip = false) {
@@ -764,11 +749,8 @@ class Pixel_Buffer_Core {
                     }
                 }
             }
-
             return res;
         })
-        
-
     }
 
     // then need to be able to save as 8 bit bitmaps too.
@@ -825,7 +807,6 @@ class Pixel_Buffer_Core {
             bres[i++] = 255 - v;
         });
         return res;
-
     }
 
 }
