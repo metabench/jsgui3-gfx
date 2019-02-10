@@ -4,6 +4,7 @@
 // gfx is both for client and server.
 
 const gfx = {
+    Pixel_Pos_List: require('./pixel-pos-list'),
     Pixel_Buffer: require('./pixel-buffer'),
     convolution_kernels: require('./convolution-kernels/kernels')
 }

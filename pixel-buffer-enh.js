@@ -26,20 +26,17 @@ const {
     get_a_sig
 } = lang;
 
-
 const Core = require('./pixel-buffer-core');
 
 // Core
-
+const Pixel_Pos_List = require('./pixel-pos-list');
 
 // Mixins
 //  Could make them for functions of some categories, and larger functions.
 //   Would help to make it replacable with more optimized functions.
-
 // Advanced / Enh
 
 const kernels = require('./convolution-kernels/kernels');
-
 const get_idx_movement_vectors = (f32a_convolution, bpp, bpr) => {
     const c_length = f32a_convolution.length;
     const dimension_size = Math.sqrt(c_length);
@@ -47,17 +44,13 @@ const get_idx_movement_vectors = (f32a_convolution, bpp, bpr) => {
     //console.log('dimension_size', dimension_size);
     const padding = (dimension_size - 1) / 2;
     //console.log('padding', padding);
-
     //const res = this.blank_copy();
-
     /*
     const res = new Pixel_Buffer_Enh({
         'size': [this.size[0] - (padding * 2), this.size[1] - (padding * 2)],
         'bits_per_pixel': this.bits_per_pixel
     })
     */
-
-
     // need the vector for each pixel in the convolution.
     // the central pixel right in the middle...
     // arrange the movement vectors according to the dimension_size;
@@ -72,7 +65,6 @@ const get_idx_movement_vectors = (f32a_convolution, bpp, bpr) => {
     //console.log('bpr', bpr);
     const idx_movement_vectors = new Int16Array(c_length);
     //const convolved_pixels = new Int16Array(c_length);
-
     for (y = -1 * padding; y <= padding; y++) {
         for (x = -1 * padding; x <= padding; x++) {
             // central 0, 0
@@ -96,10 +88,8 @@ const get_idx_movement_vectors = (f32a_convolution, bpp, bpr) => {
 }
 
 class Pixel_Buffer_Enh extends Core {
-
     // Setting bits per pixel to 8
     //  greyscale 256
-
     constructor(spec) {
         //spec.__type_name = spec.__type_name || 'pixel_buffer';
         super(spec);
@@ -114,26 +104,39 @@ class Pixel_Buffer_Enh extends Core {
     }
     */
 
+    // gaussian_blur
+    //  or gaussian is the default blur.
     blur(size = 3, sigma = 2) {
         let kernel = kernels.get_gauss(size, sigma);
         return this.apply_square_convolution(kernel);
     }
-    // each_pixel((x, y, r, g, b, a, set, get_pixel_by_offset)
 
+    count_colors() {
+        const map_colors = {};
+        let res = 0;
+        this.each_pixel_ta((pos, color) => {
+            const colstr = color.toString();
+            if (!map_colors[colstr]) {
+                map_colors[colstr] = true;
+                res++;
+            }
+        });
+        return res;
+    }
+    // each_pixel((x, y, r, g, b, a, set, get_pixel_by_offset)
     // new convolution version...
+    // not apply?
 
     // square convolution.
     apply_square_convolution(f32a_convolution) {
         return this.process((orig, res) => {
             // could replace this with orig.
-
             const c_length = f32a_convolution.length;
             const dimension_size = Math.sqrt(c_length);
             // Can't convolve the very edges of the image.
             //console.log('dimension_size', dimension_size);
             const padding = (dimension_size - 1) / 2;
             //console.log('padding', padding);
-
             //const res = this.clone();
             //const midpoint = padding;
             //const movement_vectors = new Int8Array(c_length * 2);
@@ -153,20 +156,13 @@ class Pixel_Buffer_Enh extends Core {
             // Try a for loop...
             //  
             // pixel index
-
             //console.log('bpp', bpp);
-
             // apply it to 1bpp image...
-
-            
-
-
             if (bpp === 3) {
                 //this.padded_each_pixel(padding, (x, y, r, g, b, px_idx) => {
                 this.padded_each_pixel_index(padding, (px_idx) => {
                     // get the pixels from each of these locations.
                     //  multiply the values by the pixel convolution number.
-
                     // need to keep tract of a convolution total
                     //console.log('px_idx', px_idx);
                     cr = 0;
@@ -192,21 +188,16 @@ class Pixel_Buffer_Enh extends Core {
                     buf_res[px_idx++] = Math.round(cg);
                     buf_res[px_idx++] = Math.round(cb);
                 });
-            }
-
-            if (bpp === 4) {
+            } else if (bpp === 4) {
                 //this.padded_each_pixel(padding, (x, y, r, g, b, a, px_idx) => {
                 this.padded_each_pixel_index(padding, (px_idx) => {
                     cr = 0;
                     cg = 0;
                     cb = 0;
                     for (ii = 0; ii < c_length; ii++) {
-
                         i = px_idx + idx_movement_vectors[ii];
                         //console.log('i', i);
-
                         //console.log('buf[i]', buf[i]);
-
                         cr += f32a_convolution[ii] * buf[i++];
                         //console.log('buf[i]', buf[i]);
                         cg += f32a_convolution[ii] * buf[i++];
@@ -223,12 +214,12 @@ class Pixel_Buffer_Enh extends Core {
                     if (cr < 0) cr = 0;
                     if (cg < 0) cg = 0;
                     if (cb < 0) cb = 0;
-                    if (ca < 0) ca = 0;
+                    //if (ca < 0) ca = 0;
 
                     if (cr > 255) cr = 255;
                     if (cg > 255) cg = 255;
                     if (cb > 255) cb = 255;
-                    if (ca > 255) ca = 255;
+                    //if (ca > 255) ca = 255;
                     //cr = Math.round(cr);
                     //cg = Math.round(cg);
                     //cb = Math.round(cb);
@@ -246,6 +237,8 @@ class Pixel_Buffer_Enh extends Core {
                     buf_res[px_idx++] = Math.round(cb);
                     buf_res[px_idx++] = Math.round(ca);
                 });
+            } else {
+                throw 'NYI';
             }
             return res;
         })
@@ -390,7 +383,6 @@ class Pixel_Buffer_Enh extends Core {
         // start a loop 
     }
 
-
     get_first_pixel_matching_color(r, g, b, a) {
         let px = 0,
             py = 0;
@@ -430,6 +422,7 @@ class Pixel_Buffer_Enh extends Core {
         return res;
     }
 
+    // Seems like extracting regions would be faster.
 
     'flood_fill_small_color_blocks'(max_size, r, g, b, a) {
         // scans the whole document
@@ -467,10 +460,40 @@ class Pixel_Buffer_Enh extends Core {
 
     }
 
+
+    // need to be able to handle greyscale as well.
+
     // could do this using color pixels
 
 
-    'replace_color'(r, g, b, a, tr, tg, tb, ta) {
+
+    // Should change this function.
+
+    // self_replace_color?
+    // target_color, replacement_color
+
+    self_replace_color(target_color, replacement_color) {
+        const bpp = this.bytes_per_pixel;
+        const buf = this.buffer;
+        const l = buf.length;
+        if (bpp === 1) {
+            for (let c = 0; c < l; c++) {
+                if (buf[c] === target_color) buf[c] = replacement_color;
+            }
+        } else {
+            throw 'NYI';
+        }
+        return this;
+    }
+
+
+
+
+    '_replace_color'(r, g, b, a, tr, tg, tb, ta) {
+
+        // Does to self.
+        //  Maybe we dont want that.
+
         // Iterate over all pixels
 
         // any pixels matching the given color, replace it with the target colors.
@@ -672,6 +695,8 @@ class Pixel_Buffer_Enh extends Core {
     // Would definitely be faster on a greyscale image
     //  Try despeckle on a greyscale image...
 
+    
+
 
 
 
@@ -686,165 +711,321 @@ class Pixel_Buffer_Enh extends Core {
 
         // An already visited typed array.
 
-        const scratch_32 = new Uint32Array(16);
-        // w, h
-        scratch_32[0] = this.size[0]; // w
-        scratch_32[1] = this.size[1]; // h
-        scratch_32[2] = scratch_32[0] * scratch_32[1];
-        scratch_32[3] = this.bytes_per_pixel;
-        // 4 x, 5 y
+        if (this.bytes_per_pixel === 4) {
+            const scratch_32 = new Uint32Array(16);
+            // w, h
+            scratch_32[0] = this.size[0]; // w
+            scratch_32[1] = this.size[1]; // h
+            scratch_32[2] = scratch_32[0] * scratch_32[1];
+            scratch_32[3] = this.bytes_per_pixel;
+            // 4 x, 5 y
 
-        scratch_32[6] = 0 // position within visiting pixels
-        scratch_32[7] = 0 // Maximum pixel pos starting index
-        scratch_32[8] = 0 // pixel_buffer_pos
-        scratch_32[9] = max;
-        const ta8_pixels = new Uint8Array(12);
-        scratch_32[10] = 0 // count pix3els visited
+            scratch_32[6] = 0 // position within visiting pixels
+            scratch_32[7] = 0 // Maximum pixel pos starting index
+            scratch_32[8] = 0 // pixel_buffer_pos
+            scratch_32[9] = max;
+            const ta8_pixels = new Uint8Array(12);
+            scratch_32[10] = 0 // count pix3els visited
 
-        // 0, 1, 2, 3    start color
-        // 4, 5, 6, 7    px color
-        // 8, 9, 10, 11  fill color
+            // 0, 1, 2, 3    start color
+            // 4, 5, 6, 7    px color
+            // 8, 9, 10, 11  fill color
 
-        //ta8_pixels[8] = r;
-        //ta8_pixels[9] = g;
-        //ta8_pixels[10] = b;
-        //ta8_pixels[11] = a;
+            //ta8_pixels[8] = r;
+            //ta8_pixels[9] = g;
+            //ta8_pixels[10] = b;
+            //ta8_pixels[11] = a;
 
-        const ta16_pixels = new Uint8Array(4);
-        const ta_pixels_visited = new Uint8Array(scratch_32[2]);
-        // Initialise a sequence position buffer that's as long as the whole image
+            const ta16_pixels = new Uint8Array(4);
+            const ta_pixels_visited = new Uint8Array(scratch_32[2]);
+            // Initialise a sequence position buffer that's as long as the whole image
 
-        const ta_visiting_pixels = new Uint16Array(scratch_32[2] * 2);
-        // x y coords
+            const ta_visiting_pixels = new Uint16Array(scratch_32[2] * 2);
+            // x y coords
 
-        scratch_32[8] = scratch_32[3] * (x + (y * scratch_32[0]));
+            scratch_32[8] = scratch_32[3] * (x + (y * scratch_32[0]));
 
-        //const c_start = new Uint8Array([buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++)]);
-        ta8_pixels[0] = buffer.readUInt8(scratch_32[8]++);
-        ta8_pixels[1] = buffer.readUInt8(scratch_32[8]++);
-        ta8_pixels[2] = buffer.readUInt8(scratch_32[8]++);
-        ta8_pixels[3] = buffer.readUInt8(scratch_32[8]++);
+            //const c_start = new Uint8Array([buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++)]);
+            ta8_pixels[0] = buffer[scratch_32[8]++];
+            ta8_pixels[1] = buffer[scratch_32[8]++];
+            ta8_pixels[2] = buffer[scratch_32[8]++];
+            ta8_pixels[3] = buffer[scratch_32[8]++];
 
-        //console.log('c_start', c_start);
+            //console.log('c_start', c_start);
 
-        // add the first pixel
-        ta_visiting_pixels[0] = x;
-        ta_visiting_pixels[1] = y;
-        scratch_32[7] = 2;
+            // add the first pixel
+            ta_visiting_pixels[0] = x;
+            ta_visiting_pixels[1] = y;
+            scratch_32[7] = 2;
 
-        //console.log('scratch_32[6]', scratch_32[6]);
-        //console.log('scratch_32[7]', scratch_32[7]);
-
-        while (scratch_32[6] < scratch_32[7] && scratch_32[10] < scratch_32[9]) {
             //console.log('scratch_32[6]', scratch_32[6]);
-            //[x, y] = arr_pixels_to_visit[c_visited];
-            scratch_32[4] = ta_visiting_pixels[scratch_32[6]++]; // x
-            scratch_32[5] = ta_visiting_pixels[scratch_32[6]++]; // y
+            //console.log('scratch_32[7]', scratch_32[7]);
 
-            // x + (w * y)
-            //ta_pixels_visited[scratch_32[4] + (scratch_32[0] * scratch_32[5])] = 255;
+            while (scratch_32[6] < scratch_32[7] && scratch_32[10] < scratch_32[9]) {
+                //console.log('scratch_32[6]', scratch_32[6]);
+                //[x, y] = arr_pixels_to_visit[c_visited];
+                scratch_32[4] = ta_visiting_pixels[scratch_32[6]++]; // x
+                scratch_32[5] = ta_visiting_pixels[scratch_32[6]++]; // y
 
-            //console.log('c_visited', c_visited);
-            //map_pixels_visited[[x, y]] = true;
-            //console.log('[x, y]', [x, y]);
+                // x + (w * y)
+                //ta_pixels_visited[scratch_32[4] + (scratch_32[0] * scratch_32[5])] = 255;
 
-            // Check this pixel...
-            //let pixel_buffer_pos = this.bytes_per_pixel * (x + y * this.size[0]);
-            scratch_32[8] = scratch_32[3] * (scratch_32[4] + (scratch_32[5] * scratch_32[0]));
+                //console.log('c_visited', c_visited);
+                //map_pixels_visited[[x, y]] = true;
+                //console.log('[x, y]', [x, y]);
 
-            //const [pr, pg, pb, pa] = 
-            //const c_px = new Uint8Array([buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++)]);
-            ta8_pixels[4] = buffer.readUInt8(scratch_32[8]++);
-            ta8_pixels[5] = buffer.readUInt8(scratch_32[8]++);
-            ta8_pixels[6] = buffer.readUInt8(scratch_32[8]++);
-            ta8_pixels[7] = buffer.readUInt8(scratch_32[8]++);
+                // Check this pixel...
+                //let pixel_buffer_pos = this.bytes_per_pixel * (x + y * this.size[0]);
+                scratch_32[8] = scratch_32[3] * (scratch_32[4] + (scratch_32[5] * scratch_32[0]));
 
-            //console.log('c_px', c_px);
-            // then the difference from the start colors
+                //const [pr, pg, pb, pa] = 
+                //const c_px = new Uint8Array([buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++)]);
+                ta8_pixels[4] = buffer[scratch_32[8]++];
+                ta8_pixels[5] = buffer[scratch_32[8]++];
+                ta8_pixels[6] = buffer[scratch_32[8]++];
+                ta8_pixels[7] = buffer[scratch_32[8]++];
 
-            //const c_diff = new Uint8Array([c_start[0] - c_px[0], c_start[1] - c_px[1], c_start[2] - c_px[2], c_start[3] - c_px[3]]);
-            ta16_pixels[0] = ta8_pixels[4] - ta8_pixels[0];
-            ta16_pixels[1] = ta8_pixels[5] - ta8_pixels[1];
-            ta16_pixels[2] = ta8_pixels[6] - ta8_pixels[2];
-            ta16_pixels[3] = ta8_pixels[7] - ta8_pixels[3];
+                //console.log('c_px', c_px);
+                // then the difference from the start colors
 
-            // The differences between this and the starting pixel.
+                //const c_diff = new Uint8Array([c_start[0] - c_px[0], c_start[1] - c_px[1], c_start[2] - c_px[2], c_start[3] - c_px[3]]);
+                ta16_pixels[0] = ta8_pixels[4] - ta8_pixels[0];
+                ta16_pixels[1] = ta8_pixels[5] - ta8_pixels[1];
+                ta16_pixels[2] = ta8_pixels[6] - ta8_pixels[2];
+                ta16_pixels[3] = ta8_pixels[7] - ta8_pixels[3];
 
-            //console.log('c_diff', c_diff);
-            if (ta16_pixels[0] === 0 && ta16_pixels[1] === 0 && ta16_pixels[2] === 0 && ta16_pixels[3] === 0) {
-                // No color change
-                //  So change the color
-                //scratch_32[8] -= 4;
-                //buffer.writeUInt8(ta8_pixels[8], scratch_32[8]++);
-                //buffer.writeUInt8(ta8_pixels[9], scratch_32[8]++);
-                //buffer.writeUInt8(ta8_pixels[10], scratch_32[8]++);
-                //buffer.writeUInt8(ta8_pixels[11], scratch_32[8]++);
+                // The differences between this and the starting pixel.
 
-                // Add adjacent pixels to the queue
-                //  if they've not been visited before.
+                //console.log('c_diff', c_diff);
+                if (ta16_pixels[0] === 0 && ta16_pixels[1] === 0 && ta16_pixels[2] === 0 && ta16_pixels[3] === 0) {
+                    // No color change
+                    //  So change the color
+                    //scratch_32[8] -= 4;
+                    //buffer.writeUInt8(ta8_pixels[8], scratch_32[8]++);
+                    //buffer.writeUInt8(ta8_pixels[9], scratch_32[8]++);
+                    //buffer.writeUInt8(ta8_pixels[10], scratch_32[8]++);
+                    //buffer.writeUInt8(ta8_pixels[11], scratch_32[8]++);
 
-                // ta_pixels_visited[scratch_32[4] + (scratch_32[0] * scratch_32[5])]
+                    // Add adjacent pixels to the queue
+                    //  if they've not been visited before.
 
-                if (scratch_32[4] - 1 >= 0 && scratch_32[4] - 1 < scratch_32[0] && ta_pixels_visited[scratch_32[4] - 1 + (scratch_32[0] * scratch_32[5])] === 0) {
-                    ta_visiting_pixels[scratch_32[7]++] = scratch_32[4] - 1;
-                    ta_visiting_pixels[scratch_32[7]++] = scratch_32[5];
+                    // ta_pixels_visited[scratch_32[4] + (scratch_32[0] * scratch_32[5])]
 
-                    ta_pixels_visited[scratch_32[4] - 1 + (scratch_32[0] * scratch_32[5])] = 255;
+                    if (scratch_32[4] - 1 >= 0 && scratch_32[4] - 1 < scratch_32[0] && ta_pixels_visited[scratch_32[4] - 1 + (scratch_32[0] * scratch_32[5])] === 0) {
+                        ta_visiting_pixels[scratch_32[7]++] = scratch_32[4] - 1;
+                        ta_visiting_pixels[scratch_32[7]++] = scratch_32[5];
 
-                    //scratch_32[10]++;
-                    //arr_pixels_to_visit.push([scratch_32[4] - 1, scratch_32[5]]);
+                        ta_pixels_visited[scratch_32[4] - 1 + (scratch_32[0] * scratch_32[5])] = 255;
+
+                        //scratch_32[10]++;
+                        //arr_pixels_to_visit.push([scratch_32[4] - 1, scratch_32[5]]);
+                    }
+
+                    if (scratch_32[5] - 1 >= 0 && scratch_32[5] - 1 < scratch_32[1] && ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] - 1))] === 0) {
+                        ta_visiting_pixels[scratch_32[7]++] = scratch_32[4];
+                        ta_visiting_pixels[scratch_32[7]++] = scratch_32[5] - 1;
+                        //scratch_32[10]++;
+                        //arr_pixels_to_visit.push([scratch_32[4], scratch_32[5] - 1]);
+
+                        ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] - 1))] = 255;
+                    }
+                    if (scratch_32[4] + 1 >= 0 && scratch_32[4] + 1 < scratch_32[0] && ta_pixels_visited[scratch_32[4] + 1 + (scratch_32[0] * scratch_32[5])] === 0) {
+                        ta_visiting_pixels[scratch_32[7]++] = scratch_32[4] + 1;
+                        ta_visiting_pixels[scratch_32[7]++] = scratch_32[5];
+                        //scratch_32[10]++;
+                        //arr_pixels_to_visit.push([scratch_32[4] + 1, scratch_32[5]]);
+                        ta_pixels_visited[scratch_32[4] + 1 + (scratch_32[0] * scratch_32[5])] = 255
+                    }
+                    if (scratch_32[5] + 1 >= 0 && scratch_32[5] + 1 < scratch_32[1] && ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] + 1))] === 0) {
+                        ta_visiting_pixels[scratch_32[7]++] = scratch_32[4];
+                        ta_visiting_pixels[scratch_32[7]++] = scratch_32[5] + 1;
+                        //scratch_32[10]++;
+                        //arr_pixels_to_visit.push([scratch_32[4], scratch_32[5] + 1]);
+                        ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] + 1))] = 255
+                    }
                 }
-
-                if (scratch_32[5] - 1 >= 0 && scratch_32[5] - 1 < scratch_32[1] && ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] - 1))] === 0) {
-                    ta_visiting_pixels[scratch_32[7]++] = scratch_32[4];
-                    ta_visiting_pixels[scratch_32[7]++] = scratch_32[5] - 1;
-                    //scratch_32[10]++;
-                    //arr_pixels_to_visit.push([scratch_32[4], scratch_32[5] - 1]);
-
-                    ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] - 1))] = 255;
-                }
-                if (scratch_32[4] + 1 >= 0 && scratch_32[4] + 1 < scratch_32[0] && ta_pixels_visited[scratch_32[4] + 1 + (scratch_32[0] * scratch_32[5])] === 0) {
-                    ta_visiting_pixels[scratch_32[7]++] = scratch_32[4] + 1;
-                    ta_visiting_pixels[scratch_32[7]++] = scratch_32[5];
-                    //scratch_32[10]++;
-                    //arr_pixels_to_visit.push([scratch_32[4] + 1, scratch_32[5]]);
-                    ta_pixels_visited[scratch_32[4] + 1 + (scratch_32[0] * scratch_32[5])] = 255
-                }
-                if (scratch_32[5] + 1 >= 0 && scratch_32[5] + 1 < scratch_32[1] && ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] + 1))] === 0) {
-                    ta_visiting_pixels[scratch_32[7]++] = scratch_32[4];
-                    ta_visiting_pixels[scratch_32[7]++] = scratch_32[5] + 1;
-                    //scratch_32[10]++;
-                    //arr_pixels_to_visit.push([scratch_32[4], scratch_32[5] + 1]);
-                    ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] + 1))] = 255
-                }
+                scratch_32[10]++;
+                // compare these arrays
+                // Add adjacent pixels to the stack?
+                //c_visited++;
+                //scratch_32[7] += 2;
             }
-            scratch_32[10]++;
-            // compare these arrays
-            // Add adjacent pixels to the stack?
-            //c_visited++;
-            //scratch_32[7] += 2;
+            return scratch_32[10];
+        } else if (this.bytes_per_pixel === 1) {
+
+            return (() => {
+                const scratch_32 = new Uint32Array(16);
+
+                // Is this incorrectly measuring small regions.
+
+                // w, h
+                scratch_32[0] = this.size[0]; // w
+                scratch_32[1] = this.size[1]; // h
+                scratch_32[2] = scratch_32[0] * scratch_32[1];
+                scratch_32[3] = this.bytes_per_pixel;
+                // 4 x, 5 y
+
+                scratch_32[6] = 0 // position within visiting pixels
+                scratch_32[7] = 0 // Maximum pixel pos starting index
+                scratch_32[8] = 0 // pixel_buffer_pos
+                scratch_32[9] = max;
+                const ta8_pixels = new Uint8Array(12);
+                scratch_32[10] = 0 // count pix3els visited
+
+                // 0, 1, 2, 3    start color
+                // 4, 5, 6, 7    px color
+                // 8, 9, 10, 11  fill color
+
+                //ta8_pixels[8] = r;
+                //ta8_pixels[9] = g;
+                //ta8_pixels[10] = b;
+                //ta8_pixels[11] = a;
+
+                const ta16_pixels = new Uint8Array(4);
+                const ta_pixels_visited = new Uint8Array(scratch_32[2]);
+                // Initialise a sequence position buffer that's as long as the whole image
+
+                const ta_visiting_pixels = new Uint16Array(scratch_32[2] * 2);
+                // x y coords
+
+                scratch_32[8] = scratch_32[3] * (x + (y * scratch_32[0]));
+
+                //const c_start = new Uint8Array([buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++)]);
+                ta8_pixels[0] = buffer[scratch_32[8]++];
+                //ta8_pixels[1] = buffer.readUInt8(scratch_32[8]++);
+                //ta8_pixels[2] = buffer.readUInt8(scratch_32[8]++);
+                //ta8_pixels[3] = buffer.readUInt8(scratch_32[8]++);
+
+                //console.log('c_start', c_start);
+
+                // add the first pixel
+                ta_visiting_pixels[0] = x;
+                ta_visiting_pixels[1] = y;
+                scratch_32[7] = 2;
+
+                //console.log('scratch_32[6]', scratch_32[6]);
+                //console.log('scratch_32[7]', scratch_32[7]);
+
+                while (scratch_32[6] < scratch_32[7] && scratch_32[10] < scratch_32[9]) {
+                    //console.log('scratch_32[6]', scratch_32[6]);
+                    //[x, y] = arr_pixels_to_visit[c_visited];
+                    scratch_32[4] = ta_visiting_pixels[scratch_32[6]++]; // x
+                    scratch_32[5] = ta_visiting_pixels[scratch_32[6]++]; // y
+                    scratch_32[8] = scratch_32[3] * (scratch_32[4] + (scratch_32[5] * scratch_32[0]));
+
+                    //const [pr, pg, pb, pa] = 
+                    //const c_px = new Uint8Array([buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++)]);
+                    ta8_pixels[4] = buffer[scratch_32[8]++];
+                    //ta8_pixels[5] = buffer.readUInt8(scratch_32[8]++);
+                    //ta8_pixels[6] = buffer.readUInt8(scratch_32[8]++);
+                    //ta8_pixels[7] = buffer.readUInt8(scratch_32[8]++);
+
+                    //console.log('c_px', c_px);
+                    // then the difference from the start colors
+
+                    //const c_diff = new Uint8Array([c_start[0] - c_px[0], c_start[1] - c_px[1], c_start[2] - c_px[2], c_start[3] - c_px[3]]);
+                    ta16_pixels[0] = ta8_pixels[4] - ta8_pixels[0];
+                    //ta16_pixels[1] = ta8_pixels[5] - ta8_pixels[1];
+                    //ta16_pixels[2] = ta8_pixels[6] - ta8_pixels[2];
+                    //ta16_pixels[3] = ta8_pixels[7] - ta8_pixels[3];
+                    // The differences between this and the starting pixel.
+
+                    //console.log('c_diff', c_diff);
+                    if (ta16_pixels[0] === 0) {
+                        if (scratch_32[4] - 1 >= 0 && scratch_32[4] - 1 < scratch_32[0] && ta_pixels_visited[scratch_32[4] - 1 + (scratch_32[0] * scratch_32[5])] === 0) {
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[4] - 1;
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[5];
+                            ta_pixels_visited[scratch_32[4] - 1 + (scratch_32[0] * scratch_32[5])] = 255;
+                        }
+
+                        if (scratch_32[5] - 1 >= 0 && scratch_32[5] - 1 < scratch_32[1] && ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] - 1))] === 0) {
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[4];
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[5] - 1;
+                            ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] - 1))] = 255;
+                        }
+                        if (scratch_32[4] + 1 >= 0 && scratch_32[4] + 1 < scratch_32[0] && ta_pixels_visited[scratch_32[4] + 1 + (scratch_32[0] * scratch_32[5])] === 0) {
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[4] + 1;
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[5];
+                            ta_pixels_visited[scratch_32[4] + 1 + (scratch_32[0] * scratch_32[5])] = 255
+                        }
+                        if (scratch_32[5] + 1 >= 0 && scratch_32[5] + 1 < scratch_32[1] && ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] + 1))] === 0) {
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[4];
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[5] + 1;
+                            ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] + 1))] = 255
+                        }
+                    }
+                    scratch_32[10]++;
+                    // compare these arrays
+                    // Add adjacent pixels to the stack?
+                    //c_visited++;
+                    //scratch_32[7] += 2;
+                }
+                return scratch_32[10];
+            })();
+        } else {
+            throw 'unsuppored bytes_per_pixel ' + this.bytes_per_pixel
         }
-        return scratch_32[10]; //scratch_32[10];
+        //scratch_32[10];
         //console.log('scratch_32[6]', scratch_32[6]);
         //console.log('c_visited', c_visited);
     }
-
     // flood fill
     // No toloerance for the moment
 
     // benchmark and test versions using 'px'
 
+    // flood fill self?
 
-    'flood_fill'(x, y, r, g, b, a) {
-        // stack of pixels to visit
-        // map of pixels visited
-        // Could optimize this with typed arrays
-        //const [w, h] = this.size;
-        const [w, h] = this.size;
-        let fast_stacked_mapped_flood_fill = () => {
-            //const map_pixels_visited = {};
-            //const arr_pixels_to_visit = [[x, y]];
-            //let c_visited = 0;
+    //  uses position array, uses color array if there are multiple components of the color.
+    // flood_fill2?
+
+    // extract/get color block regions pixel_pos_lists
+
+    // iterate each pixel
+    //  
+
+    // max size of the region...?
+    //  probably best not here.
+
+    'get_pixel_pos_list_of_pixels_with_color'(color) {
+        let res = new Pixel_Pos_List();
+        if (this.pos) {
+            console.log('this.pos', this.pos);
+            this.each_pixel_ta((pos, px_color) => {
+                if (px_color === color) {
+                    //res.add(pos);
+                    res.add(new Uint16Array([pos[0] + this.pos[0], pos[1] + this.pos[1]]));
+                }
+            });
+            res.pos = this.pos;
+        } else {
+            this.each_pixel_ta((pos, px_color) => {
+                if (px_color === color) {
+                    res.add(pos);
+                }
+            });
+        }
+        res.fix();
+        return res;
+    }
+
+    'flood_fill_self_get_pixel_pos_list'(pos, color) {
+        //console.log('flood_fill_self_get_pixel_pos_list this.bytes_per_pixel', this.bytes_per_pixel);
+        const size = this.size;
+
+        if (!(pos instanceof Uint16Array || pos instanceof Uint32Array)) {
+            throw 'Wrong pos data type, pos ' + pos;
+        }
+
+        if (this.bytes_per_pixel === 4) {
+            throw 'NYI'
+        } else if (this.bytes_per_pixel === 1) {
+            const pos_list = new Pixel_Pos_List();
+
+            //console.log('flood_fill_self_get_pixel_pos_list this.bytes_per_pixel', this.bytes_per_pixel);
+
+            //throw 'NYI'
+            // flood fill at that pos.
             const buffer = this.buffer;
             //let pixel_buffer_pos = this.bytes_per_pixel * (x + y * this.size[0]);
             // Could make a large typed array buffer of pixels to visit
@@ -868,10 +1049,10 @@ class Pixel_Buffer_Enh extends Core {
             // 4, 5, 6, 7    px color
             // 8, 9, 10, 11  fill color
 
-            ta8_pixels[8] = r;
-            ta8_pixels[9] = g;
-            ta8_pixels[10] = b;
-            ta8_pixels[11] = a;
+            //ta8_pixels[8] = v;
+            //ta8_pixels[9] = g;
+            //ta8_pixels[10] = b;
+            //ta8_pixels[11] = a;
 
             //const ta16_pixels = new Uint8Array(4);
             //console.log('scratch_32[2]', scratch_32[2]);
@@ -879,96 +1060,47 @@ class Pixel_Buffer_Enh extends Core {
             // Initialise a sequence position buffer that's as long as the whole image
             const ta_visiting_pixels = new Uint16Array(scratch_32[2] * 2);
             // x y coords
-
-            scratch_32[8] = scratch_32[3] * (x + (y * scratch_32[0]));
-
+            scratch_32[8] = scratch_32[3] * (pos[0] + (pos[1] * scratch_32[0]));
             //const c_start = new Uint8Array([buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++)]);
             ta8_pixels[0] = buffer[scratch_32[8]++];
-            ta8_pixels[1] = buffer[scratch_32[8]++];
-            ta8_pixels[2] = buffer[scratch_32[8]++];
-            ta8_pixels[3] = buffer[scratch_32[8]++];
-
+            //ta8_pixels[1] = buffer[scratch_32[8]++];
+            //ta8_pixels[2] = buffer[scratch_32[8]++];
+            //ta8_pixels[3] = buffer[scratch_32[8]++];
             //console.log('c_start', c_start);
-
-
             // add the first pixel
-            ta_visiting_pixels[0] = x;
-            ta_visiting_pixels[1] = y;
+            ta_visiting_pixels[0] = pos[0];
+            ta_visiting_pixels[1] = pos[1];
             scratch_32[7] = 2;
-
-            //console.log('scratch_32[6]', scratch_32[6]);
-            //console.log('scratch_32[7]', scratch_32[7]);
-
-            //c_visited < 
-
             while (scratch_32[9] <= scratch_32[2]) {
                 // 
                 //console.log('scratch_32[6]', scratch_32[6]);
                 //[x, y] = arr_pixels_to_visit[c_visited];
                 scratch_32[4] = ta_visiting_pixels[scratch_32[6]++]; // x
                 scratch_32[5] = ta_visiting_pixels[scratch_32[6]++]; // y
-
-                // x + (w * y)
-                //ta_pixels_visited[scratch_32[4] + (scratch_32[0] * scratch_32[5])] = 255;
-
-                //console.log('c_visited', c_visited);
-                //map_pixels_visited[[x, y]] = true;
-                //console.log('[x, y]', [x, y]);
-
-                // Check this pixel...
-                //let pixel_buffer_pos = this.bytes_per_pixel * (x + y * this.size[0]);
                 scratch_32[8] = scratch_32[3] * (scratch_32[4] + (scratch_32[5] * scratch_32[0]));
+                //console.log('buffer[scratch_32[8]]', buffer[scratch_32[8]]);
+                //console.log('ta8_pixels[0]', ta8_pixels[0]);
+                //console.log('scratch_32[8]', scratch_32[8]);
 
-
-                //const [pr, pg, pb, pa] = 
-                //const c_px = new Uint8Array([buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++)]);
-                //ta8_pixels[4] = buffer.readUInt8(scratch_32[8]++);
-                //ta8_pixels[5] = buffer.readUInt8(scratch_32[8]++);
-                //ta8_pixels[6] = buffer.readUInt8(scratch_32[8]++);
-                //ta8_pixels[7] = buffer.readUInt8(scratch_32[8]++);
-
-                //ta8_pixels[4] = buffer[scratch_32[8]++];
-                //ta8_pixels[5] = buffer[scratch_32[8]++];
-                //ta8_pixels[6] = buffer[scratch_32[8]++];
-                //ta8_pixels[7] = buffer[scratch_32[8]++];
-
-                //console.log('c_px', c_px);
-                // then the difference from the start colors
-
-                //const c_diff = new Uint8Array([c_start[0] - c_px[0], c_start[1] - c_px[1], c_start[2] - c_px[2], c_start[3] - c_px[3]]);
-                //ta16_pixels[0] = buffer[scratch_32[8]++] - ta8_pixels[0];
-                //ta16_pixels[1] = buffer[scratch_32[8]++] - ta8_pixels[1];
-                //ta16_pixels[2] = buffer[scratch_32[8]++] - ta8_pixels[2];
-                //ta16_pixels[3] = buffer[scratch_32[8]++] - ta8_pixels[3];
-
-
-
-                //console.log('c_diff', c_diff);
-                //if (ta16_pixels[0] === 0 && ta16_pixels[1] === 0 && ta16_pixels[2] === 0 && ta16_pixels[3] === 0) {
-                if (buffer[scratch_32[8]++] - ta8_pixels[0] === 0 && buffer[scratch_32[8]++] - ta8_pixels[1] === 0 && buffer[scratch_32[8]++] - ta8_pixels[2] === 0 && buffer[scratch_32[8]++] - ta8_pixels[3] === 0) {
+                if (buffer[scratch_32[8]++] - ta8_pixels[0] === 0) {
                     // No color change
                     //  So change the color
-                    scratch_32[8] -= 4;
-                    //buffer.writeUInt8(ta8_pixels[8], scratch_32[8]++);
-                    //buffer.writeUInt8(ta8_pixels[9], scratch_32[8]++);
-                    //buffer.writeUInt8(ta8_pixels[10], scratch_32[8]++);
-                    //buffer.writeUInt8(ta8_pixels[11], scratch_32[8]++);
-                    buffer[scratch_32[8]++] = ta8_pixels[8];
-                    buffer[scratch_32[8]++] = ta8_pixels[9];
-                    buffer[scratch_32[8]++] = ta8_pixels[10];
-                    buffer[scratch_32[8]++] = ta8_pixels[11];
-
-                    // Add adjacent pixels to the queue
-                    //  if they've not been visited before.
-
-                    // ta_pixels_visited[scratch_32[4] + (scratch_32[0] * scratch_32[5])]
-
+                    scratch_32[8] -= 1;
+                    buffer[scratch_32[8]++] = color;
+                    //console.log('color', color);
+                    //console.log('typeof color', typeof color);
+                    // do that later...
+                    // pos_list.add(new Uint16Array([scratch_32[4], scratch_32[5]]));
+                    pos_list.add(new Uint16Array([scratch_32[4], scratch_32[5]]));
+                    //buffer[scratch_32[8]++] = ta8_pixels[9];
+                    //buffer[scratch_32[8]++] = ta8_pixels[10];
+                    //buffer[scratch_32[8]++] = ta8_pixels[11];
                     if (scratch_32[4] - 1 >= 0 && ta_pixels_visited[scratch_32[4] - 1 + (scratch_32[0] * scratch_32[5])] === 0) {
                         ta_visiting_pixels[scratch_32[7]++] = scratch_32[4] - 1;
                         ta_visiting_pixels[scratch_32[7]++] = scratch_32[5];
-
                         ta_pixels_visited[scratch_32[4] - 1 + (scratch_32[0] * scratch_32[5])] = 255;
 
+                        //pos_list.add(new Uint16Array([scratch_32[4] - 1, scratch_32[5]]));
                         //arr_pixels_to_visit.push([scratch_32[4] - 1, scratch_32[5]]);
                     }
                     if (scratch_32[5] - 1 >= 0 && ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] - 1))] === 0) {
@@ -976,34 +1108,326 @@ class Pixel_Buffer_Enh extends Core {
                         ta_visiting_pixels[scratch_32[7]++] = scratch_32[5] - 1;
                         //arr_pixels_to_visit.push([scratch_32[4], scratch_32[5] - 1]);
                         ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] - 1))] = 255;
+
+                        //pos_list.add(new Uint16Array([scratch_32[4], scratch_32[5] - 1]));
                     }
                     if (scratch_32[4] + 1 < scratch_32[0] && ta_pixels_visited[scratch_32[4] + 1 + (scratch_32[0] * scratch_32[5])] === 0) {
                         ta_visiting_pixels[scratch_32[7]++] = scratch_32[4] + 1;
                         ta_visiting_pixels[scratch_32[7]++] = scratch_32[5];
                         //arr_pixels_to_visit.push([scratch_32[4] + 1, scratch_32[5]]);
                         ta_pixels_visited[scratch_32[4] + 1 + (scratch_32[0] * scratch_32[5])] = 255;
+
+                        //pos_list.add(new Uint16Array([scratch_32[4] + 1, scratch_32[5]]));
                     }
                     if (scratch_32[5] + 1 < scratch_32[1] && ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] + 1))] === 0) {
                         ta_visiting_pixels[scratch_32[7]++] = scratch_32[4];
                         ta_visiting_pixels[scratch_32[7]++] = scratch_32[5] + 1;
                         //arr_pixels_to_visit.push([scratch_32[4], scratch_32[5] + 1]);
                         ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] + 1))] = 255;
+
+                        //pos_list.add(new Uint16Array([scratch_32[4], scratch_32[5] + 1]));
                     }
                 }
                 scratch_32[9]++;
-                // compare these arrays
-
-                // Add adjacent pixels to the stack?
-                //c_visited++;
-                //scratch_32[7] += 2;
             }
-
-            //console.log('scratch_32[6]', scratch_32[6]);
-            //console.log('scratch_32[6] / 2', scratch_32[6] / 2);
-            // 787812
-            //console.log('c_visited', c_visited);
+            pos_list.fix();
+            return pos_list;
         }
-        fast_stacked_mapped_flood_fill();
+
+        
+    }
+
+
+    'flood_fill'(x, y, r, g, b, a) {
+        // stack of pixels to visit
+        // map of pixels visited
+        // Could optimize this with typed arrays
+        //const [w, h] = this.size;
+
+        if (this.bytes_per_pixel === 4) {
+
+            const [w, h] = this.size;
+            let fast_stacked_mapped_flood_fill = () => {
+                //const map_pixels_visited = {};
+                //const arr_pixels_to_visit = [[x, y]];
+                //let c_visited = 0;
+                const buffer = this.buffer;
+                //let pixel_buffer_pos = this.bytes_per_pixel * (x + y * this.size[0]);
+                // Could make a large typed array buffer of pixels to visit
+                // An already visited typed array.
+                const scratch_32 = new Uint32Array(16);
+                // w, h
+                scratch_32[0] = this.size[0]; // w
+                scratch_32[1] = this.size[1]; // h
+                scratch_32[2] = scratch_32[0] * scratch_32[1];
+                scratch_32[3] = this.bytes_per_pixel;
+                // 4 x, 5 y
+
+                scratch_32[6] = 0 // position within visiting pixels
+                scratch_32[7] = 0 // Maximum pixel pos starting index
+                scratch_32[8] = 0 // pixel_buffer_pos
+                scratch_32[9] = 0 // c_visited
+
+                const ta8_pixels = new Uint8Array(12);
+
+                // 0, 1, 2, 3    start color
+                // 4, 5, 6, 7    px color
+                // 8, 9, 10, 11  fill color
+
+                ta8_pixels[8] = r;
+                ta8_pixels[9] = g;
+                ta8_pixels[10] = b;
+                ta8_pixels[11] = a;
+
+                //const ta16_pixels = new Uint8Array(4);
+                //console.log('scratch_32[2]', scratch_32[2]);
+                const ta_pixels_visited = new Uint8Array(scratch_32[2]);
+                // Initialise a sequence position buffer that's as long as the whole image
+                const ta_visiting_pixels = new Uint16Array(scratch_32[2] * 2);
+                // x y coords
+
+                scratch_32[8] = scratch_32[3] * (x + (y * scratch_32[0]));
+
+                //const c_start = new Uint8Array([buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++)]);
+                ta8_pixels[0] = buffer[scratch_32[8]++];
+                ta8_pixels[1] = buffer[scratch_32[8]++];
+                ta8_pixels[2] = buffer[scratch_32[8]++];
+                ta8_pixels[3] = buffer[scratch_32[8]++];
+
+                //console.log('c_start', c_start);
+
+
+                // add the first pixel
+                ta_visiting_pixels[0] = x;
+                ta_visiting_pixels[1] = y;
+                scratch_32[7] = 2;
+
+                //console.log('scratch_32[6]', scratch_32[6]);
+                //console.log('scratch_32[7]', scratch_32[7]);
+
+                //c_visited < 
+
+                while (scratch_32[9] <= scratch_32[2]) {
+                    // 
+                    //console.log('scratch_32[6]', scratch_32[6]);
+                    //[x, y] = arr_pixels_to_visit[c_visited];
+                    scratch_32[4] = ta_visiting_pixels[scratch_32[6]++]; // x
+                    scratch_32[5] = ta_visiting_pixels[scratch_32[6]++]; // y
+
+                    // x + (w * y)
+                    //ta_pixels_visited[scratch_32[4] + (scratch_32[0] * scratch_32[5])] = 255;
+
+                    //console.log('c_visited', c_visited);
+                    //map_pixels_visited[[x, y]] = true;
+                    //console.log('[x, y]', [x, y]);
+
+                    // Check this pixel...
+                    //let pixel_buffer_pos = this.bytes_per_pixel * (x + y * this.size[0]);
+                    scratch_32[8] = scratch_32[3] * (scratch_32[4] + (scratch_32[5] * scratch_32[0]));
+
+
+                    //const [pr, pg, pb, pa] = 
+                    //const c_px = new Uint8Array([buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++)]);
+                    //ta8_pixels[4] = buffer.readUInt8(scratch_32[8]++);
+                    //ta8_pixels[5] = buffer.readUInt8(scratch_32[8]++);
+                    //ta8_pixels[6] = buffer.readUInt8(scratch_32[8]++);
+                    //ta8_pixels[7] = buffer.readUInt8(scratch_32[8]++);
+
+                    //ta8_pixels[4] = buffer[scratch_32[8]++];
+                    //ta8_pixels[5] = buffer[scratch_32[8]++];
+                    //ta8_pixels[6] = buffer[scratch_32[8]++];
+                    //ta8_pixels[7] = buffer[scratch_32[8]++];
+
+                    //console.log('c_px', c_px);
+                    // then the difference from the start colors
+
+                    //const c_diff = new Uint8Array([c_start[0] - c_px[0], c_start[1] - c_px[1], c_start[2] - c_px[2], c_start[3] - c_px[3]]);
+                    //ta16_pixels[0] = buffer[scratch_32[8]++] - ta8_pixels[0];
+                    //ta16_pixels[1] = buffer[scratch_32[8]++] - ta8_pixels[1];
+                    //ta16_pixels[2] = buffer[scratch_32[8]++] - ta8_pixels[2];
+                    //ta16_pixels[3] = buffer[scratch_32[8]++] - ta8_pixels[3];
+
+
+
+                    //console.log('c_diff', c_diff);
+                    //if (ta16_pixels[0] === 0 && ta16_pixels[1] === 0 && ta16_pixels[2] === 0 && ta16_pixels[3] === 0) {
+                    if (buffer[scratch_32[8]++] - ta8_pixels[0] === 0 && buffer[scratch_32[8]++] - ta8_pixels[1] === 0 && buffer[scratch_32[8]++] - ta8_pixels[2] === 0 && buffer[scratch_32[8]++] - ta8_pixels[3] === 0) {
+                        // No color change
+                        //  So change the color
+                        scratch_32[8] -= 4;
+                        //buffer.writeUInt8(ta8_pixels[8], scratch_32[8]++);
+                        //buffer.writeUInt8(ta8_pixels[9], scratch_32[8]++);
+                        //buffer.writeUInt8(ta8_pixels[10], scratch_32[8]++);
+                        //buffer.writeUInt8(ta8_pixels[11], scratch_32[8]++);
+                        buffer[scratch_32[8]++] = ta8_pixels[8];
+                        buffer[scratch_32[8]++] = ta8_pixels[9];
+                        buffer[scratch_32[8]++] = ta8_pixels[10];
+                        buffer[scratch_32[8]++] = ta8_pixels[11];
+
+                        // Add adjacent pixels to the queue
+                        //  if they've not been visited before.
+
+                        // ta_pixels_visited[scratch_32[4] + (scratch_32[0] * scratch_32[5])]
+
+                        if (scratch_32[4] - 1 >= 0 && ta_pixels_visited[scratch_32[4] - 1 + (scratch_32[0] * scratch_32[5])] === 0) {
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[4] - 1;
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[5];
+
+                            ta_pixels_visited[scratch_32[4] - 1 + (scratch_32[0] * scratch_32[5])] = 255;
+
+                            //arr_pixels_to_visit.push([scratch_32[4] - 1, scratch_32[5]]);
+                        }
+                        if (scratch_32[5] - 1 >= 0 && ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] - 1))] === 0) {
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[4];
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[5] - 1;
+                            //arr_pixels_to_visit.push([scratch_32[4], scratch_32[5] - 1]);
+                            ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] - 1))] = 255;
+                        }
+                        if (scratch_32[4] + 1 < scratch_32[0] && ta_pixels_visited[scratch_32[4] + 1 + (scratch_32[0] * scratch_32[5])] === 0) {
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[4] + 1;
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[5];
+                            //arr_pixels_to_visit.push([scratch_32[4] + 1, scratch_32[5]]);
+                            ta_pixels_visited[scratch_32[4] + 1 + (scratch_32[0] * scratch_32[5])] = 255;
+                        }
+                        if (scratch_32[5] + 1 < scratch_32[1] && ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] + 1))] === 0) {
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[4];
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[5] + 1;
+                            //arr_pixels_to_visit.push([scratch_32[4], scratch_32[5] + 1]);
+                            ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] + 1))] = 255;
+                        }
+                    }
+                    scratch_32[9]++;
+                    // compare these arrays
+
+                    // Add adjacent pixels to the stack?
+                    //c_visited++;
+                    //scratch_32[7] += 2;
+                }
+                return this;
+
+                //console.log('scratch_32[6]', scratch_32[6]);
+                //console.log('scratch_32[6] / 2', scratch_32[6] / 2);
+                // 787812
+                //console.log('c_visited', c_visited);
+            }
+            return fast_stacked_mapped_flood_fill();
+
+        } else if (this.bytes_per_pixel === 1) {
+
+            // r
+            const [w, h] = this.size;
+            let fast_stacked_mapped_flood_fill = () => {
+                const v = r;
+                //const map_pixels_visited = {};
+                //const arr_pixels_to_visit = [[x, y]];
+                //let c_visited = 0;
+                const buffer = this.buffer;
+                //let pixel_buffer_pos = this.bytes_per_pixel * (x + y * this.size[0]);
+                // Could make a large typed array buffer of pixels to visit
+                // An already visited typed array.
+                const scratch_32 = new Uint32Array(16);
+                // w, h
+                scratch_32[0] = this.size[0]; // w
+                scratch_32[1] = this.size[1]; // h
+                scratch_32[2] = scratch_32[0] * scratch_32[1];
+                scratch_32[3] = this.bytes_per_pixel;
+                // 4 x, 5 y
+
+                scratch_32[6] = 0 // position within visiting pixels
+                scratch_32[7] = 0 // Maximum pixel pos starting index
+                scratch_32[8] = 0 // pixel_buffer_pos
+                scratch_32[9] = 0 // c_visited
+
+                const ta8_pixels = new Uint8Array(12);
+
+                // 0, 1, 2, 3    start color
+                // 4, 5, 6, 7    px color
+                // 8, 9, 10, 11  fill color
+
+                ta8_pixels[8] = v;
+                //ta8_pixels[9] = g;
+                //ta8_pixels[10] = b;
+                //ta8_pixels[11] = a;
+
+                //const ta16_pixels = new Uint8Array(4);
+                //console.log('scratch_32[2]', scratch_32[2]);
+                const ta_pixels_visited = new Uint8Array(scratch_32[2]);
+                // Initialise a sequence position buffer that's as long as the whole image
+                const ta_visiting_pixels = new Uint16Array(scratch_32[2] * 2);
+                // x y coords
+
+                scratch_32[8] = scratch_32[3] * (x + (y * scratch_32[0]));
+
+                //const c_start = new Uint8Array([buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++), buffer.readUInt8(pixel_buffer_pos++)]);
+                ta8_pixels[0] = buffer[scratch_32[8]++];
+                //ta8_pixels[1] = buffer[scratch_32[8]++];
+                //ta8_pixels[2] = buffer[scratch_32[8]++];
+                //ta8_pixels[3] = buffer[scratch_32[8]++];
+
+                //console.log('c_start', c_start);
+
+
+                // add the first pixel
+                ta_visiting_pixels[0] = x;
+                ta_visiting_pixels[1] = y;
+                scratch_32[7] = 2;
+
+                while (scratch_32[9] <= scratch_32[2]) {
+                    // 
+                    //console.log('scratch_32[6]', scratch_32[6]);
+                    //[x, y] = arr_pixels_to_visit[c_visited];
+                    scratch_32[4] = ta_visiting_pixels[scratch_32[6]++]; // x
+                    scratch_32[5] = ta_visiting_pixels[scratch_32[6]++]; // y
+
+                    scratch_32[8] = scratch_32[3] * (scratch_32[4] + (scratch_32[5] * scratch_32[0]));
+
+                    if (buffer[scratch_32[8]++] - ta8_pixels[0] === 0) {
+                        // No color change
+                        //  So change the color
+                        scratch_32[8] -= 1;
+                        buffer[scratch_32[8]++] = ta8_pixels[8];
+                        //buffer[scratch_32[8]++] = ta8_pixels[9];
+                        //buffer[scratch_32[8]++] = ta8_pixels[10];
+                        //buffer[scratch_32[8]++] = ta8_pixels[11];
+                        if (scratch_32[4] - 1 >= 0 && ta_pixels_visited[scratch_32[4] - 1 + (scratch_32[0] * scratch_32[5])] === 0) {
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[4] - 1;
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[5];
+
+                            ta_pixels_visited[scratch_32[4] - 1 + (scratch_32[0] * scratch_32[5])] = 255;
+
+                            //arr_pixels_to_visit.push([scratch_32[4] - 1, scratch_32[5]]);
+                        }
+                        if (scratch_32[5] - 1 >= 0 && ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] - 1))] === 0) {
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[4];
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[5] - 1;
+                            //arr_pixels_to_visit.push([scratch_32[4], scratch_32[5] - 1]);
+                            ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] - 1))] = 255;
+                        }
+                        if (scratch_32[4] + 1 < scratch_32[0] && ta_pixels_visited[scratch_32[4] + 1 + (scratch_32[0] * scratch_32[5])] === 0) {
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[4] + 1;
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[5];
+                            //arr_pixels_to_visit.push([scratch_32[4] + 1, scratch_32[5]]);
+                            ta_pixels_visited[scratch_32[4] + 1 + (scratch_32[0] * scratch_32[5])] = 255;
+                        }
+                        if (scratch_32[5] + 1 < scratch_32[1] && ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] + 1))] === 0) {
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[4];
+                            ta_visiting_pixels[scratch_32[7]++] = scratch_32[5] + 1;
+                            //arr_pixels_to_visit.push([scratch_32[4], scratch_32[5] + 1]);
+                            ta_pixels_visited[scratch_32[4] + (scratch_32[0] * (scratch_32[5] + 1))] = 255;
+                        }
+                    }
+                    scratch_32[9]++;
+                }
+                return this;
+            }
+            return fast_stacked_mapped_flood_fill();
+
+
+        } else {
+            throw 'Unsupported bytes_per_pixel: ' + this.bytes_per_pixel;
+        }
+
+
     }
     // regional flood fill
 

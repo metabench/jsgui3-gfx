@@ -26,6 +26,7 @@ const {
     get_a_sig
 } = lang;
 
+const Pixel_Pos_List = require('./pixel-pos-list');
 
 // Core
 // Mixins
@@ -34,58 +35,258 @@ const {
 
 // Advanced / Enh
 
+// A color data type could be useful.
+//  Contains a typed array of a particular length
+
+// A few fast OO structures / classes?
+
+// Will make use of some functions, but not that many.
+
+
+// ta(1, 2, 3);
+
+// ta function
+//  returns a typed array that fits the numbers
+//  will check to see if they are integers
+
+
+// load it from a pixel-pos-list too.
+
+
+
 class Pixel_Buffer_Core {
 
     // Setting bits per pixel to 8
     //  greyscale 256
-
     constructor(spec) {
-        //spec.__type_name = spec.__type_name || 'pixel_buffer';
-        //super(spec);
-        if (spec.buffer) {
-            this.buffer = spec.buffer;
-            // Need to give it the size / num rows.
-            //this.size = spec.buffer.length;
-        }
-        if (spec.size) {
-            //this.size = spec.size;
-            this.size = new Uint32Array(spec.size);
+
+        if (spec instanceof Pixel_Pos_List) {
+            // load it as a buffer.
+            const ppl = spec;
+            //console.log('ppl.length', ppl.length);
+            // find out its bounds.
+
+            // probably best loading this as a smaller pixel buffer with just the part of the image.
+            //  will set a .pos attribute
+
+            const bounds = ppl.bounds;
+            //const [l, t, r, b] = bounds;
+            //console.log('Pixel_Buffer_Core bounds', bounds);
+
+            const ppl_size = new Uint32Array(2);
+            ppl_size[0] = bounds[2] - bounds[0];
+            ppl_size[1] = bounds[3] - bounds[1];
+
+            //console.log('Pixel_Buffer_Core ppl_size', ppl_size);
+            this.bits_per_pixel = 8;
+            const bpp = this.bytes_per_pixel = 1;
+            // Not clear why the extra space is needed, but it solves a subtle sizing error.
+            //  Maybe the ppl size registers wrong.
+            // not sure why the +1 size is needed - it prevents an overflow???
+            this.size = new Uint16Array([ppl_size[0] + 4, ppl_size[1] + 4]);
+            this.pos = new Uint16Array([bounds[0], bounds[1]]);
+            const bpr = this.bytes_per_row = bpp * this.size[0];
+            //console.log('Pixel_Buffer_Core this.pos', this.pos);
+
+            const buf = this.buffer = new Uint8ClampedArray(this.size[0] * this.size[1]);
+            const l = buf.length;
+            for (var c = 0; c < l; c++) buf[c] = 255;
+
+            ppl.each_pixel(pixel_pos => {
+                // seems like some errant pixels got set - maybe in the flood fill.
+                // not sure why we need -1 for some things...
+                //buf[(bpr * (pixel_pos[1] - bounds[1]) - bpp) + (pixel_pos[0] - bounds[0] - bpp)] = 0;
+                buf[(bpr * (pixel_pos[1] - bounds[1])) + (pixel_pos[0] - bounds[0])] = 0;
+                //this.
+            });
+
+            //console.log(JSON.stringify(buf));
+            //each(buf, console.log);
+
         } else {
-            throw 'Expected: size [x, y] property in the Pixel_Buffer_Core specification';
-        }
+            //spec.__type_name = spec.__type_name || 'pixel_buffer';
+            //super(spec);
+            if (spec.buffer) {
 
-        // bit-depth - could follow PNG.
-        //  rgba color mode.
+                if (spec.buffer instanceof Buffer) {
+                    this.buffer = new Uint8ClampedArray(spec.buffer.buffer);
+                } else {
+                    // check its uint8array either clamped or not.??
 
-        if (spec.bytes_per_pixel && !spec.bits_per_pixel) spec.bits_per_pixel = spec.bytes_per_pixel * 8;
+                    this.buffer = spec.buffer;
+                }
 
-        spec.bits_per_pixel = spec.bits_per_pixel || 32;
 
-        if (spec.bits_per_pixel) {
-            if (spec.bits_per_pixel != 8 && spec.bits_per_pixel != 24 && spec.bits_per_pixel != 32) {
-                throw 'Invalid bits_per_pixel value of ' + spec.bits_per_pixel + ', must be 8, 24 or 32, default is 32.';
+                // Need to give it the size / num rows.
+                //this.size = spec.buffer.length;
+            }
+            if (spec.size) {
+                //this.size = spec.size;
+                this.size = new Uint32Array(spec.size);
             } else {
-                this.bits_per_pixel = spec.bits_per_pixel;
+                throw 'Expected: size [x, y] property in the Pixel_Buffer_Core specification';
+            }
+
+            // bit-depth - could follow PNG.
+            //  rgba color mode.
+
+            if (spec.bytes_per_pixel && !spec.bits_per_pixel) spec.bits_per_pixel = spec.bytes_per_pixel * 8;
+            spec.bits_per_pixel = spec.bits_per_pixel || 32;
+
+            if (spec.bits_per_pixel) {
+                if (spec.bits_per_pixel != 8 && spec.bits_per_pixel != 24 && spec.bits_per_pixel != 32) {
+                    throw 'Invalid bits_per_pixel value of ' + spec.bits_per_pixel + ', must be 8, 24 or 32, default is 32.';
+                } else {
+                    this.bits_per_pixel = spec.bits_per_pixel;
+                }
+            }
+            // then initialize the buffer itself.
+            const bytes_per_pixel = this.bytes_per_pixel = this.bits_per_pixel / 8;
+            this.bytes_per_row = bytes_per_pixel * this.size[0];
+            if (this.size && !this.buffer) {
+                //console.log('this.size', this.size);
+
+                this.buffer = new Uint8ClampedArray(bytes_per_pixel * this.size[0] * this.size[1]);
+                //this.buffer = Buffer.alloc(bytes_per_pixel * this.size[0] * this.size[1]);
+            }
+            if (spec.color) {
+                this.color_whole(spec.color);
             }
         }
-        // then initialize the buffer itself.
-        const bytes_per_pixel = this.bytes_per_pixel = this.bits_per_pixel / 8;
-        this.bytes_per_row = bytes_per_pixel * this.size[0];
-        if (this.size && !this.buffer) {
-            this.buffer = new Buffer(bytes_per_pixel * this.size[0] * this.size[1]);
-        }
+    }
+    toString() {
+        return 'Pixel_Buffer_Core';
     }
 
+    get bounds() {
+        const res = new Float32Array(4);
+        const size = this.size;
+        const pos = this.pos;
+        res[0] = pos[0];
+        res[1] = pos[1];
+        res[2] = pos[0] + size[0];
+        res[3] = pos[1] + size[1];
+        return res;
+    }
 
+    // index_to_pos function...
+    // buffer index - posin buffer - could be called pixel_buffer_index
+    // pixel index - could be called pixel number
+
+    /*
+    index_to_pos(idx) {
+        // idx = bpp * (x + (y * w))
+        // idx / bpp = x + (y * w)
+        // (idx / pbb) - (y * w) = x
+        // x = (idx / pbb) - (y * w)
+
+        // x = (idx / pbb) - (y * w)
+        // x - (idx / pbb) = -(y * w)
+        // -x + (idx / pbb) = y * w
+        // -x + (idx / pbb) / w = y
+        // y = ((idx / pbb) / w ) - x
+        // above looks wrong.
+    }
+    */
+
+    color_whole(color) {
+        // if color a number or typed array?
+        //throw 'stop';
+        //console.log('this.bytes_per_pixel', this.bytes_per_pixel);
+        if (this.bytes_per_pixel === 1) {
+            // expect a value
+
+            const ta_32_scratch = new Uint32Array(12);
+            //console.log('this.size', this.size);
+            ta_32_scratch[0] = this.size[0] * this.size[1];
+
+            const buf = this.buffer;
+            let i;
+            for (i = 0; i < ta_32_scratch[0]; i++) {
+                buf[i] = color;
+            }
+            //console.log('ta_32_scratch[0]', ta_32_scratch[0]);
+
+        } else if (this.bytes_per_pixel === 3) {
+            const ta_32_scratch = new Uint32Array(12);
+            ta_32_scratch[0] = this.size[0] * this.size[1] * 3;
+            const buf = this.buffer;
+            let i, c = 0;
+            for (i = 0; i < ta_32_scratch[0]; i++) {
+                buf[c++] = color[0];
+                buf[c++] = color[1];
+                buf[c++] = color[2];
+            }
+
+        } else if (this.bytes_per_pixel === 4) {
+            const ta_32_scratch = new Uint32Array(12);
+            ta_32_scratch[0] = this.size[0] * this.size[1] * 4;
+            const buf = this.buffer;
+            let i, c = 0;
+            for (i = 0; i < ta_32_scratch[0]; i++) {
+                buf[c++] = color[0];
+                buf[c++] = color[1];
+                buf[c++] = color[2];
+                buf[c++] = color[3];
+            }
+        }
+        return this;
+    }
+
+    crop(size) {
+
+        let new_size = new Uint16Array([this.size[0] - size * 2, this.size[1] - size * 2]);
+        let res = new this.constructor({
+            bytes_per_pixel: this.bytes_per_pixel,
+            size: new_size
+        });
+        if (this.pos) {
+            res.pos = new Uint16Array([this.pos[0] - size, this.pos[1] - size])
+        }
+        //if (this.pos) res.pos = this.pos;
+        this.each_pixel_ta((pos, color) => {
+            const new_pos = new Uint16Array([pos[0] - size, pos[1] - size]);
+            if (new_pos[0] >= 0 && new_pos[0] < new_size[0] && new_pos[1] >= 0 && new_pos[1] < new_size[1]) {
+                //res.set_pixel_ta(new_pos, color);
+                res.set_pixel_ta(new_pos, color);
+            }
+        });
+        //return res;
+        return res;
+    }
+
+    uncrop(size, color) {
+        let res = new this.constructor({
+            bytes_per_pixel: this.bytes_per_pixel,
+            size: new Uint16Array([this.size[0] + size * 2, this.size[1] + size * 2])
+        })
+        if (this.pos) res.pos = this.pos;
+        if (this.pos) {
+            //res.pos = new Uint16Array([this.pos[0] + size, this.pos[1] + size])
+        }
+        res.color_whole(color);
+        console.log('size', size);
+        this.each_pixel_ta((pos, color) => {
+            //console.log('pos', pos);
+            res.set_pixel_ta(new Uint16Array([pos[0] + size, pos[1] + size]), color);
+            //res.set_pixel_ta(new Uint16Array([pos[0], pos[1]]), color);
+        })
+        return res;
+    }
+
+    // define the bounds, expect UInt16 array
+    color_rect(bounds, color) {
+        // ltrb
+    }
 
     // each_pixel((x, y, r, g, b, a, set, get_pixel_by_offset)
 
     each_pixel_index(cb) {
-        const ta_16_scratch = new Uint32Array(6);
-        ta_16_scratch[0] = this.bytes_per_pixel;
-        ta_16_scratch[1] = 0; // i
-        ta_16_scratch[2] = this.size[0];
-        ta_16_scratch[3] = this.size[1];
+        const ta_32_scratch = new Uint32Array(6);
+        ta_32_scratch[0] = this.bytes_per_pixel;
+        ta_32_scratch[1] = 0; // i
+        ta_32_scratch[2] = this.size[0];
+        ta_32_scratch[3] = this.size[1];
         // 4 = x
         // 5 = y
         //let y, x, i;
@@ -94,32 +295,31 @@ class Pixel_Buffer_Core {
         //    h = this.size[1];
         //const buf = this.buffer;
         const bpp = this.bits_per_pixel;
-
         if (bpp === 32) {
             (() => {
-                for (ta_16_scratch[5] = 0; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
-                    for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
-                        cb(ta_16_scratch[1]);
-                        ta_16_scratch[1] += 4;
+                for (ta_32_scratch[5] = 0; ta_32_scratch[5] < ta_32_scratch[3]; ta_32_scratch[5]++) {
+                    for (ta_32_scratch[4] = 0; ta_32_scratch[4] < ta_32_scratch[2]; ta_32_scratch[4]++) {
+                        cb(ta_32_scratch[1]);
+                        ta_32_scratch[1] += 4;
                     }
                 }
             })();
         }
         if (bpp === 24) {
             (() => {
-                for (ta_16_scratch[5] = 0; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
-                    for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
-                        cb(ta_16_scratch[1]);
-                        ta_16_scratch[1] += 3;
+                for (ta_32_scratch[5] = 0; ta_32_scratch[5] < ta_32_scratch[3]; ta_32_scratch[5]++) {
+                    for (ta_32_scratch[4] = 0; ta_32_scratch[4] < ta_32_scratch[2]; ta_32_scratch[4]++) {
+                        cb(ta_32_scratch[1]);
+                        ta_32_scratch[1] += 3;
                     }
                 }
             })();
         } else if (bpp === 8) {
             (() => {
-                for (ta_16_scratch[5] = 0; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
-                    for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
-                        cb(ta_16_scratch[1]);
-                        ta_16_scratch[1] += 1;
+                for (ta_32_scratch[5] = 0; ta_32_scratch[5] < ta_32_scratch[3]; ta_32_scratch[5]++) {
+                    for (ta_32_scratch[4] = 0; ta_32_scratch[4] < ta_32_scratch[2]; ta_32_scratch[4]++) {
+                        cb(ta_32_scratch[1]);
+                        ta_32_scratch[1] += 1;
                     }
                 }
             })();
@@ -127,14 +327,14 @@ class Pixel_Buffer_Core {
     }
 
     padded_each_pixel_index(padding, cb) {
-        const ta_16_scratch = new Uint32Array(9);
-        ta_16_scratch[0] = this.bytes_per_pixel;
-        ta_16_scratch[1] = 0; // i
-        ta_16_scratch[2] = this.size[0] - padding;
-        ta_16_scratch[3] = this.size[1] - padding;
+        const ta_32_scratch = new Uint32Array(9);
+        ta_32_scratch[0] = this.bytes_per_pixel;
+        ta_32_scratch[1] = 0; // i
+        ta_32_scratch[2] = this.size[0] - padding;
+        ta_32_scratch[3] = this.size[1] - padding;
 
-        ta_16_scratch[7] = this.size[0];
-        //ta_16_scratch[8] = 
+        ta_32_scratch[7] = this.size[0];
+        //ta_32_scratch[8] = 
 
         // 4 = x
         // 5 = y
@@ -147,46 +347,116 @@ class Pixel_Buffer_Core {
 
         if (bpp === 32) {
             ((cb) => {
-                for (ta_16_scratch[5] = padding; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
-                    for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
-                        //ta_16_scratch[1] = (ta_16_scratch[5] * this.size[0] + ta_16_scratch[4]) * ta_16_scratch[0];
-                        cb((ta_16_scratch[5] * ta_16_scratch[7] + ta_16_scratch[4]) * ta_16_scratch[0]);
-                        //ta_16_scratch[1] += 4;
+                for (ta_32_scratch[5] = padding; ta_32_scratch[5] < ta_32_scratch[3]; ta_32_scratch[5]++) {
+                    for (ta_32_scratch[4] = 0; ta_32_scratch[4] < ta_32_scratch[2]; ta_32_scratch[4]++) {
+                        //ta_32_scratch[1] = (ta_32_scratch[5] * this.size[0] + ta_32_scratch[4]) * ta_32_scratch[0];
+                        cb((ta_32_scratch[5] * ta_32_scratch[7] + ta_32_scratch[4]) * ta_32_scratch[0]);
+                        //ta_32_scratch[1] += 4;
                     }
                 }
             })(cb);
         }
         if (bpp === 24) {
             ((cb) => {
-                for (ta_16_scratch[5] = padding; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
-                    for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
-                        //ta_16_scratch[1] = (ta_16_scratch[5] * this.size[0] + ta_16_scratch[4]) * ta_16_scratch[0];
-                        cb((ta_16_scratch[5] * ta_16_scratch[7] + ta_16_scratch[4]) * ta_16_scratch[0]);
-                        //ta_16_scratch[1] += 3;
+                for (ta_32_scratch[5] = padding; ta_32_scratch[5] < ta_32_scratch[3]; ta_32_scratch[5]++) {
+                    for (ta_32_scratch[4] = 0; ta_32_scratch[4] < ta_32_scratch[2]; ta_32_scratch[4]++) {
+                        //ta_32_scratch[1] = (ta_32_scratch[5] * this.size[0] + ta_32_scratch[4]) * ta_32_scratch[0];
+                        cb((ta_32_scratch[5] * ta_32_scratch[7] + ta_32_scratch[4]) * ta_32_scratch[0]);
+                        //ta_32_scratch[1] += 3;
                     }
                 }
             })(cb);
         } else if (bpp === 8) {
             ((cb) => {
-                for (ta_16_scratch[5] = padding; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
-                    for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
-                        cb((ta_16_scratch[5] * ta_16_scratch[7] + ta_16_scratch[4]) * ta_16_scratch[0]);
-                        //ta_16_scratch[1] += 1;
+                for (ta_32_scratch[5] = padding; ta_32_scratch[5] < ta_32_scratch[3]; ta_32_scratch[5]++) {
+                    for (ta_32_scratch[4] = 0; ta_32_scratch[4] < ta_32_scratch[2]; ta_32_scratch[4]++) {
+                        cb((ta_32_scratch[5] * ta_32_scratch[7] + ta_32_scratch[4]) * ta_32_scratch[0]);
+                        //ta_32_scratch[1] += 1;
                     }
                 }
             })(cb);
         }
     }
 
+    // each_pixel_ta
+    //  will return a typed array for each pixel.
+
+    each_pixel_ta(cb) {
+
+        const bpp = this.bytes_per_pixel;
+        if (bpp === 1) {
+
+            (() => {
+                const pos = new Uint16Array(2);
+                const a = new Uint32Array(2);
+                const b = new Uint16Array(2);
+
+                const sc = new Uint32Array(4);
+                const buf = this.buffer;
+
+                // Would be better to use an underlying typed array.
+
+                //const buf = this.buffer;
+                b[0] = this.size[0];
+                b[1] = this.size[1];
+
+                // the index as well...
+                a[0] = 0;
+
+                sc[0] = 0; // index
+
+                for (pos[1] = 0; pos[1] < b[1]; pos[1]++) {
+                    for (pos[0] = 0; pos[0] < b[0]; pos[0]++) {
+                        // and the color value
+
+                        cb(pos, buf[sc[0]++]);
+
+                    }
+                }
+            })();
+
+        } else if (bpp === 4) {
+            (() => {
+                const pos = new Uint16Array(2);
+                const a = new Uint32Array(2);
+                const b = new Uint16Array(2);
+                const sc = new Uint32Array(4);
+                const buf = this.buffer;
+                // Would be better to use an underlying typed array.
+
+                //const buf = this.buffer;
+                b[0] = this.size[0];
+                b[1] = this.size[1];
+                // the index as well...
+                a[0] = 0;
+                sc[0] = 0; // index
+
+                for (pos[1] = 0; pos[1] < b[1]; pos[1]++) {
+                    for (pos[0] = 0; pos[0] < b[0]; pos[0]++) {
+                        // and the color value
+                        cb(pos, new Uint8Array([buf[sc[0]++], buf[sc[0]++], buf[sc[0]++], buf[sc[0]++]]));
+                    }
+                }
+            })();
+
+        } else {
+            throw 'Unsupported bpp ' + bpp;
+        }
+
+    }
+
+    // ta_pixel
+
+
     each_pixel(cb) {
         // y loop
         // x loop
 
-        const ta_16_scratch = new Uint32Array(6);
-        ta_16_scratch[0] = this.bytes_per_pixel;
-        ta_16_scratch[1] = 0; // i
-        ta_16_scratch[2] = this.size[0];
-        ta_16_scratch[3] = this.size[1];
+        const ta_32_scratch = new Uint32Array(6);
+        ta_32_scratch[0] = this.bytes_per_pixel;
+        ta_32_scratch[1] = 0; // i
+        ta_32_scratch[2] = this.size[0];
+        ta_32_scratch[3] = this.size[1];
         // 4 = x
         // 5 = y
         //let y, x, i;
@@ -194,76 +464,25 @@ class Pixel_Buffer_Core {
         //const w = this.size[0],
         //    h = this.size[1];
         const buf = this.buffer;
-
         const bpp = this.bits_per_pixel;
 
         if (bpp === 32) {
-            for (ta_16_scratch[5] = 0; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
-                for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
-                    //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
-                    //cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]), buf.readUInt8(ta_16_scratch[1] + 1), buf.readUInt8(ta_16_scratch[1] + 2), buf.readUInt8(ta_16_scratch[1] + 3));
-                    //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
-                    cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++));
-
-                    /*
-                    cb(x, y, buf.readUInt8(i), buf.readUInt8(i + 1), buf.readUInt8(i + 2), buf.readUInt8(i + 3),
-                        / *(r, g, b, a) => {
-                                           buf.writeUInt8(r, i), buf.writeUInt8(g, i + 1), buf.writeUInt8(b, i + 2), buf.writeUInt8(a, i + 3)
-                                       }, * /
-                        (vx, vy) => {
-                            //console.log('x, y, ', x, y, vx, vy);
-                            // Maybe too slow.
-                            // Vectored pixel.
-    
-                            return this.get_pixel(x + vx, y + vy);
-                        })
-                        */
+            for (ta_32_scratch[5] = 0; ta_32_scratch[5] < ta_32_scratch[3]; ta_32_scratch[5]++) {
+                for (ta_32_scratch[4] = 0; ta_32_scratch[4] < ta_32_scratch[2]; ta_32_scratch[4]++) {
+                    cb(ta_32_scratch[4], ta_32_scratch[5], buf[ta_32_scratch[1]++], buf[ta_32_scratch[1]++], buf[ta_32_scratch[1]++], buf[ta_32_scratch[1]++]);
                 }
             }
         }
         if (bpp === 24) {
-            for (ta_16_scratch[5] = 0; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
-                for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
-                    //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
-                    //cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]), buf.readUInt8(ta_16_scratch[1] + 1), buf.readUInt8(ta_16_scratch[1] + 2), buf.readUInt8(ta_16_scratch[1] + 3));
-                    //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
-                    cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++));
-                    /*
-                    cb(x, y, buf.readUInt8(i), buf.readUInt8(i + 1), buf.readUInt8(i + 2), buf.readUInt8(i + 3),
-                        / *(r, g, b, a) => {
-                                           buf.writeUInt8(r, i), buf.writeUInt8(g, i + 1), buf.writeUInt8(b, i + 2), buf.writeUInt8(a, i + 3)
-                                       }, * /
-                        (vx, vy) => {
-                            //console.log('x, y, ', x, y, vx, vy);
-                            // Maybe too slow.
-                            // Vectored pixel.
-    
-                            return this.get_pixel(x + vx, y + vy);
-                        })
-                        */
+            for (ta_32_scratch[5] = 0; ta_32_scratch[5] < ta_32_scratch[3]; ta_32_scratch[5]++) {
+                for (ta_32_scratch[4] = 0; ta_32_scratch[4] < ta_32_scratch[2]; ta_32_scratch[4]++) {
+                    cb(ta_32_scratch[4], ta_32_scratch[5], buf[ta_32_scratch[1]++], buf[ta_32_scratch[1]++], buf[ta_32_scratch[1]++]);
                 }
             }
         } else if (bpp === 8) {
-            for (ta_16_scratch[5] = 0; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
-                for (ta_16_scratch[4] = 0; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
-                    //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
-                    //cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]), buf.readUInt8(ta_16_scratch[1] + 1), buf.readUInt8(ta_16_scratch[1] + 2), buf.readUInt8(ta_16_scratch[1] + 3));
-                    //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
-                    cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++));
-
-                    /*
-                    cb(x, y, buf.readUInt8(i), buf.readUInt8(i + 1), buf.readUInt8(i + 2), buf.readUInt8(i + 3),
-                        / *(r, g, b, a) => {
-                                           buf.writeUInt8(r, i), buf.writeUInt8(g, i + 1), buf.writeUInt8(b, i + 2), buf.writeUInt8(a, i + 3)
-                                       }, * /
-                        (vx, vy) => {
-                            //console.log('x, y, ', x, y, vx, vy);
-                            // Maybe too slow.
-                            // Vectored pixel.
-    
-                            return this.get_pixel(x + vx, y + vy);
-                        })
-                        */
+            for (ta_32_scratch[5] = 0; ta_32_scratch[5] < ta_32_scratch[3]; ta_32_scratch[5]++) {
+                for (ta_32_scratch[4] = 0; ta_32_scratch[4] < ta_32_scratch[2]; ta_32_scratch[4]++) {
+                    cb(ta_32_scratch[4], ta_32_scratch[5], buf[ta_32_scratch[1]++]);
                 }
             }
         }
@@ -272,11 +491,14 @@ class Pixel_Buffer_Core {
         // y loop
         // x loop
 
-        const ta_16_scratch = new Uint32Array(7);
-        ta_16_scratch[0] = this.bytes_per_pixel;
-        ta_16_scratch[1] = 0; // i
-        ta_16_scratch[2] = this.size[0] - padding;
-        ta_16_scratch[3] = this.size[1] - padding;
+        const ta_32_scratch = new Uint32Array(7);
+        ta_32_scratch[0] = this.bytes_per_pixel;
+        ta_32_scratch[1] = 0; // i
+        ta_32_scratch[2] = this.size[0] - padding;
+        ta_32_scratch[3] = this.size[1] - padding;
+
+
+
         // 4 = x
         // 5 = y
         //let y, x, i;
@@ -287,44 +509,53 @@ class Pixel_Buffer_Core {
         //console.log('buf', buf);
         //console.log('this.bytes_per_pixel', this.bytes_per_pixel);
 
-        if (ta_16_scratch[0] === 3) {
+        //console.log('ta_32_scratch[0]', ta_32_scratch[0]);
 
-            // need to work out the index?
-
-            for (ta_16_scratch[5] = padding; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
-                for (ta_16_scratch[4] = padding; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
-                    //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
-                    //ta_16_scratch[6] = ta_16_scratch[1];
-                    ta_16_scratch[1] = ta_16_scratch[6] = (ta_16_scratch[5] * this.size[0] + ta_16_scratch[4]) * ta_16_scratch[0];
-                    cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), ta_16_scratch[6]);
+        if (ta_32_scratch[0] === 3) {
+            for (ta_32_scratch[5] = padding; ta_32_scratch[5] < ta_32_scratch[3]; ta_32_scratch[5]++) {
+                for (ta_32_scratch[4] = padding; ta_32_scratch[4] < ta_32_scratch[2]; ta_32_scratch[4]++) {
+                    ta_32_scratch[1] = ta_32_scratch[6] = (ta_32_scratch[5] * this.size[0] + ta_32_scratch[4]) * ta_32_scratch[0];
+                    cb(ta_32_scratch[4], ta_32_scratch[5], buf[ta_32_scratch[1]++], buf[ta_32_scratch[1]++], buf[ta_32_scratch[1]++], ta_32_scratch[6]);
                 }
             }
-        } else if (ta_16_scratch[0] === 4) {
-            for (ta_16_scratch[5] = padding; ta_16_scratch[5] < ta_16_scratch[3]; ta_16_scratch[5]++) {
-                for (ta_16_scratch[4] = padding; ta_16_scratch[4] < ta_16_scratch[2]; ta_16_scratch[4]++) {
-                    //ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
-                    //ta_16_scratch[6] = ta_16_scratch[1];
-                    ta_16_scratch[1] = ta_16_scratch[6] = (ta_16_scratch[5] * this.size[0] + ta_16_scratch[4]) * ta_16_scratch[0];
-                    //ta_16_scratch[6] = ta_16_scratch[5] * (this.size[0] + ta_16_scratch[4]) * ta_16_scratch[0];
-                    cb(ta_16_scratch[4], ta_16_scratch[5], buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), buf.readUInt8(ta_16_scratch[1]++), ta_16_scratch[6]);
-
-                    /*
-                    cb(x, y, buf.readUInt8(i), buf.readUInt8(i + 1), buf.readUInt8(i + 2), buf.readUInt8(i + 3),
-                        / *(r, g, b, a) => {
-                                           buf.writeUInt8(r, i), buf.writeUInt8(g, i + 1), buf.writeUInt8(b, i + 2), buf.writeUInt8(a, i + 3)
-                                       }, * /
-                        (vx, vy) => {
-                            //console.log('x, y, ', x, y, vx, vy);
-                            // Maybe too slow.
-                            // Vectored pixel.
-    
-                            return this.get_pixel(x + vx, y + vy);
-                        })
-                        */
+        } else if (ta_32_scratch[0] === 4) {
+            for (ta_32_scratch[5] = padding; ta_32_scratch[5] < ta_32_scratch[3]; ta_32_scratch[5]++) {
+                for (ta_32_scratch[4] = padding; ta_32_scratch[4] < ta_32_scratch[2]; ta_32_scratch[4]++) {
+                    ta_32_scratch[1] = ta_32_scratch[6] = (ta_32_scratch[5] * this.size[0] + ta_32_scratch[4]) * ta_32_scratch[0];
+                    cb(ta_32_scratch[4], ta_32_scratch[5], buf[ta_32_scratch[1]++], buf[ta_32_scratch[1]++], buf[ta_32_scratch[1]++], buf[ta_32_scratch[1]++], ta_32_scratch[6]);
                 }
             }
         } else {
-            throw 'Not supported: ' + ta_16_scratch[0] + ' bytes per pixel';
+            throw 'Not supported: ' + ta_32_scratch[0] + ' bytes per pixel';
+        }
+    }
+    paint_pixel_list(pixel_pos_list, color) {
+        pixel_pos_list.each_pixel(pos => {
+            //console.log('typeof pos', typeof pos);
+
+            //console.log('pos', pos);
+            //console.log('color', color);
+            //console.log('pos, color', pos, color);
+            this.set_pixel_ta(pos, color);
+        });
+    }
+    'set_pixel_ta'(pos, color) {
+        
+        //console.log('pixel_buffer_pos', pixel_buffer_pos);
+        if (this.bytes_per_pixel === 1) {
+            //const pixel_buffer_pos = this.bytes_per_pixel * (pos[0] + pos[1] * this.size[0]);
+            this.buffer[this.bytes_per_pixel * (pos[0] + pos[1] * this.size[0])] = color;
+        } else if (this.bytes_per_pixel === 3) {
+            let pixel_buffer_pos = this.bytes_per_pixel * (pos[0] + pos[1] * this.size[0]);
+            this.buffer[pixel_buffer_pos++] = color[0];
+            this.buffer[pixel_buffer_pos++] = color[1];
+            this.buffer[pixel_buffer_pos++] = color[2];
+        } else if (this.bytes_per_pixel === 4) {
+            let pixel_buffer_pos = this.bytes_per_pixel * (pos[0] + pos[1] * this.size[0]);
+            this.buffer[pixel_buffer_pos++] = color[0];
+            this.buffer[pixel_buffer_pos++] = color[1];
+            this.buffer[pixel_buffer_pos++] = color[2];
+            this.buffer[pixel_buffer_pos++] = color[3];
         }
     }
 
@@ -408,50 +639,83 @@ class Pixel_Buffer_Core {
             //console.log('[x, y, r, g, b, alpha]', [x, y, r, g, b, alpha]);
         }
 
-
         if (this.bits_per_pixel === 24) {
-            buffer.writeUInt8(r, pixel_buffer_pos);
-            buffer.writeUInt8(g, pixel_buffer_pos + 1);
-            buffer.writeUInt8(b, pixel_buffer_pos + 2);
+            buffer[pixel_buffer_pos] = r;
+            buffer[pixel_buffer_pos + 1] = g;
+            buffer[pixel_buffer_pos + 2] = b;
 
         } else if (this.bits_per_pixel === 32) {
-            buffer.writeUInt8(r, pixel_buffer_pos);
-            buffer.writeUInt8(g, pixel_buffer_pos + 1);
-            buffer.writeUInt8(b, pixel_buffer_pos + 2);
-            buffer.writeUInt8(alpha, pixel_buffer_pos + 3);
+
+            buffer[pixel_buffer_pos] = r;
+            buffer[pixel_buffer_pos + 1] = g;
+            buffer[pixel_buffer_pos + 2] = b;
+            buffer[pixel_buffer_pos + 3] = alpha;
         } else if (this.bits_per_pixel === 8) {
-            buffer.writeUInt8(a[2], pixel_buffer_pos);
+            buffer[pixel_buffer_pos] = a[2];
         } else {
             var stack = new Error().stack;
             //console.log(stack);
             throw 'Must have bits_per_pixel set to 24 or 32';
         }
     }
+
+    get_pixel_ta(pos) {
+        const ta_32_scratch = new Uint32Array(6);
+        ta_32_scratch[0] = this.bytes_per_pixel;
+        ta_32_scratch[1] = 0; // i
+        ta_32_scratch[2] = this.size[0];
+        ta_32_scratch[3] = this.size[1];
+
+        ta_32_scratch[1] = ta_32_scratch[0] * (pos[0] + pos[1] * ta_32_scratch[2]);
+        const buffer = this.buffer;
+        //var r, g, b, a;
+        //console.log('pixel_buffer_pos', pixel_buffer_pos);
+        //console.log('x, y', x, y);
+        //console.log('ta_32_scratch[1]', ta_32_scratch[1]);
+
+        //const check = this.check_rect_bounds(x, y);
+        if (this.check_rect_bounds(pos[0], pos[1])) {
+            if (ta_32_scratch[0] === 1) {
+                return buffer[ta_32_scratch[1]];
+            } else if (ta_32_scratch[0] === 3) {
+                return [buffer[ta_32_scratch[1]++], buffer[ta_32_scratch[1]++], buffer[ta_32_scratch[1]++]];
+            } else if (ta_32_scratch[0] === 4) {
+                return [buffer[ta_32_scratch[1]++], buffer[ta_32_scratch[1]++], buffer[ta_32_scratch[1]++], buffer[ta_32_scratch[1]++]];
+            } else {
+                //var stack = new Error().stack;
+                //console.log(stack);
+                throw 'Must have bits_per_pixel set to 24 or 32';
+            }
+        }
+    }
+
     'get_pixel'(x, y) {
-        const ta_16_scratch = new Uint32Array(6);
-        ta_16_scratch[0] = this.bytes_per_pixel;
-        ta_16_scratch[1] = 0; // i
-        ta_16_scratch[2] = this.size[0];
-        ta_16_scratch[3] = this.size[1];
-        ta_16_scratch[4] = x;
-        ta_16_scratch[5] = y;
+        const ta_32_scratch = new Uint32Array(6);
+        ta_32_scratch[0] = this.bytes_per_pixel;
+        ta_32_scratch[1] = 0; // i
+        ta_32_scratch[2] = this.size[0];
+        ta_32_scratch[3] = this.size[1];
+        ta_32_scratch[4] = x;
+        ta_32_scratch[5] = y;
         // 4 = x
         // 5 = y
 
         //const bytes_per_pixel = this.bits_per_pixel / 8;
         // will return [r, g, b] or [r, g, b, a];
-        ta_16_scratch[1] = ta_16_scratch[0] * (ta_16_scratch[4] + ta_16_scratch[5] * ta_16_scratch[2]);
+        ta_32_scratch[1] = ta_32_scratch[0] * (ta_32_scratch[4] + ta_32_scratch[5] * ta_32_scratch[2]);
         const buffer = this.buffer;
         //var r, g, b, a;
         //console.log('pixel_buffer_pos', pixel_buffer_pos);
         //console.log('x, y', x, y);
 
         //const check = this.check_rect_bounds(x, y);
-        if (this.check_rect_bounds(ta_16_scratch[4], ta_16_scratch[5])) {
-            if (ta_16_scratch[0] === 3) {
-                return [buffer.readUInt8(ta_16_scratch[1]++), buffer.readUInt8(ta_16_scratch[1]++), buffer.readUInt8(ta_16_scratch[1]++)];
-            } else if (ta_16_scratch[0] === 4) {
-                return [buffer.readUInt8(ta_16_scratch[1]++), buffer.readUInt8(ta_16_scratch[1]++), buffer.readUInt8(ta_16_scratch[1]++), buffer.readUInt8(ta_16_scratch[1]++)];
+        if (this.check_rect_bounds(ta_32_scratch[4], ta_32_scratch[5])) {
+            if (ta_32_scratch[0] === 3) {
+                return [buffer[ta_32_scratch[1]++], buffer[ta_32_scratch[1]++], buffer[ta_32_scratch[1]++]];
+            } else if (ta_32_scratch[0] === 4) {
+                return [buffer[ta_32_scratch[1]++], buffer[ta_32_scratch[1]++], buffer[ta_32_scratch[1]++], buffer[ta_32_scratch[1]++]];
+            } else if (ta_32_scratch[0] === 1) {
+                return [buffer[ta_32_scratch[1]++]];
             } else {
                 //var stack = new Error().stack;
                 //console.log(stack);
@@ -460,40 +724,86 @@ class Pixel_Buffer_Core {
         }
     }
     check_rect_bounds(x, y, w = 0, h = 0) {
+
+        //console.log('x, y, w, h', x, y, w, h);
+        //console.trace();
+
         if (x < 0) return false;
         if (y < 0) return false;
-        if (x + w >= this.size[0]) return false;
-        if (y + h >= this.size[1]) return false;
+        if (x + w > this.size[0]) return false;
+        if (y + h > this.size[1]) return false;
         return true;
     }
-
-
-
     // Custom convolution not working here.
     // Iterating pixels for the line joining convolution sounds best.
     // Custom convolution seems like the way to go, but it's hard to implement.
-
-
 
     process(fn) {
         let res = this.clone();
         return fn(this, res);
     }
 
+    /*
+    function typedArraysAreEqual(a, b) {
+  if (a.byteLength !== b.byteLength) return false;
+  return a.every((val, i) => val === b[i]);
+}
 
-
+    */
     equals(other_pixel_buffer) {
         let buf1 = this.buffer;
         let buf2 = other_pixel_buffer.buffer;
         if (buf1.length === buf2.length) {
-            return buf1.compare(buf2) === 0;
+            return buf1.every((val, i) => val === buf2[i]);
         } else {
             return false;
         }
     }
-
     // get (rectangle) view
     //  A rectangular square of pixels.
+
+    copy_pixel_pos_list_region(pixel_pos_list, bg_color) {
+        // find the bounds of that pixel pos list.
+        //  would help if the returned bounds included size.
+
+        let bounds = pixel_pos_list.bounds;
+        // not sure why the +1 is needed / helps
+        let size = new Uint16Array([bounds[2] - bounds[0] + 1, bounds[3] - bounds[1] + 1]);
+        //console.log('size', size);
+        //console.log('bounds', bounds);
+
+        // make a new pb
+
+        const res = new this.constructor({
+            size: size,
+            bytes_per_pixel: this.bytes_per_pixel
+        });
+        if (this.pos) res.pos = this.pos;
+        if (bg_color) {
+            res.color_whole(bg_color);
+        }
+        res.pos = new Uint16Array([bounds[0], bounds[1]]);
+        
+        // each_pixel_rebounded?
+        pixel_pos_list.each_pixel((pos) => {
+            // then we copy pixels from the current image to the result.
+            // set the result...
+            let color = this.get_pixel_ta(pos);
+            //console.log('color', color);
+            //if (typeof color !== 'number') {
+            //    console.log('color', color);
+            //}
+            const target_pos = new Uint16Array([(pos[0] - bounds[0]), (pos[1] - bounds[1])]);
+            //const target_pos = new Uint16Array([(pos[0]), (pos[1])]);
+            //const target_pos = pos;
+            //console.log('target_pos, color', target_pos, color);
+            res.set_pixel_ta(target_pos, color);
+            //res.set_pixel()
+        });
+        return res;
+    }
+    // copy_rect_to
+    //  copies it to another Pixel_Buffer
 
     // positions as UInt16Array?
 
@@ -543,7 +853,6 @@ class Pixel_Buffer_Core {
             check = this.check_rect_bounds(x, y, w, h);
         }
 
-
         //let check = check_rect_bounds(x, y, w, h);
         if (!check) {
             throw 'Out of bounds error';
@@ -555,26 +864,27 @@ class Pixel_Buffer_Core {
             //let bb = this.buffer.buffer;
             let cr, cg, cb, ca;
             let buf = this.buffer;
-
             //console.log('[w, h]', [w, h]);
-
             let res = new this.constructor({
                 size: [w, h],
                 bits_per_pixel: this.bits_per_pixel
             });
+            // The position of the copied rect...
+            if (this.pos) {
+                //res.pos = new Uint16Array([this.pos[0] + x, this.pos[1] + y]);
+                res.pos = this.pos;
+            } else {
+                //res.pos = new Uint16Array([x, y]);
+            }
             if (clip) {
                 res.clip = clip;
-
             }
             res.central_pos = central_pos;
             const right = x + w;
             const bottom = y + h;
-
             const Bpp = this.bytes_per_pixel,
                 my_w = this.size[0];
-
             //console.log('[right, bottom]', [right, bottom]);
-
             let i_res = 0;
             let buf_res = res.buffer;
             //let bbres = res.buffer.buffer;
@@ -591,9 +901,13 @@ class Pixel_Buffer_Core {
                     //[cr, cg, cb, ca] = bb.slice(i, i = i + this.bytes_per_pixel);
                     //[bbres[i++], bbres[i++], bbres[i++], bbres[i++]] = bb.slice(i - 4, i);
                     //console.log('i_res', i_res);
-                    buf_res.writeUInt32BE(buf.readUInt32BE(i), i_res);
-                    i += 4;
-                    i_res += 4;
+                    buf_res[i_res++] = buf[i++];
+                    buf_res[i_res++] = buf[i++];
+                    buf_res[i_res++] = buf[i++];
+                    buf_res[i_res++] = buf[i++];
+                    //buf_res.writeUInt32BE(buf.readUInt32BE(i), i_res);
+                    //i += 4;
+                    //i_res += 4;
                     // let res_i = res.this.bytes_per_pixel * 
                 }
             }
@@ -604,34 +918,27 @@ class Pixel_Buffer_Core {
     'place_image_from_pixel_buffer'(pixel_buffer, dest_pos) {
         // can do a fast copy.
         //  or can do pixel iteration.
-
         // function to get a line from a buffer?
         // will want to copy directly between them.
-
         // so for each line in the source, need to copy the line directly into the buffer.
         //  that's if they are the same bits_per_pixel.
-
         // copying rgba to rgba or rgb to rgb should be fast.
         //  direct copying is fastest.
         const dest_buffer = this.buffer;
         const source_buffer = pixel_buffer.buffer;
-
         //console.log('dest_pos ' + stringify(dest_pos));
         // It's also worth making RGB->RGBA and RGBA->RGB
         if (this.bits_per_pixel === 32 && pixel_buffer.bits_per_pixel === 32) {
             const dest_w = this.size[0];
             const dest_h = this.size[1];
-
             const dest_buffer_line_length = dest_w * 4;
             const source_w = pixel_buffer.size[0];
             const source_h = pixel_buffer.size[1];
             const source_buffer_line_length = source_w * 4;
-
             //console.log('source_w ' + source_w);
             //console.log('source_h ' + source_h);
             let source_buffer_line_start_pos, source_buffer_line_end_pos, dest_buffer_subline_start_pos, dest_buffer_start_offset;
             dest_buffer_start_offset = dest_pos[0] * 4;
-
             // This algorithm could be sped up with C.
             //cpp_mod.copy_rgba_pixel_buffer_to_rgba_pixel_buffer_region(source_buffer, source_buffer_line_length, dest_buffer, dest_buffer_line_length, dest_pos[0], dest_pos[1]);
             //throw 'stop';
@@ -653,15 +960,18 @@ class Pixel_Buffer_Core {
             'bits_per_pixel': this.bits_per_pixel
         });
         res.buffer.fill(0);
+        if (this.pos) res.pos = this.pos;
         return res;
     }
     'clone'() {
         //console.log('1) this.bits_per_pixel', this.bits_per_pixel);
         var res = new this.constructor({
             'size': this.size,
-            'bits_per_pixel': this.bits_per_pixel
+            'bits_per_pixel': this.bits_per_pixel,
+            'buffer': this.buffer.slice()
         });
-        this.buffer.copy(res.buffer);
+        if (this.pos) res.pos = this.pos;
+        //this.buffer.copy(res.buffer);
         //res.buffer.fill(0);
         return res;
     }
@@ -672,7 +982,7 @@ class Pixel_Buffer_Core {
                 'size': this.size,
                 'bytes_per_pixel': 4
             });
-
+            if (this.pos) res.pos = this.pos;
             /*
             this.each_pixel((x, y, r, g, b) => {
                 //console.log('x, y, r, g, b', x, y, r, g, b);
@@ -723,11 +1033,9 @@ class Pixel_Buffer_Core {
                         res.set_pixel(x, y, color[0], color[1], color[2], color[3]);
                     }
                 }
-
             }
             if (this.bytes_per_pixel === 3) {
                 // top two rows
-
                 for (y = 0; y < thickness; y++) {
                     for (x = 0; x < w; x++) {
                         res.set_pixel(x, y, color[0], color[1], color[2]);
@@ -755,21 +1063,41 @@ class Pixel_Buffer_Core {
 
     // then need to be able to save as 8 bit bitmaps too.
     'to_8bit_greyscale'() {
-        var res = new this.constructor({
-            'size': this.size,
-            'bits_per_pixel': 8
-        });
-
-        const bres = res.buffer;
-        // Then go over each of this pixel
-        //  take average rgb values
-        let i = 0;
-        this.each_pixel((x, y, r, g, b, a) => {
-            bres[i++] = Math.round((r + g + b) / 3);
-            //i++;
-        });
-        // 
-        return res;
+        if (this.bytes_per_pixel === 1) {
+            return this;
+        }
+        if (this.bytes_per_pixel === 3) {
+            var res = new this.constructor({
+                'size': this.size,
+                'bits_per_pixel': 8
+            });
+            if (this.pos) res.pos = this.pos;
+            const bres = res.buffer;
+            // Then go over each of this pixel
+            //  take average rgb values
+            let i = 0;
+            this.each_pixel((x, y, r, g, b, a) => {
+                bres[i++] = Math.round((r + g + b) / 3);
+                //i++;
+            });
+            return res;
+        }
+        if (this.bytes_per_pixel === 4) {
+            var res = new this.constructor({
+                'size': this.size,
+                'bits_per_pixel': 8
+            });
+            if (this.pos) res.pos = this.pos;
+            const bres = res.buffer;
+            // Then go over each of this pixel
+            //  take average rgb values
+            let i = 0;
+            this.each_pixel((x, y, r, g, b, a) => {
+                bres[i++] = Math.round((r + g + b) / 3);
+                //i++;
+            });
+            return res;
+        }
     }
 
     'to_32bit_rgba'() {
@@ -777,6 +1105,7 @@ class Pixel_Buffer_Core {
             'size': this.size,
             'bits_per_pixel': 32
         });
+        if (this.pos) res.pos = this.pos;
         const bres = res.buffer;
         if (this.bytes_per_pixel === 1) {
             // Then go over each of this pixel
@@ -790,15 +1119,26 @@ class Pixel_Buffer_Core {
                 //i++;
             });
         }
-        // 
         return res;
     }
 
+    'invert_greyscale_self'() {
+        const bres = this.buffer;
+        // Then go over each of this pixel
+        //  take average rgb values
+        let i = 0;
+        this.each_pixel((x, y, v) => {
+            bres[i++] = 255 - v;
+        });
+        return this;
+    }
+
     'invert_greyscale'() {
-        var res = new this.constructor({
+        let res = new this.constructor({
             'size': this.size,
             'bits_per_pixel': 8
         });
+        if (this.pos) res.pos = this.pos;
         const bres = res.buffer;
         // Then go over each of this pixel
         //  take average rgb values
