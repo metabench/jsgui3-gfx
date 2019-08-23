@@ -28,6 +28,17 @@ const {
 
 const Pixel_Pos_List = require('./pixel-pos-list');
 
+
+
+// All operations will be in place.
+//  If it's at all possible.
+//  Can do .clone and then do the operation on that if we want another object.
+
+
+
+
+//const inspect = Symbol.for('nodejs.util.inspect.custom');
+
 // Core
 // Mixins
 //  Could make them for functions of some categories, and larger functions.
@@ -39,27 +50,19 @@ const Pixel_Pos_List = require('./pixel-pos-list');
 //  Contains a typed array of a particular length
 
 // A few fast OO structures / classes?
-
 // Will make use of some functions, but not that many.
-
-
 // ta(1, 2, 3);
-
 // ta function
 //  returns a typed array that fits the numbers
 //  will check to see if they are integers
-
-
 // load it from a pixel-pos-list too.
-
-
-
+// More clarity / specifying whether to do it in place, not producing a res option?
+//  and use clone where appropriate.
+const {ro} = require('obext');
 class Pixel_Buffer_Core {
-
     // Setting bits per pixel to 8
     //  greyscale 256
     constructor(spec) {
-
         if (spec instanceof Pixel_Pos_List) {
             // load it as a buffer.
             const ppl = spec;
@@ -73,11 +76,14 @@ class Pixel_Buffer_Core {
             //const [l, t, r, b] = bounds;
             //console.log('Pixel_Buffer_Core bounds', bounds);
 
-            const ppl_size = new Uint32Array(2);
+            const ppl_size = new Uint16Array(2);
             ppl_size[0] = bounds[2] - bounds[0];
             ppl_size[1] = bounds[3] - bounds[1];
 
             //console.log('Pixel_Buffer_Core ppl_size', ppl_size);
+            //  Can have bits or bytes per pixel set in spec, otherwise.
+            //   Pixel pos list to produce 1 bit per pixel in the near future anyway.
+
             this.bits_per_pixel = 8;
             const bpp = this.bytes_per_pixel = 1;
             // Not clear why the extra space is needed, but it solves a subtle sizing error.
@@ -88,7 +94,7 @@ class Pixel_Buffer_Core {
             const bpr = this.bytes_per_row = bpp * this.size[0];
             //console.log('Pixel_Buffer_Core this.pos', this.pos);
 
-            const buf = this.buffer = new Uint8ClampedArray(this.size[0] * this.size[1]);
+            const buf = this.ta = this.buffer = new Uint8ClampedArray(this.size[0] * this.size[1]);
             const l = buf.length;
             for (var c = 0; c < l; c++) buf[c] = 255;
 
@@ -109,20 +115,22 @@ class Pixel_Buffer_Core {
             if (spec.buffer) {
 
                 if (spec.buffer instanceof Buffer) {
-                    this.buffer = new Uint8ClampedArray(spec.buffer.buffer);
+                    this.ta = this.buffer = new Uint8ClampedArray(spec.buffer.buffer);
                 } else {
                     // check its uint8array either clamped or not.??
-
-                    this.buffer = spec.buffer;
+                    this.ta = this.buffer = spec.buffer;
                 }
 
 
                 // Need to give it the size / num rows.
                 //this.size = spec.buffer.length;
             }
+
+            // Size could more logically be its dimensions.
+
             if (spec.size) {
                 //this.size = spec.size;
-                this.size = new Uint32Array(spec.size);
+                this.size = new Uint16Array(spec.size); // using the size it was given, which was given as an array.
             } else {
                 throw 'Expected: size [x, y] property in the Pixel_Buffer_Core specification';
             }
@@ -134,7 +142,7 @@ class Pixel_Buffer_Core {
             spec.bits_per_pixel = spec.bits_per_pixel || 32;
 
             if (spec.bits_per_pixel) {
-                if (spec.bits_per_pixel != 8 && spec.bits_per_pixel != 24 && spec.bits_per_pixel != 32) {
+                if (spec.bits_per_pixel != 1 || spec.bits_per_pixel != 8 && spec.bits_per_pixel != 24 && spec.bits_per_pixel != 32) {
                     throw 'Invalid bits_per_pixel value of ' + spec.bits_per_pixel + ', must be 8, 24 or 32, default is 32.';
                 } else {
                     this.bits_per_pixel = spec.bits_per_pixel;
@@ -145,18 +153,46 @@ class Pixel_Buffer_Core {
             this.bytes_per_row = bytes_per_pixel * this.size[0];
             if (this.size && !this.buffer) {
                 //console.log('this.size', this.size);
-
-                this.buffer = new Uint8ClampedArray(bytes_per_pixel * this.size[0] * this.size[1]);
+                this.ta = this.buffer = new Uint8ClampedArray(bytes_per_pixel * this.size[0] * this.size[1]);
                 //this.buffer = Buffer.alloc(bytes_per_pixel * this.size[0] * this.size[1]);
             }
             if (spec.color) {
                 this.color_whole(spec.color);
             }
+            //console.log('this.ta', this.ta);
         }
+
+        ro(this, 'meta', () => {
+            return {
+                size: this.size,
+                bits_per_pixel: this.bits_per_pixel,
+                bytes_per_pixel: this.bytes_per_pixel,
+                bytes_per_row: this.bytes_per_row
+            }
+        });
     }
+
     toString() {
-        return 'Pixel_Buffer_Core';
+        /*
+        size: Uint32Array [ 1024, 576 ],
+        bits_per_pixel: 32,
+        bytes_per_pixel: 4,
+        bytes_per_row: 4096 }
+        */
+        return JSON.stringify({
+            buffer: 'Uint8ClampedArray length ' + this.buffer.length,
+            size: this.size,
+            bits_per_pixel: this.bits_per_pixel,
+            bytes_per_pixel: this.bytes_per_pixel,
+            bytes_per_row: this.bytes_per_row
+        });
     }
+
+    /*
+    [inspect]() {
+        return 'Pixel_Buffer_Core ' + this.toString();
+    }
+    */
 
     get bounds() {
         const res = new Float32Array(4);
@@ -189,24 +225,28 @@ class Pixel_Buffer_Core {
     }
     */
 
+    // Could call more specific addon functions?
+    // More general addon functions?
+
     color_whole(color) {
         // if color a number or typed array?
         //throw 'stop';
         //console.log('this.bytes_per_pixel', this.bytes_per_pixel);
+
+        // 0.125 - 1/8 bytes per pixel
+
         if (this.bytes_per_pixel === 1) {
             // expect a value
 
             const ta_32_scratch = new Uint32Array(12);
             //console.log('this.size', this.size);
             ta_32_scratch[0] = this.size[0] * this.size[1];
-
             const buf = this.buffer;
             let i;
             for (i = 0; i < ta_32_scratch[0]; i++) {
                 buf[i] = color;
             }
             //console.log('ta_32_scratch[0]', ta_32_scratch[0]);
-
         } else if (this.bytes_per_pixel === 3) {
             const ta_32_scratch = new Uint32Array(12);
             ta_32_scratch[0] = this.size[0] * this.size[1] * 3;
@@ -229,12 +269,13 @@ class Pixel_Buffer_Core {
                 buf[c++] = color[2];
                 buf[c++] = color[3];
             }
+        } else {
+            throw 'Unsupported this.bytes_per_pixel: ' + this.bytes_per_pixel;
         }
         return this;
     }
 
     crop(size) {
-
         let new_size = new Uint16Array([this.size[0] - size * 2, this.size[1] - size * 2]);
         let res = new this.constructor({
             bytes_per_pixel: this.bytes_per_pixel,
@@ -251,7 +292,6 @@ class Pixel_Buffer_Core {
                 res.set_pixel_ta(new_pos, color);
             }
         });
-        //return res;
         return res;
     }
 
@@ -275,57 +315,30 @@ class Pixel_Buffer_Core {
     }
 
     // define the bounds, expect UInt16 array
+
+    // bounds ltrb
+    // pos and size?
+
     color_rect(bounds, color) {
         // ltrb
     }
+    // couldn't we do a simpler for loop throughout the length.
 
-    // each_pixel((x, y, r, g, b, a, set, get_pixel_by_offset)
+    // Could use a for loop looping through pixel indexes elsewhere.
 
     each_pixel_index(cb) {
-        const ta_32_scratch = new Uint32Array(6);
-        ta_32_scratch[0] = this.bytes_per_pixel;
-        ta_32_scratch[1] = 0; // i
-        ta_32_scratch[2] = this.size[0];
-        ta_32_scratch[3] = this.size[1];
-        // 4 = x
-        // 5 = y
-        //let y, x, i;
-        // a px typed array... could give actual access to that typed array / view.
-        //const w = this.size[0],
-        //    h = this.size[1];
-        //const buf = this.buffer;
-        const bpp = this.bits_per_pixel;
-        if (bpp === 32) {
-            (() => {
-                for (ta_32_scratch[5] = 0; ta_32_scratch[5] < ta_32_scratch[3]; ta_32_scratch[5]++) {
-                    for (ta_32_scratch[4] = 0; ta_32_scratch[4] < ta_32_scratch[2]; ta_32_scratch[4]++) {
-                        cb(ta_32_scratch[1]);
-                        ta_32_scratch[1] += 4;
-                    }
-                }
-            })();
-        }
-        if (bpp === 24) {
-            (() => {
-                for (ta_32_scratch[5] = 0; ta_32_scratch[5] < ta_32_scratch[3]; ta_32_scratch[5]++) {
-                    for (ta_32_scratch[4] = 0; ta_32_scratch[4] < ta_32_scratch[2]; ta_32_scratch[4]++) {
-                        cb(ta_32_scratch[1]);
-                        ta_32_scratch[1] += 3;
-                    }
-                }
-            })();
-        } else if (bpp === 8) {
-            (() => {
-                for (ta_32_scratch[5] = 0; ta_32_scratch[5] < ta_32_scratch[3]; ta_32_scratch[5]++) {
-                    for (ta_32_scratch[4] = 0; ta_32_scratch[4] < ta_32_scratch[2]; ta_32_scratch[4]++) {
-                        cb(ta_32_scratch[1]);
-                        ta_32_scratch[1] += 1;
-                    }
-                }
-            })();
+        const buf = this.buffer, l = buf.length, bpp = this.bytes_per_pixel;
+        for (let c = 0; c < l; c += bpp) {
+            cb(c);
         }
     }
 
+    // then will want to do translations on pixel indexes.
+    //  can have a translation list.
+    //  pixel pos list used as offsets
+    //  index array rather than pixel pos list too.
+
+    // Could make shorter and more general version.
     padded_each_pixel_index(padding, cb) {
         const ta_32_scratch = new Uint32Array(9);
         ta_32_scratch[0] = this.bytes_per_pixel;
@@ -335,7 +348,6 @@ class Pixel_Buffer_Core {
 
         ta_32_scratch[7] = this.size[0];
         //ta_32_scratch[8] = 
-
         // 4 = x
         // 5 = y
         //let y, x, i;
@@ -378,6 +390,24 @@ class Pixel_Buffer_Core {
         }
     }
 
+
+    // Efficient Tensor processing could be used for this, in another version.
+
+    
+
+    each_pixel_pos(cb) {
+        //const bpp = this.bytes_per_pixel;
+        const b = this.size;
+        const pos = new Uint16Array(2);
+        for (pos[1] = 0; pos[1] < b[1]; pos[1]++) {
+            for (pos[0] = 0; pos[0] < b[0]; pos[0]++) {
+                // and the color value
+                cb(pos);
+            }
+        }
+    }
+
+
     // each_pixel_ta
     //  will return a typed array for each pixel.
 
@@ -385,12 +415,10 @@ class Pixel_Buffer_Core {
 
         const bpp = this.bytes_per_pixel;
         if (bpp === 1) {
-
             (() => {
                 const pos = new Uint16Array(2);
                 const a = new Uint32Array(2);
                 const b = new Uint16Array(2);
-
                 const sc = new Uint32Array(4);
                 const buf = this.buffer;
 
@@ -402,15 +430,11 @@ class Pixel_Buffer_Core {
 
                 // the index as well...
                 a[0] = 0;
-
                 sc[0] = 0; // index
-
                 for (pos[1] = 0; pos[1] < b[1]; pos[1]++) {
                     for (pos[0] = 0; pos[0] < b[0]; pos[0]++) {
                         // and the color value
-
                         cb(pos, buf[sc[0]++]);
-
                     }
                 }
             })();
@@ -442,12 +466,10 @@ class Pixel_Buffer_Core {
         } else {
             throw 'Unsupported bpp ' + bpp;
         }
-
     }
 
+    // Maybe redo for conciseness and generalised principles? Inner functions for optimization?
     // ta_pixel
-
-
     each_pixel(cb) {
         // y loop
         // x loop
@@ -497,8 +519,6 @@ class Pixel_Buffer_Core {
         ta_32_scratch[2] = this.size[0] - padding;
         ta_32_scratch[3] = this.size[1] - padding;
 
-
-
         // 4 = x
         // 5 = y
         //let y, x, i;
@@ -508,7 +528,6 @@ class Pixel_Buffer_Core {
         const buf = this.buffer;
         //console.log('buf', buf);
         //console.log('this.bytes_per_pixel', this.bytes_per_pixel);
-
         //console.log('ta_32_scratch[0]', ta_32_scratch[0]);
 
         if (ta_32_scratch[0] === 3) {
@@ -532,7 +551,6 @@ class Pixel_Buffer_Core {
     paint_pixel_list(pixel_pos_list, color) {
         pixel_pos_list.each_pixel(pos => {
             //console.log('typeof pos', typeof pos);
-
             //console.log('pos', pos);
             //console.log('color', color);
             //console.log('pos, color', pos, color);
@@ -540,7 +558,11 @@ class Pixel_Buffer_Core {
         });
     }
     'set_pixel_ta'(pos, color) {
-        
+
+        // 0.125 bytes per pixel.
+
+
+
         //console.log('pixel_buffer_pos', pixel_buffer_pos);
         if (this.bytes_per_pixel === 1) {
             //const pixel_buffer_pos = this.bytes_per_pixel * (pos[0] + pos[1] * this.size[0]);
@@ -783,7 +805,7 @@ class Pixel_Buffer_Core {
             res.color_whole(bg_color);
         }
         res.pos = new Uint16Array([bounds[0], bounds[1]]);
-        
+
         // each_pixel_rebounded?
         pixel_pos_list.each_pixel((pos) => {
             // then we copy pixels from the current image to the result.
@@ -975,6 +997,8 @@ class Pixel_Buffer_Core {
         //res.buffer.fill(0);
         return res;
     }
+
+    // Will be done by changing the .bytes_per_pixel or .bits_per_pixel
     'add_alpha_channel'() {
         console.log('add_alpha_channel this.bytes_per_pixel', this.bytes_per_pixel);
         if (this.bytes_per_pixel === 3) {
@@ -1007,6 +1031,8 @@ class Pixel_Buffer_Core {
         }
     }
 
+
+    // Could have a 'paint' file / module.
     'paint_solid_border'(thickness, color) {
         return this.process((me, res) => {
             let x, y;
@@ -1033,8 +1059,7 @@ class Pixel_Buffer_Core {
                         res.set_pixel(x, y, color[0], color[1], color[2], color[3]);
                     }
                 }
-            }
-            if (this.bytes_per_pixel === 3) {
+            } else if (this.bytes_per_pixel === 3) {
                 // top two rows
                 for (y = 0; y < thickness; y++) {
                     for (x = 0; x < w; x++) {
@@ -1056,11 +1081,14 @@ class Pixel_Buffer_Core {
                         res.set_pixel(x, y, color[0], color[1], color[2]);
                     }
                 }
+            } else {
+                throw 'NYI';
             }
             return res;
         })
     }
 
+    //  again, change .bipp or .bypp. make aliases with those names? .bi .by even more abbreviated. Allow more abbreviated code, support aliases for that.
     // then need to be able to save as 8 bit bitmaps too.
     'to_8bit_greyscale'() {
         if (this.bytes_per_pixel === 1) {
@@ -1133,6 +1161,11 @@ class Pixel_Buffer_Core {
         return this;
     }
 
+
+    
+    // .invert
+    //   and when it's on a greyscale image
+    //   and do it in place.
     'invert_greyscale'() {
         let res = new this.constructor({
             'size': this.size,
@@ -1149,6 +1182,132 @@ class Pixel_Buffer_Core {
         return res;
     }
 
+    // moving_pixels_indexes_window
+    //  so it gives back the pixel indexes
+    //  including index of central pixel
+
+    // Would create a list of pixel offsets, then apply them to the lists of pixels generated.
+    //  In some cases though, it would need to create a smaller result typed array.
+    
+
+
+    
+
+
+
+    'moving_pixels_window'(offset_bounds, cb) {
+        const [offset_l, offset_t, offset_r, offset_b] = offset_bounds;
+
+        const check = (pos) => {
+            if (pos[0] < 0) return false;
+            if (pos[1] < 0) return false;
+            if (pos[0] >= this.size[0]) return false;
+            if (pos[1] >= this.size[1]) return false;
+            return true;
+        }
+
+        // then for each pixel ta
+        //  we then run through the pixels defined by the offsets
+
+        this.each_pixel_pos((pos) => {
+            //console.log('pos', pos);
+            let ppl = new Pixel_Pos_List();
+
+            let ymax = pos[1] + offset_b;
+            let xmax = pos[0] + offset_r;
+            let pos2 = new Int16Array(2);
+            const s = this.size;
+            for (pos2[1] = pos[1] + offset_t; pos2[1] <= ymax; pos2[1]++) {
+                //console.log('pos2[1]', pos2[1]);
+                for (pos2[0] = pos[0] + offset_l; pos2[0] <= xmax; pos2[0]++) {
+                    
+                    //let ok = check(pos2);
+                    //console.log('ok', ok);
+
+                    if (!(pos2[0] < 0 || pos2[1] < 0 || pos2[0] >= s[0] || pos2[1] >= s[1])) ppl.add(pos2);
+
+
+                    //if (check(pos2)) ppl.add(pos2);
+                }
+                //throw 'stop';
+            }
+            ppl.fix();
+            //console.log('ppl.ta', ppl.ta);
+            cb(pos, ppl);
+            //console.log('ppl.length', ppl.length);
+
+            //console.log('ppl', ppl);
+        });
+    }
+    // This could be used to make a function that will despeckle larger areas of an image.
+    //  Could even have a fairly large speckle in the centre, but detect it's not corrected around the edges.
+    //   Even an 11x11 window size. 
+
+    // Moving pixels pixel setter
+    //  And provide a 'set' function too?
+
+    'moving_pixels_ppl_selector'(offset_bounds, fn_selector) {
+        let res = new Pixel_Pos_List();
+        this.moving_pixels_window(offset_bounds, (pos, ppl) => {
+            if (fn_selector(pos, ppl) === true) {
+                res.add(pos);
+            }
+        });
+        res.fix();
+        return res;
+    }
+    // Could reconstruct a new image from that ppl.
+
 }
 
+
+// Some more functionality and testing
+
+// Moving pixel windows look important.
+
+// Return a ppl of pixels within the bounds, for each pixel.
+// 
+
 module.exports = Pixel_Buffer_Core;
+
+if (require.main === module) {
+    const test1 = () => {
+        let pb = new Pixel_Buffer_Core({
+            size: [1000, 1000],
+            bytes_per_pixel: 1
+        });
+        console.log('pb.size', pb.size);
+
+        // a moving pixels window with a set current pixel function.
+
+        // a moving pixels window boolean pixel list selector function.
+        //  it itself will create a pixel_pos list based on the inner / convolution-type function results.
+
+        // moving_pixels_pixel_selector
+        //  returns the moving pixels ppl window to a callback, adds that pixel to a ppl if the callback returns true.
+        //  and it puts the selected pixels into a pixel pos list.
+        
+
+        //pos, color, ppl
+        // and the ppls by offset?
+        // also interested in the indexes and index offsets.
+
+        // An array of pixel indexes would do the job.
+
+        // Moving Pixel Indexes
+
+
+        pb.moving_pixels_window(new Uint16Array([-2, -2, 2, 2]), (pos, ppl) => {
+            //console.log('pos', pos);
+            //console.log('ppl.length', ppl.length);
+
+            // are all the border pixels white?
+
+
+        });
+    }
+    test1();
+
+} else {
+    //console.log('required as a module');
+}
