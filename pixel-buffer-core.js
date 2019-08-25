@@ -58,11 +58,78 @@ const Pixel_Pos_List = require('./pixel-pos-list');
 // load it from a pixel-pos-list too.
 // More clarity / specifying whether to do it in place, not producing a res option?
 //  and use clone where appropriate.
-const {ro} = require('obext');
+
+//const oext = require('obext')();
+
+const oext = require('obext')();
+
+const {ro, prop} = oext;
+console.log('oext', oext);
+//throw 'stop';
+
+console.log('ro', ro);
+
+// Make this extend evented class?
+
 class Pixel_Buffer_Core {
     // Setting bits per pixel to 8
     //  greyscale 256
+
+    // Bits per pixel and bytes per pixel.
+    //  May be worth having the normal change events in operation.
+    //   But a single defined change function would make sense.
+    //    Raising change events may be unnecessary.
+    //     Or some of them?
+    //    Could be useful in some ways.
+
+
     constructor(spec) {
+        // The prop silent_update function
+
+        // Access to silent update functions would be very useful
+
+        // prop setup callback?
+
+
+        let silent_update_bits_per_pixel;
+        let silent_update_bytes_per_pixel;
+
+        // prop obext needs improving - will raise 'ready' function with a silent set fn as well.
+
+        prop(this, ['bits_per_pixel', 'bipp'], {
+            default: spec.bits_per_pixel || spec.bytes_per_pixel * 8,
+            change: (e_change) => {
+                const {old, value} = e_change;
+
+                // this.set('bits_per_pixel', x, {silent: true})
+                silent_update_bytes_per_pixel(value / 8);
+
+                // this.realloc_change_bpp(value)
+            },
+            ready: (e_ready) => {
+                silent_update_bits_per_pixel = e_ready.silent_set;
+            }
+        })
+
+        prop(this, ['bytes_per_pixel', 'bypp'], {
+            default: spec.bytes_per_pixel || spec.bits_per_pixel / 8,
+            change: (e_change) => {
+                const {old, value} = e_change;
+                silent_update_bits_per_pixel(value * 8);
+
+                // will need to go through all of the pixels, putting them into the new bpp format.
+
+                // will use get pixel and set pixel that work with 1 bit per pixel images.
+                // then may need to do various transformations?
+                //  update_bpp
+                //   takes both bits and bytes per pixel. checks that they match
+                //    most likely this will have to reallocate memory.
+            },
+            ready: (e_ready) => {
+                silent_update_bytes_per_pixel = e_ready.silent_set;
+            }
+        })
+
         if (spec instanceof Pixel_Pos_List) {
             // load it as a buffer.
             const ppl = spec;
@@ -71,7 +138,6 @@ class Pixel_Buffer_Core {
 
             // probably best loading this as a smaller pixel buffer with just the part of the image.
             //  will set a .pos attribute
-
             const bounds = ppl.bounds;
             //const [l, t, r, b] = bounds;
             //console.log('Pixel_Buffer_Core bounds', bounds);
@@ -105,27 +171,19 @@ class Pixel_Buffer_Core {
                 buf[(bpr * (pixel_pos[1] - bounds[1])) + (pixel_pos[0] - bounds[0])] = 0;
                 //this.
             });
-
             //console.log(JSON.stringify(buf));
             //each(buf, console.log);
-
         } else {
             //spec.__type_name = spec.__type_name || 'pixel_buffer';
             //super(spec);
             if (spec.buffer) {
-
                 if (spec.buffer instanceof Buffer) {
                     this.ta = this.buffer = new Uint8ClampedArray(spec.buffer.buffer);
                 } else {
                     // check its uint8array either clamped or not.??
                     this.ta = this.buffer = spec.buffer;
                 }
-
-
-                // Need to give it the size / num rows.
-                //this.size = spec.buffer.length;
             }
-
             // Size could more logically be its dimensions.
 
             if (spec.size) {
@@ -142,7 +200,9 @@ class Pixel_Buffer_Core {
             spec.bits_per_pixel = spec.bits_per_pixel || 32;
 
             if (spec.bits_per_pixel) {
-                if (spec.bits_per_pixel != 1 || spec.bits_per_pixel != 8 && spec.bits_per_pixel != 24 && spec.bits_per_pixel != 32) {
+                //console.log('spec.bits_per_pixel', spec.bits_per_pixel);
+                //console.trace();
+                if (spec.bits_per_pixel != 1 && spec.bits_per_pixel != 8 && spec.bits_per_pixel != 24 && spec.bits_per_pixel != 32) {
                     throw 'Invalid bits_per_pixel value of ' + spec.bits_per_pixel + ', must be 8, 24 or 32, default is 32.';
                 } else {
                     this.bits_per_pixel = spec.bits_per_pixel;
@@ -172,6 +232,63 @@ class Pixel_Buffer_Core {
         });
     }
 
+    to_24bipp() {
+        const bipp = this.bits_per_pixel;
+        const bypp = this.bytes_per_pixel;
+        let i_px = 0;
+        const num_px = this.size[0] * this.size[1];
+        console.log('to_24bipp bipp', bipp);
+        if (bipp === 1) {
+            const res = new this.constructor({
+                size: this.size,
+                bits_per_pixel: 24
+            })
+            let i_byte = 0;
+            const num_bytes = this.ta.length;
+            // iterate through the bits?
+            // could have a fast processing algorithm that's written out a bit longer, using &.
+            // go through it byte by byte makes sense in a way.
+
+            while (i_byte < num_bytes) {
+                // iterate through pixel numbers too...
+                // need to set the result points.
+                // do this 8 times...
+                for (var b = 0; b < 8; b++) {
+                    const color = this.get_pixel_by_idx_1bipp(i_px) === 1 ? new Uint8ClampedArray([255, 255, 255]) : new Uint8ClampedArray([0, 0, 0]);
+                    res.set_pixel_by_idx_24bipp(i_px++, color);
+                }
+                i_byte++;
+                // pixel by pixel... not as efficient this way.
+            }
+            return res;
+        } else if (bipp === 8) {
+            const res = new this.constructor({
+                size: this.size,
+                bits_per_pixel: 24
+            })
+            return res;
+
+        } else if (bipp === 24) {
+            return this.clone();
+        } else if (bipp === 32) {
+            const res = new this.constructor({
+                size: this.size,
+                bits_per_pixel: 24
+            })
+            // will remove the channel.
+            // iterate through each pixel?
+
+            while (i_px < num_px) {
+                const col_32 = this.get_pixel_by_idx_32bipp(i_px)
+                i_px += bypp;
+            }
+
+            return res;
+
+        }
+
+    }
+
     toString() {
         /*
         size: Uint32Array [ 1024, 576 ],
@@ -187,7 +304,6 @@ class Pixel_Buffer_Core {
             bytes_per_row: this.bytes_per_row
         });
     }
-
     /*
     [inspect]() {
         return 'Pixel_Buffer_Core ' + this.toString();
@@ -393,7 +509,7 @@ class Pixel_Buffer_Core {
 
     // Efficient Tensor processing could be used for this, in another version.
 
-    
+    // pos and subpos with 1bipp? or have intervals on 0.125.???
 
     each_pixel_pos(cb) {
         //const bpp = this.bytes_per_pixel;
@@ -411,7 +527,15 @@ class Pixel_Buffer_Core {
     // each_pixel_ta
     //  will return a typed array for each pixel.
 
+    /*
     each_pixel_ta(cb) {
+
+
+        // will use bipp
+
+        // Be able to quickly go through 1bipp images.
+
+
 
         const bpp = this.bytes_per_pixel;
         if (bpp === 1) {
@@ -455,6 +579,8 @@ class Pixel_Buffer_Core {
                 a[0] = 0;
                 sc[0] = 0; // index
 
+                // Recycle the result typed array for each pixel???
+
                 for (pos[1] = 0; pos[1] < b[1]; pos[1]++) {
                     for (pos[0] = 0; pos[0] < b[0]; pos[0]++) {
                         // and the color value
@@ -467,9 +593,14 @@ class Pixel_Buffer_Core {
             throw 'Unsupported bpp ' + bpp;
         }
     }
+    */
 
     // Maybe redo for conciseness and generalised principles? Inner functions for optimization?
     // ta_pixel
+
+    // Will return a ta by default when appropriate for the color.
+
+    /*
     each_pixel(cb) {
         // y loop
         // x loop
@@ -509,6 +640,10 @@ class Pixel_Buffer_Core {
             }
         }
     }
+
+    */
+
+    /*
     padded_each_pixel(padding, cb) {
         // y loop
         // x loop
@@ -548,6 +683,7 @@ class Pixel_Buffer_Core {
             throw 'Not supported: ' + ta_32_scratch[0] + ' bytes per pixel';
         }
     }
+    */
     paint_pixel_list(pixel_pos_list, color) {
         pixel_pos_list.each_pixel(pos => {
             //console.log('typeof pos', typeof pos);
@@ -557,13 +693,311 @@ class Pixel_Buffer_Core {
             this.set_pixel_ta(pos, color);
         });
     }
-    'set_pixel_ta'(pos, color) {
+
+    // Will have more advances get_pixel too.
+    //  get_pixel_by_idx
+
+
+    // set_pixel_1bipp, set_pixel_8bipp, set_pixel_24bipp, set_pixel_32bipp
+
+    'set_pixel_1bipp'(pos, color) {
+        // color should be 1 or 0
+        // on or off.
+        
+        //console.log('set_pixel_1bipp');
+        //console.log('pos', pos);
+
+        const val = !!color;
+        // get the pixel index....
+
+        const idx = pos[1] * this.size[0] + pos[0];
+        const byte = Math.floor(idx / 8);
+        const bit = idx % 8;
+
+        //console.log('byte, bit', [byte, bit]);
+
+        // use roots of some sort?
+
+        const pow = Math.pow(2, bit);
+        //console.log('pow', pow);
+
+        const byte_val = this.ta[byte];
+        //console.log('byte_val', byte_val);
+
+
+        /*
+        if (byte_val < pow) {
+            //this.ta[byte] += pow;
+        } else {
+            //this.ta[byte] -= pow;
+        }
+        */
+
+        if (val) {
+            this.ta[byte] = this.ta[byte] | pow;
+        } else {
+            this.ta[byte] = this.ta[byte] & pow;
+        }
+        //console.log('this.ta[byte]', this.ta[byte]);
+
+        // 0: 
+        // Think this works now :)
+    }
+    // this.buffer[this.bytes_per_pixel * (pos[0] + pos[1] * this.size[0])] = color;
+    'set_pixel_8bipp'(pos, color) {
+        // color should be 1 or 0
+        // on or off.
+
+        //const val = !!color;
+        // get the pixel index....
+
+        const idx = pos[1] * this.size[0] + pos[0];
+        //const byte = Math.floor(idx / 8);
+        //const bit = idx % 8;
+
+        //console.log('byte, bit', [byte, bit]);
+
+        this.ta[idx] = color;
+    }
+
+    'set_pixel_24bipp'(pos, color) {
+        // color should be 1 or 0
+        // on or off.
+
+        //const val = !!color;
+        // get the pixel index....
+
+        const idx = pos[1] * this.size[0] + pos[0];
+        const byte = idx * 3;
+        //const bit = idx % 8;
+
+        //console.log('byte, bit', [byte, bit]);
+
+        this.ta[idx] = color[0];
+        this.ta[idx + 1] = color[1];
+        this.ta[idx + 2] = color[2];
+    }
+
+    'set_pixel_32bipp'(pos, color) {
+        // color should be 1 or 0
+        // on or off.
+
+        //const val = !!color;
+        // get the pixel index....
+
+        const idx = pos[1] * this.size[0] + pos[0];
+        const byte = idx * 4;
+        //const bit = idx % 8;
+
+        //console.log('byte, bit', [byte, bit]);
+
+        this.ta[idx] = color[0];
+        this.ta[idx + 1] = color[1];
+        this.ta[idx + 2] = color[2];
+        this.ta[idx + 2] = color[3];
+    }
+
+    'set_pixel_by_idx_1bipp'(idx, color) {
+        const byte = Math.floor(idx / 8);
+        const bit = idx % 8;
+        const val = !!color;
+        const pow = Math.pow(2, bit);
+
+        //console.log('color', color);
+        //console.log('val', val);
+
+        //console.log('bit', bit);
+
+        //console.log('1) this.ta[byte]', this.ta[byte]);
+        //console.log('val', val);
+        if (val) {
+            this.ta[byte] = this.ta[byte] | pow;
+        } else {
+            //this.ta[byte] = this.ta[byte]~pow;
+            // need to remove the component of that pow.
+            //  xor?
+
+            // 
+
+            // Unset it...?
+            //  how to do that?
+
+
+
+            this.ta[byte] = this.ta[byte] & pow;
+        }
+        //console.log('2) this.ta[byte]', this.ta[byte]);
+
+    }
+
+    'set_pixel_by_idx_8bipp'(idx, color) {
+        const byte = idx;
+        this.ta[byte] = color;
+
+        //console.log('color', color);
+
+        //console.trace();
+        //throw 'NYI';
+    }
+
+    'set_pixel_by_idx_24bipp'(idx, color) {
+        const byte = idx * 3;
+        this.ta[byte] = color[0];
+        this.ta[byte + 1] = color[1];
+        this.ta[byte + 2] = color[2];
+
+        //console.log('color', color);
+
+        //console.trace();
+        //throw 'NYI';
+
+    }
+
+    'set_pixel_by_idx_32bipp'(idx, color) {
+        const byte = idx * 4;
+        //this.ta[byte] = color;
+
+        this.ta[byte] = color[0];
+        this.ta[byte + 1] = color[1];
+        this.ta[byte + 2] = color[2];
+        this.ta[byte + 3] = color[3];
+
+        //console.trace();
+        //throw 'NYI';
+    }
+
+    'set_pixel_by_idx'(idx, color) {
+        const a = arguments;
+        const l = a.length;
+
+        //let t0, t1, t2, t3;
+
+        const bipp = this.bipp;
+        //console.log('bipp', bipp);
+
+        if (bipp === 1) {
+            return this.set_pixel_by_idx_1bipp(a[0], a[1]);
+        } else if (bipp === 8) {
+            // check args length
+
+            if (l === 2) {
+                return(this.set_pixel_by_idx_8bipp(a[0], a[1]));
+            }
+
+        } else if (bipp === 24) {
+            if (l === 2) {
+                return(this.set_pixel_by_idx_24bipp(a[0], a[1]));
+            }
+            
+        } else if (bipp === 32) {
+            if (l === 2) {
+                return(this.set_pixel_by_idx_32bipp(a[0], a[1]));
+            }
+        }
+    }
+
+
+    'set_pixel'(pos, color) {
+
+        // May be quite a long function.
+        //  Better to use inner functions for better optimization? Could be worth checking that.
+
+        // Lets get setting pixels working in all cases.
+
+        // Not sure if this function should be polymorphic / have checking.
+        //  Would it be slowed down too much?
+
+        // A quick typed test at the beginning could help.
+        //  Not sure how much perf would be lost through doing any kind of polymorphism here.
+        //  However, want to make this flexible and work in all possible cases.
+        //  Could look into typescript too.
+
+        let ta_pos, ta_color, grey_color;
+
+        const a = arguments;
+        const l = a.length;
+
+        //let t0, t1, t2, t3;
+
+        const bipp = this.bipp;
+        //console.log('bipp', bipp);
+
+        if (bipp === 1) {
+            return(this.set_pixel_1bipp(a[0], a[1]));
+        } else if (bipp === 8) {
+
+            // check args length
+
+            if (l === 2) {
+                return(this.set_pixel_8bipp(a[0], a[1]));
+            }
+
+        } else if (bipp === 24) {
+            if (l === 2) {
+                return(this.set_pixel_24bipp(a[0], a[1]));
+            }
+            
+        } else if (bipp === 32) {
+            if (l === 2) {
+                return(this.set_pixel_32bipp(a[0], a[1]));
+            }
+        }
+
+        // Or would dealing with a string sig be best here?
+        //  Or even using mfp?
+        //  That would be a good thing to test.
+
+        // And a set pixel function that only uses typed arrays could work best as well.
+        //  though may need to deal with greyscale / 1 bit images.
+
+        // specific functions for 1 bpp and greyscale modes.
+
+        // Will use a bunch of more specific functions for modes.
+        //  Could have a function the returns the appropriate function.
+        //   That would be an efficient way of doing polymorphism.
+
+        /*
+
+        if (l === 2) {
+
+            // Maybe best not to call tf function?
+
+            let t1 = tf(a[1]);
+            console.log('t1', t1);
+
+        } else if (l === 3) {
+            // l === 3 : x, y, color
+
+            // color as number or typed array
+
+
+
+        }
+        */
+
+        
+
+
+
+
+
+
+
+        // May be best to perf benchmark this function.
+
+
+        // May be worth using mfp here?
+        //  Not so sure about js speed but it could help compilation / porting.
+
 
         // 0.125 bytes per pixel.
 
 
 
         //console.log('pixel_buffer_pos', pixel_buffer_pos);
+
+        /*
+
         if (this.bytes_per_pixel === 1) {
             //const pixel_buffer_pos = this.bytes_per_pixel * (pos[0] + pos[1] * this.size[0]);
             this.buffer[this.bytes_per_pixel * (pos[0] + pos[1] * this.size[0])] = color;
@@ -579,9 +1013,12 @@ class Pixel_Buffer_Core {
             this.buffer[pixel_buffer_pos++] = color[2];
             this.buffer[pixel_buffer_pos++] = color[3];
         }
+        */
     }
 
-    'set_pixel'() {
+    /*
+
+    '_set_pixel'() {
         // Could this whole thing be sped up with C++?
         const a = arguments,
             l = a.length;
@@ -594,13 +1031,34 @@ class Pixel_Buffer_Core {
         //console.log('set_pixel sig ' + sig);
         //console.log('set_pixel a ' + stringify(a));
 
+        // check the types of the args / the sig of the function call.
+        // deep sig where it gets typed array lengths too?
+
+        // or avoid making another function call?
+        //  Maybe move more towards always using a typed array to describe a position.
+
         let x, y, r, g, b, alpha;
+
+        // Maybe separate inner functions for different sigs would work well.
+
+        // x and y could be given as a typed array.
+
+
 
         x = a[0];
         y = a[1];
         const w = this.size[0];
 
+        console.log('x', x);
+        console.log('y', y);
+        console.log('w', w);
+
+        console.log('bytes_per_pixel', bytes_per_pixel);
+
         var pixel_buffer_pos = bytes_per_pixel * (x + y * w);
+
+        console.log('pixel_buffer_pos', pixel_buffer_pos);
+
         var buffer = this.buffer;
         // x, y, [r, g, b, a] l = 3
         // x, y, [r, g, b]    l = 3
@@ -661,7 +1119,33 @@ class Pixel_Buffer_Core {
             //console.log('[x, y, r, g, b, alpha]', [x, y, r, g, b, alpha]);
         }
 
-        if (this.bits_per_pixel === 24) {
+        // 1 bit per pixel...
+        //  a more complicated calculation.
+
+        
+
+
+        if (this.bits_per_pixel === 1) {
+            //buffer[pixel_buffer_pos] = r;
+            //buffer[pixel_buffer_pos + 1] = g;
+            //buffer[pixel_buffer_pos + 2] = b;
+
+            // get the pixel number
+            //  pixel index
+            //   sub-byte-index
+
+            // then use that to calculate its bit position within the byte.
+            //  then do the appropriate measurement and add or subtract of a number 2^idx (I think)
+
+
+
+
+
+
+
+
+
+        } else if (this.bits_per_pixel === 24) {
             buffer[pixel_buffer_pos] = r;
             buffer[pixel_buffer_pos + 1] = g;
             buffer[pixel_buffer_pos + 2] = b;
@@ -677,13 +1161,146 @@ class Pixel_Buffer_Core {
         } else {
             var stack = new Error().stack;
             //console.log(stack);
-            throw 'Must have bits_per_pixel set to 24 or 32';
+            throw '1) Must have bits_per_pixel set to 24 or 32';
         }
     }
+    */
+
+    // Maybe compiling using let would work ok?
+    //  gta(6, 'uint32');
+    //   a get typed array function could be very successful.
+    //   could save on code size too.
+    //    in lang-mini.
+    
+    // Could have a module level scratch for general purpose use.
+    //  Would save having to redefine it.
+
+    // Then specific ones.
+
+    'get_pixel_by_idx_1bipp'(idx) {
+        const byte = Math.floor(idx / 8);
+        const bit = idx % 8;
+        const pow = Math.pow(2, bit);
+
+        //const tas1 = new Uint32Array(6);
+
+        //tas1[0] = pow;
+        //tas1[1] = this.ta[byte] & pow;
+
+        //console.log('tas1[0] === tas1[1]', (tas1[0] === tas1[1]));
+        //console.log('(this.ta[byte] & pow) === pow', (this.ta[byte] & pow) === pow);
+
+        //console.log('[byte, bit, pow]', [byte, bit, pow]);
+
+        //console.log('this.ta[byte]', this.ta[byte]);
+        //console.log('this.ta[byte] & pow', this.ta[byte] & pow);
+
+        // set a ta with values of the same type to the values to compare?
+
+        //console.log('get_pixel_by_idx_1bipp 1 ? 0 : (this.ta[byte] & pow) == pow', 1 ? 0 : (this.ta[byte] & pow) == pow);
+
+        return ((this.ta[byte] & pow) === pow) ? 1 : 0;
+
+        //return 1 ? 0 : (this.ta[byte] & pow) === pow;
+    }
+    'get_pixel_by_idx_8bipp'(idx) {
+        const byte = idx;
+        return this.ta[byte];
+    }
+    'get_pixel_by_idx_24bipp'(idx) {
+        const byte = idx * 3;
+        return this.ta.slice(byte, byte + 3);
+    }
+    'get_pixel_by_idx_32bipp'(idx) {
+        const byte = idx * 4;
+        return this.ta.slice(byte, byte + 4);
+    }
+
+    'get_pixel_by_idx'(idx) {
+        const bipp = this.bits_per_pixel;
+
+        if (bipp === 1) {
+            return this.get_pixel_by_idx_1bipp(idx);
+        } else if (bipp === 8) {
+            return this.get_pixel_by_idx_8bipp(idx);
+        } else if (bipp === 24) {
+            return this.get_pixel_by_idx_24bipp(idx);
+        } else if (bipp === 32) {
+            return this.get_pixel_by_idx_32bipp(idx);
+        } else {
+            throw 'Unsupported bipp'
+        }
+    }
+
+
+
+    // Will redo get_pixel.
+    //  likely to use tas by default, and built in type checking within minimal calling of any other functions.
+
+    'get_pixel_1bipp'(pos) {
+        // work out the pixel index...
+
+        const idx = pos[1] * this.size[0] + pos[0];
+        const byte = Math.floor(idx / 8);
+        const bit = idx % 8;
+
+        //console.log('byte, bit', [byte, bit]);
+
+        // use roots of some sort?
+        const pow = Math.pow(2, bit);
+        // use AND with POW
+        //console.log('get_pixel_1bipp 1 ? 0 : (this.ta[byte] & pow) === pow', 1 ? 0 : (this.ta[byte] & pow) === pow);
+        return ((this.ta[byte] & pow) === pow) ? 1 : 0;
+        //return 1 ? 0 : (this.ta[byte] & pow) === pow;
+    }
+    'get_pixel_8bipp'(pos) {
+        const idx = pos[1] * this.size[0] + pos[0];
+        const byte = idx;
+        return this.ta[byte];
+    }
+    'get_pixel_24bipp'(pos) {
+        const idx = pos[1] * this.size[0] + pos[0];
+        const byte = idx * 3;
+
+        return this.ta.slice(byte, byte + 3);
+    }
+    'get_pixel_32bipp'(pos) {
+        
+        const idx = pos[1] * this.size[0] + pos[0];
+        const byte = idx * 4;
+
+        return this.ta.slice(byte, byte + 4);
+    }
+
+    'get_pixel'(pos) {
+        const bipp = this.bits_per_pixel;
+        if (bipp === 1) {
+            return this.get_pixel_1bipp(pos);
+        } else if (bipp === 8) {
+            return this.get_pixel_8bipp(pos);
+        } else if (bipp === 24) {
+            return this.get_pixel_24bipp(pos);
+        } else if (bipp === 32) {
+            return this.get_pixel_32bipp(pos);
+        } else {
+            console.trace();
+            throw 'bits per pixels error';
+        }
+    }
+
+    get num_px() {
+        return this.size[0] * this.size[1];
+    }
+
+
+    /*
 
     get_pixel_ta(pos) {
         const ta_32_scratch = new Uint32Array(6);
         ta_32_scratch[0] = this.bytes_per_pixel;
+
+
+
         ta_32_scratch[1] = 0; // i
         ta_32_scratch[2] = this.size[0];
         ta_32_scratch[3] = this.size[1];
@@ -706,12 +1323,28 @@ class Pixel_Buffer_Core {
             } else {
                 //var stack = new Error().stack;
                 //console.log(stack);
-                throw 'Must have bits_per_pixel set to 24 or 32';
+                throw '2) Must have bits_per_pixel set to 24 or 32';
             }
         }
     }
 
+    // Return it as a typed array by default?
+
     'get_pixel'(x, y) {
+
+        // (ta_pos, int_color || ta_color)
+
+        // Could asess the param sig...
+        //  Want to identify typed arrays in the sigs as well.
+        //   and the typed array type. ...   ta_ui32 type...?
+        //    but the abbreviations?
+        //     maybe i
+        //     maybe d
+        //     
+
+
+
+
         const ta_32_scratch = new Uint32Array(6);
         ta_32_scratch[0] = this.bytes_per_pixel;
         ta_32_scratch[1] = 0; // i
@@ -741,10 +1374,18 @@ class Pixel_Buffer_Core {
             } else {
                 //var stack = new Error().stack;
                 //console.log(stack);
-                throw 'Must have bits_per_pixel set to 24 or 32';
+                throw '3) Must have bits_per_pixel set to 24 or 32';
             }
         }
     }
+    */
+
+
+
+    // Will use a ta instead.
+    //  or two....
+
+    /*
     check_rect_bounds(x, y, w = 0, h = 0) {
 
         //console.log('x, y, w, h', x, y, w, h);
@@ -756,6 +1397,7 @@ class Pixel_Buffer_Core {
         if (y + h > this.size[1]) return false;
         return true;
     }
+    */
     // Custom convolution not working here.
     // Iterating pixels for the line joining convolution sounds best.
     // Custom convolution seems like the way to go, but it's hard to implement.
@@ -998,7 +1640,58 @@ class Pixel_Buffer_Core {
         return res;
     }
 
+    // Want tests and examples to do with 1 bit per pixel images.
+    //  Will be nice to use them quickly, especially with C++ and wasm plugins.
+
+
+    // transform-to-new style functions.
+    //  means a new object gets made.
+
+    // Maybe better to use to_xbipp functions.
+    //  As its clearer that it creates and outputs a new object.
+
+    'change_bits_per_pixel'(new_bipp) {
+        const old_bipp = this.bits_per_pixel;
+
+        // could make a temporary bixel buffer to work with.
+        //  ie, clone, reallocate own ta, read from clone, write to this.
+        
+        // Or may be easier to write / use functions that apply directly to the typed arrays.
+        //  May be easier to port them over to C++.
+
+        console.log('change_bits_per_pixel [old_bipp, new_bipp]', [old_bipp, new_bipp])
+
+        if (old_bipp !== new_bipp) {
+
+            if (old_bipp === 1) {
+
+                if (new_bipp === 8) {
+
+                } else if (new_bipp === 24) {
+
+                } else if (new_bipp === 32) {
+
+                }
+
+            } else if (old_bipp === 8) {
+                
+            } else if (old_bipp === 24) {
+                
+            } else if (old_bipp === 32) {
+                
+            }
+
+
+        }
+
+    }
+
+
+
     // Will be done by changing the .bytes_per_pixel or .bits_per_pixel
+    //  Though possibly they could call functions like this when needed.
+    //  Would result in the original typed array being reallocated.
+
     'add_alpha_channel'() {
         console.log('add_alpha_channel this.bytes_per_pixel', this.bytes_per_pixel);
         if (this.bytes_per_pixel === 3) {
@@ -1032,61 +1725,10 @@ class Pixel_Buffer_Core {
     }
 
 
-    // Could have a 'paint' file / module.
-    'paint_solid_border'(thickness, color) {
-        return this.process((me, res) => {
-            let x, y;
-            const [w, h] = this.size;
-            if (this.bytes_per_pixel === 4) {
-                // top two rows
-                for (y = 0; y < thickness; y++) {
-                    for (x = 0; x < w; x++) {
-                        res.set_pixel(x, y, color[0], color[1], color[2], color[3]);
-                    }
-                }
-                for (y = h - thickness; y < h; y++) {
-                    for (x = 0; x < w; x++) {
-                        res.set_pixel(x, y, color[0], color[1], color[2], color[3]);
-                    }
-                }
-                for (y = 0; y < h; y++) {
-                    for (x = 0; x < thickness; x++) {
-                        res.set_pixel(x, y, color[0], color[1], color[2], color[3]);
-                    }
-                }
-                for (y = 0; y < h; y++) {
-                    for (x = w - thickness; x < w; x++) {
-                        res.set_pixel(x, y, color[0], color[1], color[2], color[3]);
-                    }
-                }
-            } else if (this.bytes_per_pixel === 3) {
-                // top two rows
-                for (y = 0; y < thickness; y++) {
-                    for (x = 0; x < w; x++) {
-                        res.set_pixel(x, y, color[0], color[1], color[2]);
-                    }
-                }
-                for (y = h - thickness; y < h; y++) {
-                    for (x = 0; x < w; x++) {
-                        res.set_pixel(x, y, color[0], color[1], color[2]);
-                    }
-                }
-                for (y = 0; y < h; y++) {
-                    for (x = 0; x < thickness; x++) {
-                        res.set_pixel(x, y, color[0], color[1], color[2]);
-                    }
-                }
-                for (y = 0; y < h; y++) {
-                    for (x = w - thickness; x < w; x++) {
-                        res.set_pixel(x, y, color[0], color[1], color[2]);
-                    }
-                }
-            } else {
-                throw 'NYI';
-            }
-            return res;
-        })
-    }
+
+    // 
+
+    
 
     //  again, change .bipp or .bypp. make aliases with those names? .bi .by even more abbreviated. Allow more abbreviated code, support aliases for that.
     // then need to be able to save as 8 bit bitmaps too.
@@ -1160,8 +1802,6 @@ class Pixel_Buffer_Core {
         });
         return this;
     }
-
-
     
     // .invert
     //   and when it's on a greyscale image
@@ -1188,10 +1828,6 @@ class Pixel_Buffer_Core {
 
     // Would create a list of pixel offsets, then apply them to the lists of pixels generated.
     //  In some cases though, it would need to create a smaller result typed array.
-    
-
-
-    
 
 
 
@@ -1271,12 +1907,116 @@ class Pixel_Buffer_Core {
 module.exports = Pixel_Buffer_Core;
 
 if (require.main === module) {
-    const test1 = () => {
+    const lg = console.log;
+
+    (async() => {
+        const run_examples = async() => {
+            lg('Begin run examples');
+
+            // A list of example functions. array.
+
+            const examples = [
+                async() => {
+                    // just lg for log???
+                    lg('Begin example 0');
+
+                    // Change it to 1 bit per pixel.
+
+                    // Maybe make a new 1 bit per pixel pixel buffer, and do some manipulations on it.
+
+                    // Could make them small, such as 8 * 8, meaning 8 bytes. That would be a good starting point because each row is
+                    //  1 byte.
+
+                    // Can also try and test some set pixel and get pixel methods. See that it works with code on a small scale.
+                    //  Then could work on expanding the scale once some maths has been better implemented and understood.
+
+                    const pb = new Pixel_Buffer_Core({
+                        bits_per_pixel: 1,
+                        size: [8, 8]
+                    });
+
+                    // set_pixel(3, 3, 1);  // This could actually be faster though?
+                    // set_pixel([3, 3], 1);
+                    // set_pixel(ta_pos, 1);
+
+                    const ta_pos = new Uint16Array(2);
+
+                    ta_pos[0] = 3;
+                    ta_pos[1] = 3;
+
+                    // Adding or subtracting the significance of the bit would be a good way to do it.
+                    //  Reference an array of bit signigicances. Modify the number. Don't try to directly access the bits.
+                    //  Will have simpler JS code this way. Could then maybe make bit manipulation system.
+
+
+
+
+                    pb.set_pixel(ta_pos, 1);
+
+
+
+                    // Will do individual set pixel and get pixel functions.
+                    //  Treat input using truthy or falsy.
+
+                    // if ... == true.
+
+
+
+
+
+
+
+                    lg('End example 0');
+
+                }
+            ]
+
+            const l = examples.length;
+            for (var c = 0; c < l; c++) {
+                const res_eg = await examples[c]();
+                console.log('res_eg ' + c + ':', res_eg);
+            }
+
+
+            lg('End run examples');
+
+        }
+
+        await run_examples();
+    })();
+
+
+    const __test1 = () => {
+
+
+        // Will make various examples in the examples directory, and use them as the basis for tests in the future.
+        //  Stabilise the version numbers in which example results are saved to use as tests.
+
+        // Want to do some work on 1 bit per pixel images.
+
+        // Make a few example functions that do some things.
+        //  Could run examples written and from here, then move them to the examples directory.
+
+
+        
+
+
+        
+
+
+
+
+
+        
+
+
         let pb = new Pixel_Buffer_Core({
             size: [1000, 1000],
             bytes_per_pixel: 1
         });
         console.log('pb.size', pb.size);
+
+
 
         // a moving pixels window with a set current pixel function.
 
@@ -1306,8 +2046,6 @@ if (require.main === module) {
 
         });
     }
-    test1();
+    //test1();
 
-} else {
-    //console.log('required as a module');
 }

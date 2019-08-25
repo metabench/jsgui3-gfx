@@ -100,6 +100,63 @@ class Pixel_Buffer_Enh extends Core {
     }
     */
 
+    // Could have a 'paint' file / module.
+    'paint_solid_border'(thickness, color) {
+        return this.process((me, res) => {
+            let x, y;
+            const [w, h] = this.size;
+            if (this.bytes_per_pixel === 4) {
+                // top two rows
+                for (y = 0; y < thickness; y++) {
+                    for (x = 0; x < w; x++) {
+                        res.set_pixel(x, y, color[0], color[1], color[2], color[3]);
+                    }
+                }
+                for (y = h - thickness; y < h; y++) {
+                    for (x = 0; x < w; x++) {
+                        res.set_pixel(x, y, color[0], color[1], color[2], color[3]);
+                    }
+                }
+                for (y = 0; y < h; y++) {
+                    for (x = 0; x < thickness; x++) {
+                        res.set_pixel(x, y, color[0], color[1], color[2], color[3]);
+                    }
+                }
+                for (y = 0; y < h; y++) {
+                    for (x = w - thickness; x < w; x++) {
+                        res.set_pixel(x, y, color[0], color[1], color[2], color[3]);
+                    }
+                }
+            } else if (this.bytes_per_pixel === 3) {
+                // top two rows
+                for (y = 0; y < thickness; y++) {
+                    for (x = 0; x < w; x++) {
+                        res.set_pixel(x, y, color[0], color[1], color[2]);
+                    }
+                }
+                for (y = h - thickness; y < h; y++) {
+                    for (x = 0; x < w; x++) {
+                        res.set_pixel(x, y, color[0], color[1], color[2]);
+                    }
+                }
+                for (y = 0; y < h; y++) {
+                    for (x = 0; x < thickness; x++) {
+                        res.set_pixel(x, y, color[0], color[1], color[2]);
+                    }
+                }
+                for (y = 0; y < h; y++) {
+                    for (x = w - thickness; x < w; x++) {
+                        res.set_pixel(x, y, color[0], color[1], color[2]);
+                    }
+                }
+            } else {
+                console.trace();
+                throw 'NYI';
+            }
+            return res;
+        })
+    }
+
     // gaussian_blur
     //  or gaussian is the default blur.
     blur(size = 3, sigma = 2) {
@@ -124,6 +181,10 @@ class Pixel_Buffer_Enh extends Core {
     // not apply?
 
     // square convolution.
+
+    // Could probably make a much faster version of this.
+    //  Maybe different sub-functions for different bpp values.
+
     apply_square_convolution(f32a_convolution) {
         return this.process((orig, res) => {
             // could replace this with orig.
@@ -240,6 +301,117 @@ class Pixel_Buffer_Enh extends Core {
         })
     }
 
+    extract_channel(i_channel) {
+        const bypp = this.bytes_per_pixel;
+        const ta = this.ta;
+        let i_byte = i_channel;
+        let i_px = 0;
+        const l = ta.length;
+
+        console.log('bypp', bypp);
+
+
+
+        if (bypp === 3 || bypp === 4) {
+            const res_channel_ta = new this.constructor({
+                size: this.size,
+                bits_per_pixel: 8
+            })
+            while(i_byte < l) {
+                res_channel_ta.set_pixel_by_idx(i_px, ta[i_byte]);
+
+                i_byte += bypp;
+                i_px++;
+            }
+            return res_channel_ta;
+        } else {
+            console.trace();
+            throw 'NYI';
+        }
+
+
+    }
+
+
+    mask_each_pixel(cb_pixel) {
+
+        const bipp = this.bits_per_pixel;
+        let i_byte = 0;
+        let i_px = 0;
+        const bypp = this.bytes_per_pixel;
+        const ta = this.ta;
+        const l = ta.length;
+
+        const res_mask = new this.constructor({
+            size: this.size,
+            bits_per_pixel: 1
+        });
+
+        //console.log('res_mask', res_mask);
+        //console.log('mask_each_pixel bipp', bipp);
+
+        if (bipp === 1) {
+            console.trace();
+            throw 'NYI';
+
+        } else if (bipp === 8) {
+            console.trace();
+            throw 'NYI';
+
+        } else if (bipp === 24 || bipp === 32) {
+            //throw 'NYI';
+            while (i_byte < l) {
+
+                // get the subarray of each pixel
+
+                const ta_sub = ta.slice(i_byte, i_byte + bypp);
+                const px_on = cb_pixel(ta_sub) ? 1 : 0;
+                //console.log('px_on', px_on);
+
+                // is 1 bipp setting working ok?
+                res_mask.set_pixel_by_idx(i_px, px_on);
+
+                i_byte += bypp;
+                i_px++;
+            }
+        } /* else if (bipp === 32) {
+            console.trace();
+            throw 'NYI';
+
+        } */
+
+        //console.log('res_mask.ta.length', res_mask.ta.length);
+        //console.log('res_mask.ta', res_mask.ta);
+        //console.log('res_mask.size', res_mask.size);
+
+        //const px_count = res_mask.size[0] * res_mask.size[1];
+        //console.log('px_count', px_count);
+
+        //const resl = res_mask.ta.length;
+
+        // iterating through pixels using an index is easy enough.
+        //  simpler loop structure than x and y.
+
+
+
+        // see about going through each pixel...
+        //  seeing its value.
+
+        // Iterating pixels with a 1 bit per pixel image...
+        //  Could separately test that.
+
+        // res_mask.get_color_by_idx()
+
+
+
+
+
+
+        return res_mask;
+
+    }
+
+    // Self-threshold. Want to get a threshold 1bpp (mask)
     threshold_gs(value) {
         // iterate all pixels...
         // better to make a copy of it.
@@ -405,6 +577,7 @@ class Pixel_Buffer_Enh extends Core {
         }
     }
 
+    // ??? Improve...?
     apply_mask(pb_mask, mr, mg, mb, ma) {
         let res = this.blank_copy();
         res.flood_fill(0, 0, 255, 255, 255, 255);
@@ -467,6 +640,11 @@ class Pixel_Buffer_Enh extends Core {
 
     // self_replace_color?
     // target_color, replacement_color
+
+    // Will be applied to self by default.
+    //  .cl alias!!! change obext
+
+    // will apply to self by default.
 
     self_replace_color(target_color, replacement_color) {
         const bpp = this.bytes_per_pixel;
@@ -544,7 +722,9 @@ class Pixel_Buffer_Enh extends Core {
         }
     }
 
-    'get_single_color_mask_32'(r, g, b, a) {
+
+    // now got 1bpp masks.
+    '__get_single_color_mask_32'(r, g, b, a) {
         // Less effiient still - want 1 bit image, not using 8 bit, using 32 bit.
 
         // read pixel index
@@ -601,6 +781,9 @@ class Pixel_Buffer_Enh extends Core {
         return res;
     }
 
+    // color better as 1 variable.
+    //  then could run other function depending on bipp.
+
     count_pixels_with_color(r, g, b, a) {
         // This will be a somewhat optimized function.
 
@@ -646,8 +829,10 @@ class Pixel_Buffer_Enh extends Core {
 
     }
 
+
+    // Old mask style...
     // Get as 32 bit bitmap... inefficient.
-    'get_single_color_mask'(r, g, b, a) {
+    '__get_single_color_mask'(r, g, b, a) {
         // read pixel index
         // write pixel index
 
@@ -691,10 +876,103 @@ class Pixel_Buffer_Enh extends Core {
     // Would definitely be faster on a greyscale image
     //  Try despeckle on a greyscale image...
 
+    'get_mask_each_px'(fn_mask) {
+        const bipp = this.bipp;
+        console.log('get_mask_each_px bipp', bipp);
+
+        // Would be worth returning a view from the typed array?
+        //  each_px_ta_subsection
+
+        // May be worth having a variety of functions named by implementation.
+        //  Then functions on a higher level named by what they do.
+
+        // set_pixel_by_idx
+        
+
+        const res_mask = new this.constructor({
+            size: this.size,
+            bits_per_pixel: 1
+        })
+
+
+        if (bipp === 1) {
+            // could process it byte by byte
+            //  raising the pixel events one by one....
+
+            let byte = 0, bit = 0; //px index too?
+
+            console.trace();
+            throw 'NYI'
+
+            const ta = this.ta, l = ta.length;
+            while (byte < l) {
+
+            }
+
+
+        } else if (bipp === 8) {
+
+            // 8 bipp - return a single number each time?
+            //  seems to make the most sense.
+
+            // byte by byte...
+            console.trace();
+            throw 'NYI';
+
+
+
+        } else if (bipp === 24) {
+
+            // 24 bipp - will return a view from the typed array.
+
+            // use slice
+
+            //const ta_px = this.ta.slice()
+
+            // go through the pixel indexes
+            //  also increment the pixel numbers and positions?
+
+            // basically, need to callback with the correct slices.
+
+            let byte_pos = 0, i_px = 0;
+            const l = this.ta.length;
+
+            while (byte_pos < l) {
+                const ta_px = this.ta.slice(byte_pos, byte_pos + 3);
+                const mask_res = fn_mask(ta_px);
+
+                byte_pos += 3;
+            }
 
 
 
 
+
+
+
+        } else if (bipp === 32) {
+
+            // 8 bipp - return a single number each time?
+            //  seems to make the most sense.
+
+            console.trace();
+            throw 'NYI';
+
+
+
+
+        }
+
+        return res_mask;
+
+
+    }
+
+
+
+
+    // Pos better as a ta.
+    //  That should be the default.
 
     'measure_color_region_size'(x, y, max) {
         const buffer = this.buffer;
@@ -1019,20 +1297,10 @@ class Pixel_Buffer_Enh extends Core {
 
         // An ordered list of pixels, using single number indexes, would be useful.
 
-
         // PPL shift would help too, when reading pixels yet to visit.
-
-        
-
-
-
-
-
 
 
     }
-
-
 
 
     // 
@@ -1272,9 +1540,8 @@ class Pixel_Buffer_Enh extends Core {
     // Could just get the color region, then color in those pixels.
 
 
-
-
-
+    // This is a good flood fill.
+    //  May be better to update with different version for different bipp.
 
     'flood_fill'(x, y, r, g, b, a) {
         // stack of pixels to visit
