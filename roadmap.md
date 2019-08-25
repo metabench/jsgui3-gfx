@@ -47,6 +47,8 @@ Convolutions could apply to them.
 
 // Would be interesting to apply functions to arrays of pixel buffers too.
 
+// Optimized 8bipp to 1bipp thresholding function
+
 // Thresholding at all 255 values on all channels...
 //  How long would that take?
 //   Could test optimizations well using that as well.

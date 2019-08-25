@@ -108,105 +108,197 @@ const thresh = async() => {
     //  Set them up so that they are fast.
     //  It seems that some functions get optimized very well now.
 
+    // How about splitting the rgb channels into 3 8 bit Pixel Buffers?
+    //  Then could run separate thresholding on each of them.
+    //   maybe even 0 to 255 on each of them.
 
+
+
+    // const [pb_red, pb_green, pb_blue] = pb.get_split_rgb_channels();
+    //  as 8 bits per pixel each.
+    // could even see about class creation in c++?
+
+    // Applying a convolution in C++ would be much faster too.
+    //  It's worth building up to that type of functionality.
+
+
+
+
+    // And could try functions in C++ that accelerate these.
+    //  Also subset of js to C++ (kernel) compilation.
     performance.mark('A');
 
-    // Lamda function a little slower??
-    const pb_1bipp_mask = pb.mask_each_pixel(pixel_color => pixel_color[0] >= 225);
+    const [r, g, b] = pb.split_rgb_channels;
+    //console.log('post split_rgb_channels');
+
+    // Save the split channels in a simple way together?
+    // maybe would need to await their saving.
+
 
     performance.mark('B');
     performance.measure('A to B', 'A', 'B');
 
-    /*
-    let l2 = pb_1bipp_mask.ta.length;
-    for (let c2 = 0; c2 < l2; c2 ++) {
-        //console.log('pb_1bipp_mask.ta[c2]', pb_1bipp_mask.ta[c2]);
-    }
-    */
+    // Then would be nice to get some thresholded 1bipp images from these channels.
 
-    // See about saving this as a 1bpp image...
-    // Or turn it into a 24bpp image, save it as a jpeg.
-
-    // .to_24bipp()  - creates a new object and returns it.
-    // .to_bipp()
-
-    // Far more functions will operate internally on the Pixel_Buffer.
-
-    // Can use some relatively simple pixel read and write functions.
-    //  Not sure quite how well optimized the calls will wind up.
-    //   Should be quite fast for JS at least.
-
-    const res_pb_24bipp = pb_1bipp_mask.to_24bipp();
-
-    //console.log('res_pb_24bipp', res_pb_24bipp);
-
-    // Go through the pixels...
-    //console.log('res_pb_24bipp.ta', res_pb_24bipp.ta);
-
-    let c_on = 0;
-    let tal = res_pb_24bipp.ta.length;
-
-    let i_px = 0;
-    const px_count = res_pb_24bipp.size[0] * res_pb_24bipp.size[1];
-
-    /*
-
-    for (let i_px = 0; i_px < px_count; i_px++) {
-        // read the result pixel...?
-
-        const px_res = res_pb_24bipp.get_pixel_by_idx(i_px);
-        //console.log('px_res', px_res);
-
-        //i_px += 1;
-
-    }
-    */
+    // Boolean Convolutions?
+    //  Get a view of the pixels in the vacinity (maybe larger vacinity), mark each pixel as true or false.
+    //   A form of information reduction, could take a fairly large amount of information into account.
+    //    Some uses for feature detection.
 
 
 
-    //throw 'stop';
+    // A fast enough function for viewing a convolution window would be of use.
+    //  Maybe best to have an array of the different slices of all the rows?
+    //   Would not involve copying typed array data.
+
+    // Also, the convolution_window function should present data that has not been modified from the convolution itself.
+
+    // ta_self_scratch worth having a getter.
+
+    
 
 
 
 
 
 
-    // Try saving the mask?
-    //  Iterating through it....
+    // Splitting the channels is nicely fast.
+    //  Simple operation done in JS with simple and efficient code.
 
-    // read the pixels by index...?
-    //  as in by pixel index.
-
-
-
-
-
-    //console.log('pb_1bipp_mask', pb_1bipp_mask);
-
-
-
-
-    // Change the bits_per_pixel
-    //  would automatically add the alpha channel with each of them as 255.
-
-    // to greyscle could be done by setting the bits_per_pixel to 8
-
-    // and could also have bits_per_pixel as 1.
-    //  1 bit per pixel, should be done with operations that set a single bit.
-    //  underlying clamped uint8 array.
-
-
-    //(path, size_or_opts)
-    //const pb = await Server_Pixel_Buffer.load('./source_images/Swiss Alps.jpg');
-    //await pb.save('./source_images/saved-Swiss Alps.jpg');
-
-    await gfx.save_pixel_buffer('./output/test_thresh-erte_ale.png', res_pb_24bipp, {
+    await gfx.save_pixel_buffer('./output/test_r_channel-erte_ale.png', r, {
         format: 'png'
     });
-    //pb.color_whole(124);
-    //await gfx.save_pixel_buffer('./source_images/Swiss Alps.jpg', pb, {
-    //    format: 'jpg'
-    //});
+    await gfx.save_pixel_buffer('./output/test_g_channel-erte_ale.png', g, {
+        format: 'png'
+    });
+    await gfx.save_pixel_buffer('./output/test_b_channel-erte_ale.png', b, {
+        format: 'png'
+    });
+
+    // Could come up with multiple thresholded versions for the different channels.
+    //  Want a more efficient and specific thresholding function.
+
+    // The channel splitting function is very fast for JS.
+
+    // threshold function for just one single channel.
+    //  or just for 8 bpp for the moment right now.
+
+    // get_mask_threshold_8bipp
+    //  maybe better to call them mono or 1bipp.
+
+    // get_threshold_8bipp
+    //  would be simple enough to make it only run on 8bipp pixel buffers.
+
+
+
+    
+
+
+    const general_px_mask_eg = async() => {
+        // Lamda function a little slower??
+        performance.mark('C');
+        const pb_1bipp_mask = pb.mask_each_pixel(pixel_color => pixel_color[0] >= 225);
+        performance.mark('D');
+        
+        
+        performance.measure('C to D', 'C', 'D');
+
+        /*
+        let l2 = pb_1bipp_mask.ta.length;
+        for (let c2 = 0; c2 < l2; c2 ++) {
+            //console.log('pb_1bipp_mask.ta[c2]', pb_1bipp_mask.ta[c2]);
+        }
+        */
+
+        // See about saving this as a 1bpp image...
+        // Or turn it into a 24bpp image, save it as a jpeg.
+
+        // .to_24bipp()  - creates a new object and returns it.
+        // .to_bipp()
+
+        // Far more functions will operate internally on the Pixel_Buffer.
+
+        // Can use some relatively simple pixel read and write functions.
+        //  Not sure quite how well optimized the calls will wind up.
+        //   Should be quite fast for JS at least.
+
+        const res_pb_24bipp = pb_1bipp_mask.to_24bipp();
+
+        //console.log('res_pb_24bipp', res_pb_24bipp);
+
+        // Go through the pixels...
+        //console.log('res_pb_24bipp.ta', res_pb_24bipp.ta);
+
+        let c_on = 0;
+        let tal = res_pb_24bipp.ta.length;
+
+        let i_px = 0;
+        const px_count = res_pb_24bipp.size[0] * res_pb_24bipp.size[1];
+
+        /*
+
+        for (let i_px = 0; i_px < px_count; i_px++) {
+            // read the result pixel...?
+
+            const px_res = res_pb_24bipp.get_pixel_by_idx(i_px);
+            //console.log('px_res', px_res);
+
+            //i_px += 1;
+
+        }
+        */
+
+
+
+        //throw 'stop';
+
+
+
+
+
+
+        // Try saving the mask?
+        //  Iterating through it....
+
+        // read the pixels by index...?
+        //  as in by pixel index.
+
+
+
+
+
+        //console.log('pb_1bipp_mask', pb_1bipp_mask);
+
+
+
+
+        // Change the bits_per_pixel
+        //  would automatically add the alpha channel with each of them as 255.
+
+        // to greyscle could be done by setting the bits_per_pixel to 8
+
+        // and could also have bits_per_pixel as 1.
+        //  1 bit per pixel, should be done with operations that set a single bit.
+        //  underlying clamped uint8 array.
+
+
+        //(path, size_or_opts)
+        //const pb = await Server_Pixel_Buffer.load('./source_images/Swiss Alps.jpg');
+        //await pb.save('./source_images/saved-Swiss Alps.jpg');
+
+        await gfx.save_pixel_buffer('./output/test_thresh-erte_ale.png', res_pb_24bipp, {
+            format: 'png'
+        });
+        //pb.color_whole(124);
+        //await gfx.save_pixel_buffer('./source_images/Swiss Alps.jpg', pb, {
+        //    format: 'jpg'
+        //});
+    }
+
+
+
+
+    
 }
 
 if (require.main === module) {
