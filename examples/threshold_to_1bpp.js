@@ -67,6 +67,21 @@ const copy_to_server_pb = (standard_pb) => {
 
 
 
+// Would be nice to have an example / test result IO framework.
+//  Saved the output based on test_name, test_subname, test_number, test_subnumber, node_version, module_version, architecture
+//   Checksum / private key signature. Public key?
+//   Would be nice to hold a structure that could potentially hold a library of test and benchmark data.
+//    Even the time of the test.
+//    Could always save the test / example data.
+//     Building it up in the repo would be useful too.
+//     Tool to recieve / submit / sync test data.
+
+
+
+
+
+
+
 const thresh = async() => {
     console.log('Erte Ale thresh example');
     const spb = await Server_Pixel_Buffer.load('../source_images/Erte Ale Volcano.jpg');
@@ -83,12 +98,6 @@ const thresh = async() => {
     //console.log('pb_alpha_channel.bipp', pb_alpha_channel.bipp);
 
     // Not really working right now....
-
-
-
-
-
-
 
     // then get the thresholded msk pb.
     // get_threshold_mask
@@ -127,18 +136,79 @@ const thresh = async() => {
     // And could try functions in C++ that accelerate these.
     //  Also subset of js to C++ (kernel) compilation.
     performance.mark('A');
-
     const [r, g, b] = pb.split_rgb_channels;
+    performance.mark('B');
+    performance.measure('A to B', 'A', 'B');
     //console.log('post split_rgb_channels');
 
     // Save the split channels in a simple way together?
     // maybe would need to await their saving.
 
+    // Nice if convolutions were to share cached ta objects between them too?
+    //  Want to get this working really fast and effectively.
 
-    performance.mark('B');
-    performance.measure('A to B', 'A', 'B');
+
+
+    // A convolution that will use a pixel buffer to act as a window where possible.
+    //  direct reference typed array for the position
+    //   how about the full bounds? pos of the window pixel buffer.
+
+    // Make a pixel buffer a floating window of another.
+    //  Could be a virtual pixel buffer even.
+
+    // Then self_convolve_same_size???
+    ///  ie if we hold the data to convolve in a small Pixel_Buffer, could we use it there.
+    //   apply a convolution that's the same size as the Pixel_Buffer itself...?
+
+    // A moving window with copy-over makes a lot of sense.
+    //  Especially when wishing to pay attention to out-of-bounds pixels and their default colors.
+
+    // Maybe worth putting some of these operations into new files?
+    //  Though much of it should go in core really?
+    //   Or do it more as mixins and then see if it should go in core, make it easier to swap versions / apis.
+
+
+
+    // With the r component...
+    //  Lets run a convolution on it
+    //  Lets pass a convolution window over it.
+
+    // Using a convolution window makes a lot of sense.
+    //  Having an algorithm that moves it around and copies makes a lot of sense.
+    //   Need to be careful about pixels out of bounds.
+
+    // oob_px_color
+
+    // have get_pixel return an oob color if out of bounds and oob_color is set?
+
+    // Floating window, then move it.
+    //  It would copy its data accross.
+    //   It it gets / sets by refernce?
+
+    // Floating_Window_Reference?
+    //  So it would be a Pixel_Buffer by reference.
+
+
+
+
+
+
+
+
+
+
+
+
+    
 
     // Then would be nice to get some thresholded 1bipp images from these channels.
+
+    const rthresh = r.get_1bipp_threshold_8bipp(210);
+
+    const thresh_24bipp = rthresh.to_24bipp();
+
+    console.log('rthresh', rthresh);
+    //throw 'stop';
 
     // Boolean Convolutions?
     //  Get a view of the pixels in the vacinity (maybe larger vacinity), mark each pixel as true or false.
@@ -155,9 +225,26 @@ const thresh = async() => {
 
     // ta_self_scratch worth having a getter.
 
-    
+    // a moving convolution buffer would be useful.
+    //  // will also update its position values.
 
+    // Will try functions to get convolution windows as well.
 
+    // It have 'next', being an iterator?
+
+    // A callback for each pixel could work...
+
+    // The overall for loop structure could be useful for inlining.
+    //  
+
+    // While loop through each pixel...?
+
+    // Moving the whole window at once.
+    //  Including the central pixel.
+
+    // function to get / copy a convolution window makes a lot of sense.
+    //  interested in small vector math here too.
+    //  will be very much worth making and using small and efficient data structures.
 
 
 
@@ -172,6 +259,9 @@ const thresh = async() => {
         format: 'png'
     });
     await gfx.save_pixel_buffer('./output/test_b_channel-erte_ale.png', b, {
+        format: 'png'
+    });
+    await gfx.save_pixel_buffer('./output/thresh_24bipp_210-erte_ale.png', thresh_24bipp, {
         format: 'png'
     });
 
@@ -294,9 +384,6 @@ const thresh = async() => {
         //    format: 'jpg'
         //});
     }
-
-
-
 
     
 }

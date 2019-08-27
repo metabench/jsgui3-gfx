@@ -55,6 +55,12 @@ Convolutions could apply to them.
 
 // Resizing / getting the resized versions.
 
+Pixel buffer core could do with a fair bit more work and testing.
+Rapidly and efficiently doing convolutions will be very useful.
+
+
+
+
 
 
 
@@ -67,6 +73,15 @@ Convolutions could apply to them.
 
  a float32 number in each for example, or float16.
 
+
+
+
+0.0.21 - Pixel_Buffer acting as a window_to another Pixel_Buffer (spec.window_to(source))
+  work in progress
+  0.0.21 - pos_center property as a facade to pos and size
+   Properties overhaul, using the 'facade' pattern.
+    // Pre properties overhaul version???
+  
 
 
 

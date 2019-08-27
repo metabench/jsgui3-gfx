@@ -23,7 +23,8 @@ const {
     each,
     fp,
     tof,
-    get_a_sig
+    get_a_sig,
+    are_equal
 } = lang;
 
 const Pixel_Pos_List = require('./pixel-pos-list');
@@ -71,6 +72,36 @@ const {ro, prop} = oext;
 
 // Make this extend evented class?
 
+
+
+// Convolution kernel reading?
+//  Maintain the small pixel buffer or convolution buffer for enough time to do the convolution.
+
+
+
+// Looks like the scratch typed array would be very useful for the convolution.
+//  May be worth trying the more optimized convolution that only needs to store data in its buffer (or somewhere else???)
+
+// Should try a few different convolution window functions...
+//  With copy, without.
+
+// Using a temporary convolution typed array or two would help.
+
+
+// Also, a way to set the pixel color value outside of the bounds, as input to the convolution (window).
+
+// Would be nice to see how quickly a convolution could run in js using different types of memory access / efficiency techniques.
+
+
+
+
+
+
+
+
+
+
+
 class Pixel_Buffer_Core {
     // Setting bits per pixel to 8
     //  greyscale 256
@@ -82,31 +113,286 @@ class Pixel_Buffer_Core {
     //     Or some of them?
     //    Could be useful in some ways.
 
+    // ta_scratch would make a lot of sense for some operations.
+    //  possibly loading / copying too?
+    // A way to avoid unnecessary memory allocation and deallocation.
+
+
+
+    // Get the ta_scratch as a copy.
+    //  It would be useful for viewing the convolution window while applying the convolution internally.
+
+    // Convolutions need both an input and output typed array.
+    //  (or some optimization could use a smaller temporary buffer)
+
+
+
+
+
+
 
     constructor(spec) {
+
+
+
+        // ta_bpp would be useful.
+        //  UInt8 x 2
+        //   then the getters and setters refer to values from them.
+        //    not sure how much faster it would be. try it later.
+
+
+
+        // defining bounds functionality?
+        //  then calculating indexes from that easily?
+        
+        
+
+
+
+        
+
+
+
+
         // The prop silent_update function
 
         // Access to silent update functions would be very useful
 
         // prop setup callback?
 
+        // window_to in the spec.
+        //  could also try a direct access mode to its ta. Not to start with.
+        //   will have a cached version which gets read from the ta that this is a window_to
+
+        // update_from_main
+        // update_to_main
+
+        // Will need to operate somewhat differently when its a window to another pixel buffer.
+
+        // Direct reference would help sync updates really well / perfectly.
+
+
+
+        // window_to in operation
+        //  on startup, will copy_from_main
+
+        this.pos = new Int16Array([0, 0]);
+
+        // if it's got window_to, set some things up (extra functionality) in the constructor.
+
+        // Being able to set the window_to property?
+        //  Being able to use the same window on multiple input pixel buffers makes sense.
+
+
+
+
+
+
+
+
+
+
+
 
         let silent_update_bits_per_pixel;
         let silent_update_bytes_per_pixel;
 
+        if (spec.window_to) {
+            spec.bits_per_pixel = spec.window_to.bits_per_pixel;
+        }
+
+        // pos_centre?
+        //  can use that, along with the size, to set the normal pos.
+
+        // a pos_centre property with getters and setters would be nice.
+
+
+
+
         // prop obext needs improving - will raise 'ready' function with a silent set fn as well.
 
+        // Change event given in the opts...
+        //console.log('Pixel_Buffer_Core spec', spec);
+        //console.trace();
+        // Default bits per pixel?
+
+        // default.. should properly set the variable at the beginning. not doing so right now for some reason.
+
+
+        // window_to property
+        //  can setup window to upon initialization.
+
+        // has to have the same bpp?
+        //  could still have optimized functions that handle the differences.
+
+        // sgs simple_getter_setter_prop?
+
+        // sgsp?
+
+        // more like a facade / overlay property.
+        //  would do translation / transformation both ways.
+
+        //  and causes changes to the pos property.
+        //   integer only?
+        //   will need to work out the rounding mode here.
+        //    see how to keep it integer only...?
+
+        // facade_prop(this, 'pos_center', getter, setter)
+
+        // a facade prop that only interacts with other properties would make sense.
+        //  using facade_prop could make code clearer to read as well.
+        //   but when it's a typed array that gets changed?
+
+        // it's just a value that gets changed.
+        //  for the moment, will do less fancy stuff with the center_pos property.
+        //   would be useful to refer to it though.
+
+        // need to keep Pixel_Buffer as simple and efficient where possible.
+        
+
+
+
+
+
+
+
+
+        // then can change the pos_center property of the window pixel_buffer.
+        //  copy_from_source()
+        //   see about a lower level and fast copy_rect function?
+        //    many of these functions will run in small / very small number of ms.
+
+
+        // Further properties
+        //  more developed as properties.
+
+        // Conventional get and set style makes sense.
+        //  In the constructor.
+
+        // Better local access to tas in the constructor too.
+
+        /*
+            All appropriate Typed Arrays
+            ----------------------------
+
+            1) pos
+            2) size
+            3) pos_center
+        */
+
+
+        const pos = new Int16Array(2);
+        const size = new Int16Array(2);
+
+        // Also ta | buffer property.
+        //  May be better using defineProperty and a local typed array variable here?
+        //   ta as a const, not being able to overwrite it?
+        //    or if we do, it copies the values over?
+
+        // An overhaul of the properties makes sense.
+
+        
+
+
+
+
+
+        // and pos_center is a facade property with no local variable.
+
+        Object.defineProperty(this, 'pos', {
+            // Using shorthand method names (ES2015 feature).
+            // This is equivalent to:
+            // get: function() { return bValue; },
+            // set: function(newValue) { bValue = newValue; },
+            get() { return pos; },
+            set(value) {
+                // Were we given a Int16Array? Similar?
+                //  set own pos ta values from the value.
+
+                if (value instanceof Int16Array) {
+                    if (value.length === 2) {
+                        pos[0] = value[0];
+                        pos[1] = value[1];
+                    }
+                }
+
+
+                //pos = value; 
+            },
+            enumerable: true,
+            configurable: false
+        });
+
+        Object.defineProperty(this, 'size', {
+            // Using shorthand method names (ES2015 feature).
+            // This is equivalent to:
+            // get: function() { return bValue; },
+            // set: function(newValue) { bValue = newValue; },
+            get() { return size; },
+            set(value) {
+                // Were we given a Int16Array? Similar?
+                //  set own pos ta values from the value.
+
+                if (value instanceof Int16Array) {
+                    if (value.length === 2) {
+                        size[0] = value[0];
+                        size[1] = value[1];
+                    }
+                }
+
+
+                //pos = value; 
+            },
+            enumerable: true,
+            configurable: false
+        });
+        
+
+
+
+        // getter and setter for bipp, bits_per_pixel, bypp, bytes_per_pixel referring to the two members of a ta_ui8
+        //  again, the facade pattern.
+
+
+
+
+
+
+
+        // define getters and setters here instead, using prop?
         prop(this, ['bits_per_pixel', 'bipp'], {
             default: spec.bits_per_pixel || spec.bytes_per_pixel * 8,
+
+            // better to give change events as an object.
+            //  (maybe experiment with optimization at some other point here.)
+
             change: (e_change) => {
+                // prop change event coming through differently to expected....
                 const {old, value} = e_change;
+                //console.log('change bits_per_pixel e_change:', e_change);
 
                 // this.set('bits_per_pixel', x, {silent: true})
-                silent_update_bytes_per_pixel(value / 8);
+                
+                // then do the update_bits_per_pixel to do the updating to the the underlying data.
+                //  would reassign the typed array???
+                //   can we update its length?
+
+                // Would need to reassign the typed array to change its length.
+                //  Just don't do that all the time!
+                //console.log('old, value', old, value);
+                if (old !== value) {
+                    silent_update_bytes_per_pixel(value / 8);
+                    this.change_bits_per_pixel(old, value);
+                }
+
+                
+
+
 
                 // this.realloc_change_bpp(value)
             },
             ready: (e_ready) => {
+                //console.log('***** e_ready', e_ready);
                 silent_update_bits_per_pixel = e_ready.silent_set;
             }
         })
@@ -115,7 +401,13 @@ class Pixel_Buffer_Core {
             default: spec.bytes_per_pixel || spec.bits_per_pixel / 8,
             change: (e_change) => {
                 const {old, value} = e_change;
-                silent_update_bits_per_pixel(value * 8);
+
+                if (old !== value) {
+                    silent_update_bits_per_pixel(value * 8);
+                    this.change_bits_per_pixel(old * 8, value * 8);
+                }
+
+                
 
                 // will need to go through all of the pixels, putting them into the new bpp format.
 
@@ -129,6 +421,33 @@ class Pixel_Buffer_Core {
                 silent_update_bytes_per_pixel = e_ready.silent_set;
             }
         })
+
+        // another prop?
+        //  ta_scratch
+        // copies over the data from own ta
+        //  will be useful with the convolution system, maybe other things.
+
+        // a getter?
+
+        let ta_scratch;
+
+        ro(this, 'ta_scratch', () => {
+            if (!ta_scratch) {
+                ta_scratch = new this.ta.constructor(this.ta);
+            } else {
+                // check the size...? the types as well?
+                if (ta_scratch.length !== this.ta.length) {
+                    ta_scratch = new this.ta.constructor(this.ta);
+                } else {
+                    const l = this.ta.length;
+                    for (c = 0; c < l; c++) {
+                        ta_scratch[c] = this.ta[c];
+                    }
+                }
+
+            }
+        });
+
 
         if (spec instanceof Pixel_Pos_List) {
             // load it as a buffer.
@@ -156,7 +475,16 @@ class Pixel_Buffer_Core {
             //  Maybe the ppl size registers wrong.
             // not sure why the +1 size is needed - it prevents an overflow???
             this.size = new Uint16Array([ppl_size[0] + 4, ppl_size[1] + 4]);
-            this.pos = new Uint16Array([bounds[0], bounds[1]]);
+            this.pos = new Int16Array([bounds[0], bounds[1]]);
+
+
+            // .bypr and .bytes_per row as read-only facade properties.
+
+
+
+            // property .length as the ta length?
+
+
             const bpr = this.bytes_per_row = bpp * this.size[0];
             //console.log('Pixel_Buffer_Core this.pos', this.pos);
 
@@ -200,7 +528,6 @@ class Pixel_Buffer_Core {
             spec.bits_per_pixel = spec.bits_per_pixel || 32;
 
             if (spec.bits_per_pixel) {
-                
                 if (spec.bits_per_pixel != 1 && spec.bits_per_pixel != 8 && spec.bits_per_pixel != 24 && spec.bits_per_pixel != 32) {
                     console.log('spec.bits_per_pixel', spec.bits_per_pixel);
                     console.trace();
@@ -231,7 +558,1170 @@ class Pixel_Buffer_Core {
                 bytes_per_row: this.bytes_per_row
             }
         });
+
+        if (spec.window_to) {
+            console.log('Pixel_Buffer_Core (or subclass) needs to act as a window to another Pixel Buffer.')
+
+            console.log('spec.pos', spec.pos);
+            console.log('this.pos', this.pos);
+
+        }
+
+        let ta_pos_scratch;
+        ro(this, 'ta_pos_scratch', () => {
+            if (!ta_pos_scratch) {
+                ta_pos_scratch = new Int16Array(2);
+            }
+            return ta_pos_scratch;
+        });
+
+
+        // What about double bounds scratch for rapid checking of overlaps?
+        //  Could make use of this / other scratch ta properties to handle input and output
+
+        // Still, need to make a very fast copy rectangle function.
+
+        // Presumably can get it to a very high speed.
+        
+
+
+        let ta_bounds_scratch;
+        ro(this, 'ta_bounds_scratch', () => {
+            if (!ta_bounds_scratch) {
+                ta_bounds_scratch = new Int16Array(4);
+            }
+            return ta_bounds_scratch;
+        });
+
+        let ta_bounds2_scratch;
+        ro(this, 'ta_bounds2_scratch', () => {
+            if (!ta_bounds2_scratch) {
+                ta_bounds2_scratch = new Int16Array(4);
+            }
+            return ta_bounds2_scratch;
+        });
+
+        let ta_bounds3_scratch;
+        ro(this, 'ta_bounds3_scratch', () => {
+            if (!ta_bounds3_scratch) {
+                ta_bounds3_scratch = new Int16Array(4);
+            }
+            return ta_bounds3_scratch;
+        });
+
+        let ta_bounds4_scratch;
+        ro(this, 'ta_bounds4_scratch', () => {
+            if (!ta_bounds4_scratch) {
+                ta_bounds4_scratch = new Int16Array(4);
+            }
+            return ta_bounds4_scratch;
+        });
+
+        // ta_bounds2_scratch // can be useful / necessary to have 2 sets of bounds.
+
+
+        // ta_bounds_scratch
+        //  Int16 size 4
+
+        let ta_size_scratch;
+        ro(this, 'ta_size_scratch', () => {
+            if (!ta_size_scratch) {
+                ta_size_scratch = new Uint16Array(2);
+            }
+            return ta_size_scratch;
+        });
+
+        // ta_pointers_scratch
+
+        let ta_pointers_scratch;
+        ro(this, 'ta_pointers_scratch', () => {
+            if (!ta_pointers_scratch) {
+                // Only allow 2 pointers? by default?
+                ta_pointers_scratch = new Uint32Array(4);
+            }
+            return ta_pointers_scratch;
+        });
+
+        
+        let ta_pointers2_scratch;
+        ro(this, 'ta_pointers2_scratch', () => {
+            if (!ta_pointers2_scratch) {
+                // Only allow 2 pointers? by default?
+                ta_pointers2_scratch = new Uint32Array(4);
+            }
+            return ta_pointers2_scratch;
+        });
+
+
+        let ta_pointerpair_scratch;
+        ro(this, 'ta_pointerpair_scratch', () => {
+            if (!ta_pointerpair_scratch) {
+                // Only allow 2 pointers? by default?
+                ta_pointerpair_scratch = new Uint32Array(2);
+            }
+            return ta_pointerpair_scratch;
+        });
+
+        // pointer pair scratch?
+        //  start and end?
+
+
+
+
+
+        // offsets...
+        //  (pointer offsets?)
+
+        let ta_offsets_scratch;
+        ro(this, 'ta_offsets_scratch', () => {
+            if (!ta_offsets_scratch) {
+                // Only allow 2 pointers? by default?
+                ta_offsets_scratch = new Int32Array(4);
+            }
+            return ta_offsets_scratch;
+        });
+
+
+        /*
+        // bytes_per_row
+        ro(this, 'bytes_per_row', () => {
+            
+            return this.size[0] * this.bytes_per_pixel;
+        });
+        */
+
+
+
+
+
+
+
+
     }
+
+    // copy_rect_by_bounds_to_24bipp(ta_bounds, pb_target)
+    //  specific optimized version for 24 bipp.
+    //   Would make a lot of sense to use that.
+
+    // worth making the 8bipp version too soon.
+
+    // do want to run rgb multichannel convolutions of course.
+    //  see about image enlargement and enhancement.
+
+    // image enlargement... try a pixel mapping algorithm that won't be all that complex?
+    //  as in, for each result pixel, work out how many samples of which source pixels to take.
+    //   result pixel would not have direct corresponsence with single source pixels, very often.
+    //    think there would be a small square of 9 pixels where there would be overlap / possible overlap.
+    //     work out the proportions based on a super-scaled resolution, don't need to use that much memory.
+
+
+
+
+
+
+
+    // pb_window.copy_rect_by_bounds_to(window_bounds, pb_window);
+
+
+    // Then will probably refine / simplify this function that gets made.
+    //  Getting and using scratch arrays that get set up by their getter function...
+    //   Adding more functionality to these scratch arrays so long as they work quickly.
+
+    // The target should have has its pos set to -2, -2?
+    //  Meaning its partially out of bounds of its source.
+    
+    // Need to be very accurate and efficient with all the bounds checking.
+
+    // We will try making some more functions that do things like bounds checking while making use of the tas that are scratch or part of the objects.
+
+
+
+
+
+    // Will keep this as an old version in the future, as it contains a lot of comments, ideas and code.
+    //  Not all of it needed in one place.
+
+
+    // Finding the safe bounds, based on target size and position, and the source size.
+    //  target position refers to a position on the source.
+
+
+
+
+    copy_rect_by_bounds_to_24bipp(ta_bounds, pb_target) {
+
+        console.trace();
+        throw 'NYI';
+
+        const pos = this.ta_pos_scratch;
+        // ta_size_scratch?
+        //  could also be efficient and clear for storage of data during the running of an algorithm.
+
+        // and a bounds scratch too?
+
+        // various scratch tas could be effective for quickly running various algorithms.
+        //  want the fastest JS perf, then port to C++ for faster perf still.
+
+        // loop within the bounds...
+
+        // worth calculating the size from the bounds as well.
+
+        const rect_size = this.ta_size_scratch;
+
+
+        rect_size[0] = ta_bounds[2] - ta_bounds[0];
+        rect_size[1] = ta_bounds[3] - ta_bounds[1];
+        //rect_size[0] = 1 + ta_bounds[2] - ta_bounds[0];
+        //rect_size[1] = 1 + ta_bounds[3] - ta_bounds[1];
+
+
+        console.log('rect_size', rect_size);
+
+        // check that the rect size matches the target size.
+        //  if so, got an optimized algorithm for it.
+
+        // for loop of pos within the ta_bounds
+        //  easy enough to loop between both of them
+
+        // Maybe have a read byte pointer on the target?
+        //  target.ta_pointers_scratch
+        //   get 4? sized Uint32 array? Use that for a variety of numbers / variables / pointers in the inner working of a function?
+
+        // these scratch objects will enable very fast operations by avoiding having to allocate more memory at many points in time.
+
+        // .ta_further?
+
+        // a pointers scratch would be useful?
+        //  allowing up to 4 Uint32s to be stored...  8 bytes of memory isnt so bad.
+
+        // pointers scratch?
+        //  the pixel read position...?
+        //   could do some clever incrementing of this value as well, when chaning row.
+
+        // maybe a local variable is just fine / more efficient anyway?
+
+        const ta_pointers = this.ta_pointers_scratch;
+
+        // 0: byte index of pixel within source
+
+        // and use a scratch from the target as well...
+        // write position target pointer
+
+        // got to make this very fast indeed in JS.
+
+        const ta_target_pointers = pb_target.ta_pointers_scratch;
+
+        console.log('ta_pointers', ta_pointers);
+        console.log('ta_target_pointers', ta_target_pointers);
+
+        // then can easily use the pointers for the byte positions.
+        //  set the byte position of both of them according to the top left position as given by the bounds.
+        //   maybe pointers are more important than calculating x, y positions?
+        //    if we can bypass x and y (storage / calc?) and use the pointer positions we may be at an advantage?
+
+        console.log('pos', pos);
+
+        console.log('ta_bounds', ta_bounds);
+
+        // get a bounds scratch as well.
+        //  4 int16 values (accepts negatives).
+
+        // use these ta ... scratch properties for the moment.
+
+        // need to go through the image space from the source pb.
+
+        const ta = this.ta;
+        const ta_target = pb_target.ta;
+
+        console.log('pb_target.pos', pb_target.pos);
+        // The target pos should have been set up separately / automatially before?
+
+
+
+
+        // const ta_adjusted_safe_bounds = this.ta_bounds_scratch
+        // const ta_bounds_adjustment = this.ta_offset_scratch  (size 4)
+
+        // using data stored in specific typed arrays will help process it quickly.
+        //  
+
+
+
+
+        // Using a few / plenty of scratch tas could help to keep the code from declaring new variables.
+
+
+
+        // 
+
+
+        // beginning the target pointer at the position of the beginning of the bounds...
+
+        //  will need to check for x/y out of bounds errors anyway.
+        //   likely need to do that with every pixel anyway?
+        //    when reading from the source image...?
+        //   or pre-calculate which are out of bounds, pre-fill with the out of bounds color, then process the area that's in bounds.
+        //    that does seem like the fastest method with the fewest tests that need to be done on a per-pixel basis.
+        //     and adjust the write positions?
+
+        // Seems like doing this in a rather longwinded way does make sense.
+        //  Want the fewest operations poss, done in a simple way (in general).
+
+        // Finding the boundaries of the area that is within the source image bounds.
+        //  Know what the offset between the given boundaries and allowed boundaries is.
+        //  Only copy pixels within safe boundaries, to their positions within the safe boundaries.
+
+
+        // Adjusted bounds, but then put into a slightly different position?
+        //  As in when it's out of bounds, it just does not copy.
+
+        // Do a for loop using the adjusted bounds.
+        // These adjusted bounds will only cover a safe area of the image.
+
+        // Bounds adjustments, also using these scratch tas, make sense.
+        //  sometimes will need very fast copying between Pixel_Buffers.
+
+        // do a bound adjusted copy.
+
+        // safe bounds limits...
+        //  then the bounds themselves...
+        //  a secondary bounds scratch?
+
+        // calculations on typed arrays would be of use too.
+        //  both optimized and functional.
+
+
+
+
+
+        const ta_safe_bounds_limits = this.ta_bounds_scratch;
+        ta_safe_bounds_limits[0] = 0;
+        ta_safe_bounds_limits[1] = 0;
+        ta_safe_bounds_limits[2] = this.size[0];
+        ta_safe_bounds_limits[3] = this.size[1];
+
+
+
+
+        const ta_safe_adjusted_bounds = this.ta_bounds2_scratch;
+
+        const ta_bounds_adjustments = this.ta_bounds3_scratch;
+
+        // and a third bounds scratch ta for the adjustment values?
+        //  do we need these for dealing with indexes?
+
+        const ta_bounds_byte_offsets = this.ta_bounds3_scratch;
+
+
+
+
+        // bounds adjustments values (x) needed for setting the index at the beginning of each row.
+
+
+        //ta_safe_adjusted_bounds = 
+
+        if (ta_bounds[0] >= ta_safe_bounds_limits[0]) {
+            ta_safe_adjusted_bounds[0] = ta_bounds[0];
+            ta_bounds_adjustments[0] = 0;
+        } else {
+            ta_bounds_adjustments[0] = ta_safe_bounds_limits[0] - ta_bounds[0];
+            ta_safe_adjusted_bounds[0] = ta_safe_bounds_limits[0];
+        }
+        if (ta_bounds[1] >= ta_safe_bounds_limits[1]) {
+            ta_safe_adjusted_bounds[1] = ta_bounds[1];
+            ta_bounds_adjustments[1] = 0;
+        } else {
+            ta_bounds_adjustments[1] = ta_safe_bounds_limits[1] - ta_bounds[1];
+            ta_safe_adjusted_bounds[1] = ta_safe_bounds_limits[1];
+        }
+        if (ta_bounds[2] <= ta_safe_bounds_limits[2]) {
+            ta_safe_adjusted_bounds[2] = ta_bounds[2];
+            ta_bounds_adjustments[2] = 0;
+        } else {
+            ta_bounds_adjustments[2] = ta_safe_bounds_limits[2] - ta_bounds[2];
+            ta_safe_adjusted_bounds[2] = ta_safe_bounds_limits[2];
+        }
+        if (ta_bounds[3] <= ta_safe_bounds_limits[3]) {
+            ta_safe_adjusted_bounds[3] = ta_bounds[3];
+            ta_bounds_adjustments[3] = 0;
+        } else {
+            ta_bounds_adjustments[3] = ta_safe_bounds_limits[3] - ta_bounds[3];
+            ta_safe_adjusted_bounds[3] = ta_safe_bounds_limits[3];
+        }
+
+        console.log('ta_safe_adjusted_bounds', ta_safe_adjusted_bounds);
+
+
+        // Need to be specific about which offsets are used where.
+        //  Will need to try different cases too.
+
+        // A more efficient bits_per_pixel storage / getter?
+        //  ta_bpp with both bipp and bypp
+        //   and facade functions to access it.
+
+        // Want to get this optimized to the fullest.
+
+
+        // module level scratch as well?
+        //  careful about multithreading then....
+
+
+
+
+        console.log('ta_bounds_adjustments', ta_bounds_adjustments);
+
+        // lets use a pixel read index in one of the tas.
+        //  keep that up to date with each pixel?
+        //   probably can do set from the row.
+
+        // and update the write pixel location pointer too.
+        //  will be able to set whole rows.
+        //   not quite sure how fast that will be.
+
+        // will work out the indexes of the start and end of each row from the source image.
+        //  will use ta.set
+
+
+        // bytes_per_row
+
+
+        // use pointers ta for number of bytes per row.
+
+        // source image bytes_per_row
+        console.log('this.bytes_per_row', this.bytes_per_row);
+
+        const source_bytes_per_row = this.bytes_per_row;
+        const bypp = this.bypp;
+
+        // the offset from the end of one row read from the source (according to the bounds) to the beginning of the next row to read from the source
+
+        // byte offsets of bounds...
+
+        // read byte offsets?
+        //  source read byte offsets?
+
+
+        // but what are these for?
+
+
+        // want to calculate the start position of the first source byte to read.
+        //  use the ta_safe_adjusted_bounds
+        //   safe_adjusted_bounds_pixel_indexes?
+        //    and they are pixel indexes based on the source image.
+
+        // but also row widths in number of bytes.
+        //  target.bytes_per_row
+        
+
+        // But most likely we want the read coords to be right at the top left.
+        //  We do want to start at 0,0 on the source image, with the bounds system limiting how far right and down it reads to start with.
+
+        // For the moment, it seems we need to get into more detail about what specific areas will be mapped,
+        //  what indexes apply, and importantly what index increments apply when moving from pixel to pixel and then to the next row.
+
+        // For loops mapping the target pixel to read.
+        //  For the moment, use of scratch tas for these internal things will be best.
+
+        // Maybe better to loop through the in-bounds pixels of the source pb.
+        //  copy them to the target pb.
+
+        // keeping track of variables is one of the most important things to get this working efficiently on a low level.
+
+
+
+        // Seems worth redoing this in a focused way after all this writing....
+        //  Could sum it up in a few parts.
+
+        // 1) Calculate the in-bounds region (px) of the source image
+        //     calculate its corresponding region (px) on the target image
+
+        // 2) Calculate the row byte length of the in-bounds region
+
+        //  source image - how many bytes to jump to the beginning of the next in-bound row.
+        //  dest image - no row skip needed ??? (for the moment)
+
+        //  offset of the beginning of each row (from the bounds) when reading from the source.
+
+        // the y-dest-row-loop may work best?
+        //  could try some different loop functions.
+        //   easiest first and compare results.
+
+        // Try the syncronised pointer update loop.
+
+        // looping over dest_y.
+
+        // the whole of the dest is within bounds?
+        //  no, some of it may be referring to some out-of-bounds part of the source.
+
+        // so loop over the dest rows that are within bounds.
+
+        // ta_dest_area_within_source_safe_bounds
+        //  so the bounds on the dest that match up with safe areas of the source.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        const adjusted_safe_bounds_source_read_byte_offsets = this.ta_offsets_scratch;
+        adjusted_safe_bounds_source_read_byte_offsets[0] = ta_bounds_adjustments[0] * bypp;
+        adjusted_safe_bounds_source_read_byte_offsets[1] = ta_bounds_adjustments[1] * source_bytes_per_row;
+        adjusted_safe_bounds_source_read_byte_offsets[2] = ta_bounds_adjustments[2] * bypp;
+        adjusted_safe_bounds_source_read_byte_offsets[3] = ta_bounds_adjustments[3] * source_bytes_per_row;
+
+        console.log('adjusted_safe_bounds_source_read_byte_offsets', adjusted_safe_bounds_source_read_byte_offsets);
+
+
+
+        const adjusted_safe_bounds_target_write_byte_offsets = pb_target.ta_offsets_scratch;
+        // and the write offset...
+
+
+
+
+
+
+
+        // And the safe bounds write offsets too.
+
+        // Seems worth having all of this put into tas.
+        //  Many functions seem to use a few structures which hold various forms of numbers for similar kinds of things. Can standardise and provent memory alloc / realloc.
+
+
+
+
+        // loop through the rows that appear in the safe bounds
+        //  calculate the byte indexes of the beginning and ends of each row?
+
+
+        // Addition only may be faster.
+        //  Try the algo only with increments.
+
+        // Set up the start and end points of the first row, both reading and writing.
+
+        // would be a pointer pair for each of them.
+
+        const ta_pp_source_read = this.ta_pointerpair_scratch;
+        const ta_pp_target_write = pb_target.ta_pointerpair_scratch;
+
+        // then set these up before each line copy.
+
+        
+
+        // so can make pb_target.bytes_per_row the read width...
+
+
+        //const row_byte_length = 
+
+        // But only doing the safe copy.
+
+        // May be best to set up and do the safe copy, row by row.
+        //  But going by what's getting copied into the target pb, meaning leaving out anything that would be out of bounds there, or come from an out of bounds place in the source.
+
+        // A moving window of some sort, set up with tas?
+
+
+        // Maybe need to precompute some more values.
+
+        // The bytes per row of the safe boundary range.
+
+        const bytes_per_row_of_safe_bounds = (ta_safe_adjusted_bounds[2] - ta_safe_adjusted_bounds[0]) * bypp;
+
+        console.log('bytes_per_row_of_safe_bounds', bytes_per_row_of_safe_bounds);
+
+
+        ta_pp_source_read[0] = adjusted_safe_bounds_source_read_byte_offsets[0] + adjusted_safe_bounds_source_read_byte_offsets[1];
+        // need to set it to a number that's within bounds of the source image.
+        ta_pp_source_read[1] = ta_pp_source_read[0] + bytes_per_row_of_safe_bounds;
+
+
+
+
+        ta_pp_target_write[0] = 0; // no, it's the left indent of the safe bounds.
+        ta_pp_target_write[1] = ta_pp_target_write[0] + bytes_per_row_of_safe_bounds;
+
+
+        console.log('ta_pp_source_read', ta_pp_source_read);
+        console.log('ta_pp_target_write', ta_pp_target_write);
+
+        // need to update this by the write offset...
+        //  and maybe need some offset precalculation in bytes, for the target, with the bounds (safe adjusted bounds in use).
+        //   need that to have accurate write positions.
+
+
+
+        // A getter for bytes_per_row would be useful.
+
+
+
+        console.log('pb_target.bytes_per_row', pb_target.bytes_per_row);
+
+        // and then the number of rows to copy...
+        //  will be able to iterate the pointers and do ta.set quite neatly.
+
+        const num_rows_to_copy = ta_safe_adjusted_bounds[3] - ta_safe_adjusted_bounds[1];
+        console.log('num_rows_to_copy', num_rows_to_copy);
+
+        // Have a simple local variable to count the row number?
+        //  Use incrementation to update the byte index values.
+
+        for (let c = 0; c < num_rows_to_copy; c++) {
+            // copy the row...
+
+            // could set using a slice of the source...
+            // or subarray.
+
+            // .set using an offset and a subarray should work OK.
+
+            // maybe pixel for loop would be faster anyway.
+
+            const sa_source_row = ta.subarray(ta_pp_source_read[0], ta_pp_source_read[1]);
+            console.log('sa_source_row', sa_source_row);
+
+
+
+
+
+
+
+            //ta_target.set()
+
+
+            // increment the pointers to point to the next row...
+
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+        
+
+
+        // .ta_bounds_info...
+        //  larger ta that includes space for bounds intersection and safety options and info?
+
+
+        
+
+        //ta_pp_source_read[1] = ta_pp_source_read[0] + 
+
+
+
+
+
+        // the source read 
+
+        
+
+
+
+
+
+
+
+
+        // ta_bounds_adjustments...
+        //  but really need to go within / loop within the calculated safe bounds.
+
+        // should be easy enough to loop through the in-range rows in the target image.
+        //  ta_safe_adjusted_bounds
+
+        // actually have the pos of the target set accurately to reflect its center point?
+        //  it would be -2, -2 at size 5.
+
+
+
+
+
+
+
+
+
+
+        // setup both the pointers for write and the pointers for read.
+
+
+
+        // use another ta to hold the read row byte index bounds
+        //  and another for the write row byte index bounds.
+
+        // ta_pointerpair_scratch?
+        //  just 2 of them makes more sense.
+
+
+
+        // then work out the standard start and end points of the row in the data from the source???
+        //  or we have the offsets to the start point already? the 0,0 point?
+
+        // using a smallish bunch of named const typed scratch typed arrays makes sense here.
+
+        // do the copying row by row.
+        //  only think we need the y position. to be iterated?
+        //   and work out the byte index variables, do the copying.
+        //    optimized copying designed around the data structures.
+
+        // the 4 points of the bounds in terms of pixel indexes would be useful
+        //  or v edge values really, or lt, rb
+        // with these we can do the row copy algorithm quickly.
+
+        // probably best to do this using source and dest / dest and source byte indexes
+        //  could use translations between them.
+
+        // need to have the maths to do it for rows, or even better, whole blocks of rows, ie the necessary 2d image.
+
+        // using byte array pointers for pixels may well speed operations up.
+        //  its a lower level than coords.
+
+
+
+        // have ta values available for the read and write byte pointers.
+        //  row read pointer pair
+        //  row write pointer pair
+
+        // both pointer ranges - 2 pointers, sequential.
+
+        // pointers here basically being array indexes.
+
+        // uint32
+
+
+
+
+
+
+
+
+
+
+        //  safe adjusted bounds byte offsets...
+        //   can get another bounds scratch...?
+
+        // These small scratch objects will work well with SIMD in the future.
+        //  Working out the byte offsets from the different edges will be useful.
+
+        // will use this.get_byte_index_from_pos_24bipp
+        //  and other convenience / fast function.
+        // Then could inline them.
+
+        // functions that set a value to an existing typed array
+        //   could be faster? give it the ta and the idx.
+
+        // update_ta_with_px_byte_idx(ta, ta_idx, pos)
+
+        // could work quickly that way.
+
+        // would be worth testing different versions with different micro-optimizations.
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // ? row length of extraction in bytes
+
+        // [0]: row beginning (source) byte index
+        // [1]: row ending (source) byte index
+        //ta_pointers[0] = 
+
+        // copy it from the source row by row.
+
+
+
+
+
+
+
+
+        
+        // then calc what the safe bounds are...
+
+        // safe bounds come from size of this....
+        // min is 0, 0, max is w, h
+        //  possibly by using quite a lot of ta variables things can work really fast.
+        //  or more specific function calling...?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // use the adjusted bounds.
+        //  and have the write index take into account necessary bounds adjustments.
+
+        // Hopefully this function can still run very quickly indeed.
+        //  Copy within the bounds
+        //  Keep the read and write pointers both up-to-date, and use them
+
+
+
+        // go within the safe adjusted bounds.
+
+        for (pos[1] = ta_bounds[1]; pos[1] < ta_bounds[3]; pos[1]++) {
+            // row start... worth setting the read byte pointer to the start of the row.
+            //ta_pointers[0] = 
+
+
+
+            // read the pixels in the row...
+
+
+            //  worth setting 
+            // row complete...
+        }
+
+
+
+
+
+
+
+        // Can easily and quickly use pos as the core of the iteration?
+        //  Then calculate the edges with pos and ta_bounds
+
+        // 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        if (rect_size[0] === pb_target.size[0] && rect_size[1] === pb_target.size[1]) {
+            // optimized...
+            //  call a separate function?
+            //  _24bipp_target_same_size?
+
+            //  probably not needed for the moment...?
+            //   smaller code paths result in more optimizations.
+
+            console.log('rect_size matches target size.')
+
+
+
+        }
+
+        // 
+
+
+
+
+
+    }
+
+    copy_rect_by_bounds_to(ta_bounds, pb_target) {
+
+        console.log('pb.copy_rect_by_bounds_to');
+
+        const bipp = this.bipp;
+
+        if (bipp === 24) {
+            return this.copy_rect_by_bounds_to_24bipp(ta_bounds, pb_target)
+        }
+
+        // check its the same bipp on the target...
+        //  could have optimized conversions in the future.
+
+        // single for loop? while loop?
+        //  double for?
+
+        // Double for, using an already given ta for the pos.
+
+        // maybe .ta_pos_scratch would do the job?
+        //  lazy from oext? only provides the object (creates it) the first time it's asked.
+
+        // want to be given a ta_pos?
+        //  it be optional, and use a / the .ta_pos_scratch?
+
+        
+
+        // iterate through some new bounds?
+
+        //  use the provided bounds?
+        //  need to quickly be able to detect out of bounds.
+        //   use if statement logic.
+
+        // will use default colors / values when out of bounds.
+        //  this will help convolutions work better.
+
+        // two for loops, using the bounds and the pos
+        //  detect out of bounds for both x and y
+        //   if out of bounds, it's the default color
+        //    (for source reading, fast byte index calculation from x, y?)
+
+        // Copying (quickly) between array buffers?
+        //  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set
+
+        // May be the fastest for copying over rows defined by blocks.
+        //  Or making complete copies if we have the same width.
+
+        // Consider using 8x8 pixel blocks to increase locality?
+
+
+        // specialised loop for when the target size matches up with the size of the bounds?
+        //  simpler iterations for the output position.
+        //  
+
+        // Can make a for loop that is very efficient for both arrays.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // output pixel index...?
+        //  starts at 0 normally...
+
+        // check that the target is the same as the size calculated from the bounds.
+
+
+
+
+
+        // iterate pos1 from top bound to bottom bound
+        //  iterate pos0 from left bound to right bound
+
+
+
+
+
+
+
+
+
+
+
+
+    }
+
+
+
+    // function to iterate a convolution window?
+    //  could have a function to extract a rectangle as a small image
+    //  but with a predefined Pixel_Buffer or underlying array.
+
+    // Object reuse is important for some algorithms.
+
+    // Maybe a function to directly do a blur convolution?
+    //  Dont want some functions to be too abstract for perf reasons.
+
+    // It's worth trying a variety of functions in a few ways.
+
+
+
+    // a convolution window function may make most sense.
+    //  give the convolution window buffer as a param, and it's a Pixel_Buffer?
+
+    // that may be a faster way of updating data.
+    //  even shift parameter of data views?
+    //  for use loops to copy?
+    //   copying probably wont take all that long. worth trying.
+
+
+
+    // copying convolution window seems like one of the best ways.
+    //  or provide all of the indexes to the points in a single array???
+    //   need to deal with out of bounds as well.
+
+    // reading a convolution window from each pixel.
+    // get_window_centered_on_px(px_pos, window_size, optional pb_res_window)
+
+    // So give it the pixel buffer for it to copy its result into.
+    //  Seems like we will have fast convolutions before long.
+
+
+
+    // and a convolution window loop function
+
+    // Give it the pb_conv_window for it to work with
+
+    
+
+    // Could even give it the ta for positions as a parameter so it does not need to be passed in the callback function. Is that faster?
+
+
+    // An easier to call function for convolutions?
+    //  Callback will include various items such as the conv window?
+
+    // The conv window could contain the pos though.
+
+    // I do think that interlinking between Pixel_Buffers would work.
+
+    // const pb_window = new Pixel_Buffer({size:..., window_to: pb, pos: [-1, -1]})
+    //  pb_window.move_to(...)
+    //  pb_window.move(...)
+
+    //  Then it copies over the whole of its internal array when it's a window to another one?
+    //   That would mean it acts as a cache.
+    //    Convolution data would be more local to itself in memory, so possible / likely to run faster.
+
+
+    // A Pixel_Buffer acting as a window_to another Pixel_Buffer looks like it would make the best coding style for this system, for convolutions at least.
+    //  It could be very fast. Will be great to find out.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    each_px_convolution(ta_size, pb_conv_window, ta_pos, callback) {
+        // const ta_size = new Uint16Array(2);
+        ta_pos[0] = 0;
+        ta_pos[1] = 0;
+
+        console.log('ta_size', ta_size);
+
+
+        // Would 4 levels of loop for a moving convolution window be too much?
+        
+
+        // Looping x and y should be OK.
+        //  dealing with out of bounds.
+
+
+        // Will find out how long loops take vs how long memory allocation takes
+        //  also will check algorithms for amount of memory copying used.
+        //   and size of area it copies memory to.
+
+
+        // Could have a get_conv_window(pos, size) function.
+        //  and would return a conv window object cached for that size?
+
+        // Or write conv window to a ta?
+        //  Updating a Pixel_Buffer with the conv_window makes a lot of sense.
+
+
+
+
+        //  maybe that would work OK.
+        //  and do it in a very fp way?
+
+
+
+
+
+
+
+
+        // rectangular sizes?
+        //  may as well support them at the moment.
+
+        // should be able to work with different bipp.
+        //  may be just worth implementing it for 8bipp to start with.
+
+        // 1 bit per pixel image manipulation is now working nicely.
+        //  pixel reducer functions?
+
+        // Possibly different functions for different bipp would work best.
+
+        // Have been given pb_conv_window already.
+
+        if (are_equal(pb_conv_window.size, ta_size)) {
+
+        } else {
+            // Sizes need to be equal.
+
+        }
+
+
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
 
     // Threshold above, below, equal?
@@ -279,7 +1769,6 @@ class Pixel_Buffer_Core {
             // but the bit significance needs to be reversed within the byte.
             //  will need changes elsewhere.
 
-
             // ta[i_px];
 
             let meets_threshold = false;
@@ -287,43 +1776,31 @@ class Pixel_Buffer_Core {
             let out_byte = 0;
 
             while (i_px < cpx) {
-
                 meets_threshold = ta[i_px] >= ui8_threshold;
-
                 // 
-
                 if (meets_threshold) {
                     // it's 2 to the power of i_dest_bit
-
                     // Could optimize with a powers array. (maybe).
-                    out_byte = out_byte & Math.pow(2, i_dest_bit)
+                    out_byte = out_byte | Math.pow(2, i_dest_bit)
 
                 } else {
 
                 }
-
-
-
                 i_px++;
                 i_dest_bit--;
                 if (i_dest_bit === -1) {
-
-                    console.log('out_byte', out_byte);
+                    //console.log('out_byte', out_byte);
+                    rta[i_dest_byte] = out_byte;
 
                     // put the number in place?
 
                     i_dest_bit = 7;
                     i_dest_byte++;
+                    out_byte = 0;
                 }
             }
-
-
-
-
-
-
-
-
+            // then the rest once complete?
+            return res;
 
         } else {
             console.trace();
@@ -338,7 +1815,7 @@ class Pixel_Buffer_Core {
         const bypp = this.bytes_per_pixel;
         let i_px = 0;
         const num_px = this.size[0] * this.size[1];
-        console.log('to_24bipp bipp', bipp);
+        //console.log('to_24bipp bipp', bipp);
         if (bipp === 1) {
             const res = new this.constructor({
                 size: this.size,
@@ -366,7 +1843,12 @@ class Pixel_Buffer_Core {
             const res = new this.constructor({
                 size: this.size,
                 bits_per_pixel: 24
-            })
+            });
+
+            // r, g, b all the same.
+
+
+
             return res;
 
         } else if (bipp === 24) {
@@ -410,6 +1892,8 @@ class Pixel_Buffer_Core {
         return 'Pixel_Buffer_Core ' + this.toString();
     }
     */
+
+    // Awareness of a pixel buffer itself having a position.
 
     get bounds() {
         const res = new Float32Array(4);
@@ -499,11 +1983,11 @@ class Pixel_Buffer_Core {
             size: new_size
         });
         if (this.pos) {
-            res.pos = new Uint16Array([this.pos[0] - size, this.pos[1] - size])
+            res.pos = new Int16Array([this.pos[0] - size, this.pos[1] - size])
         }
         //if (this.pos) res.pos = this.pos;
         this.each_pixel_ta((pos, color) => {
-            const new_pos = new Uint16Array([pos[0] - size, pos[1] - size]);
+            const new_pos = new Int16Array([pos[0] - size, pos[1] - size]);
             if (new_pos[0] >= 0 && new_pos[0] < new_size[0] && new_pos[1] >= 0 && new_pos[1] < new_size[1]) {
                 //res.set_pixel_ta(new_pos, color);
                 res.set_pixel_ta(new_pos, color);
@@ -519,7 +2003,7 @@ class Pixel_Buffer_Core {
         })
         if (this.pos) res.pos = this.pos;
         if (this.pos) {
-            //res.pos = new Uint16Array([this.pos[0] + size, this.pos[1] + size])
+            //res.pos = new Int16Array([this.pos[0] + size, this.pos[1] + size])
         }
         res.color_whole(color);
         console.log('size', size);
@@ -612,10 +2096,17 @@ class Pixel_Buffer_Core {
 
     // pos and subpos with 1bipp? or have intervals on 0.125.???
 
+    // Shuld return the color too?
+
+    // Accept the pos ta as an option?
+    //  So it does not need to call the cb function with it, saving allocation???
+
+    // Will go for more flexibility as well as optimization.
+
     each_pixel_pos(cb) {
         //const bpp = this.bytes_per_pixel;
         const b = this.size;
-        const pos = new Uint16Array(2);
+        const pos = new Int16Array(2);
         for (pos[1] = 0; pos[1] < b[1]; pos[1]++) {
             for (pos[0] = 0; pos[0] < b[0]; pos[0]++) {
                 // and the color value
@@ -623,6 +2114,210 @@ class Pixel_Buffer_Core {
             }
         }
     }
+
+    // Some kinds of pixel iteration functions that only work by reference?
+    //  Or that do work by reference as well?
+
+    // pixel indexes as well as the positions?
+    //  do want a function that reads / provides the pixel values.
+
+    // Putting the pixel value into a typed array does make sense.
+    //  As well as using slice(a, b) on the typed array that initially holds the pixel.
+
+
+    // each_px(ta_pos, ta_px_value, ta_info, cb)
+    //  could wind up being very efficient.
+    // each_px(ta_pos, ta_px_value, cb)
+    //  and the callback can be called with no parameters
+    //  also hold the byte index? bit index within byte?
+    //   bit overall? The bit number of any value could be an effective means of indexing.
+
+    // And would also have a different each_px (inner) function specific to the number of bipp.
+
+    // if fast enough, each_px could work as the basis for a convolution.
+    //  would also read the window around each px.
+    //  a moving convolution window implemented in a fast and oo way would be very useful.
+
+
+    // Functions that operate only on the typed arrays they are given. Callback has no params of its own.
+    //  Lets give it a go.
+
+    each_ta_24bipp(ta_pos, ta_px_value, ta_info, callback) {
+        // worth doing an x and y loop?
+        //  and then also do integer incrementing
+
+        // Can we set details of the array view for the ta px value?
+        //  Lets copy the pixel values for the moment.
+
+        const bipp = this.bipp;
+        if (bipp === 24) {
+
+            // Check the parameter TAs are OK.
+            //  Make necessary assignments.
+
+            // the size within ta_info
+
+            //ta_px_value being Uint8 clamped or unclamped array
+            //  length 3 or more. we only use 1st 3.
+            // could do this without allocating any variables at all?
+            //  
+
+            //let input_params_are_valid = true;
+
+
+            //let arr_param_errs = []
+
+            //if (!(ta_pos instanceof UInt16Array)) {
+            //    input_params_are_valid = false;
+            //}
+
+            if (ta_pos instanceof Uint16Array || ta_pos instanceof Uint32Array && ta_pos.length >= 2) {
+
+                // only accept clamped ui8 array for the moment?
+
+                if (ta_px_value instanceof Uint8ClampedArray && ta_px_value.length >= 3) {
+
+                    // r, g, b
+
+                    // these values stored as 32 bit.
+                    //  can still have quite large bit addresses. 512mb limit???
+
+                    // or use larger float ta type?
+                    //  32 bit int for the moment?
+                    //  bigint?
+
+                    if (ta_info instanceof Uint32Array && ta_info.length >= 4) {
+                        // img w, img h, pixel index (num), bipp
+
+                        // for loop over all...
+                        //  set these two to the size.
+
+
+
+                        const ta = this.ta;
+
+                        ta_info[0] = this.size[0];
+                        ta_info[1] = this.size[1];
+                        ta_info[2] = 0;
+                        ta_info[3] = 24; // bipp;
+
+                        const update = () => {
+                            ta[ta_info[2] * 3] = ta_px_value[0];
+                            ta[ta_info[2] * 3 + 1] = ta_px_value[1];
+                            ta[ta_info[2] * 3 + 2] = ta_px_value[2];
+
+                        }
+
+                        for (ta_pos[1] = 0; ta_pos[1] < ta_info[1]; ta_pos[1]++) {
+                            for (ta_pos[0] = 0; ta_pos[0] < ta_info[0]; ta_pos[0]++) {
+                                ta_px_value[0] = ta[ta_info[2] * 3];
+                                ta_px_value[1] = ta[ta_info[2] * 3 + 1];
+                                ta_px_value[2] = ta[ta_info[2] * 3 + 2];
+                                
+                                callback(update);
+                                ta_info[2]++;
+                            }
+                        }
+
+                        //  pixel num = bit index / bipp
+                        //   have a pixel num variable too?
+                        //    could be convenient.
+                        //     maybe more convenient than bit index.
+                        //  pixel num would be simpler / easier than bit_index in many cases.
+
+                    }
+
+
+
+                    // ta_info
+                    //  width
+                    //  height
+                    //  bit index of current pixel
+                    //  bipp (but we know that's 24???)
+                    //   nice to set a value for it.
+
+
+
+
+                }
+
+
+            }
+
+
+
+
+
+
+
+        } else {
+            throw 'each_ta_24bipp error: bipp must be 24, bipp: ' + bipp;
+        }
+
+
+
+    }
+
+    each_px(ta_pos, ta_px_value, ta_info, callback) {
+
+
+        const bipp = this.bipp;
+
+        if (bipp === 1) {
+            return this.each_ta_1bipp(ta_pos, ta_px_value, ta_info, callback);
+        } else if (bipp === 8) {
+            return this.each_ta_8bipp(ta_pos, ta_px_value, ta_info, callback);
+        } else if (bipp === 24) {
+            return this.each_ta_24bipp(ta_pos, ta_px_value, ta_info, callback);
+        } else if (bipp === 32) {
+            return this.each_ta_32bipp(ta_pos, ta_px_value, ta_info, callback);
+        } else {
+            console.trace();
+            throw 'Unsupported bipp: ' + bipp;
+        }
+
+
+        // should have 4 arguments?
+
+        // ta info will include the image size
+        // 
+
+        // ta_info should hold ints? uints?
+
+        // Uint32Array size 4 or greater.
+
+        // ta_pos - Uint32 or 16 Array size 2 (or greater?)
+        // ta_px_value Uint8 (Clamped) array relevant bytes per pixel size
+        //  (or size 1 when it's 1 bit per pixel)
+
+
+
+        // info:
+        //  image width
+        //  image height
+        //  bits per pixel
+        //  pixel bit index  (/8 for the byte index)
+        //   (can get the pos from this as well with a calculation involving bipp and width)
+
+        // callback will be called without any parameters!
+        //  lets see how fast it is...
+
+
+
+
+
+    }
+
+
+
+
+
+    //  
+
+
+
+
+
 
 
     // each_pixel_ta
@@ -641,7 +2336,7 @@ class Pixel_Buffer_Core {
         const bpp = this.bytes_per_pixel;
         if (bpp === 1) {
             (() => {
-                const pos = new Uint16Array(2);
+                const pos = new Int16Array(2);
                 const a = new Uint32Array(2);
                 const b = new Uint16Array(2);
                 const sc = new Uint32Array(4);
@@ -666,7 +2361,7 @@ class Pixel_Buffer_Core {
 
         } else if (bpp === 4) {
             (() => {
-                const pos = new Uint16Array(2);
+                const pos = new Int16Array(2);
                 const a = new Uint32Array(2);
                 const b = new Uint16Array(2);
                 const sc = new Uint32Array(4);
@@ -813,7 +2508,9 @@ class Pixel_Buffer_Core {
 
         const idx = pos[1] * this.size[0] + pos[0];
         const byte = Math.floor(idx / 8);
-        const bit = idx % 8;
+
+        // 7 - idx % 8 ???
+        const bit = 7 - (idx % 8);
 
         //console.log('byte, bit', [byte, bit]);
 
@@ -894,7 +2591,7 @@ class Pixel_Buffer_Core {
     }
     'set_pixel_by_idx_1bipp'(idx, color) {
         const byte = Math.floor(idx / 8);
-        const bit = idx % 8;
+        const bit = 7 - (idx % 8);
         const val = !!color;
         const pow = Math.pow(2, bit);
 
@@ -1118,8 +2815,6 @@ class Pixel_Buffer_Core {
 
         // x and y could be given as a typed array.
 
-
-
         x = a[0];
         y = a[1];
         const w = this.size[0];
@@ -1209,14 +2904,6 @@ class Pixel_Buffer_Core {
             // then use that to calculate its bit position within the byte.
             //  then do the appropriate measurement and add or subtract of a number 2^idx (I think)
 
-
-
-
-
-
-
-
-
         } else if (this.bits_per_pixel === 24) {
             buffer[pixel_buffer_pos] = r;
             buffer[pixel_buffer_pos + 1] = g;
@@ -1251,7 +2938,7 @@ class Pixel_Buffer_Core {
 
     'get_pixel_by_idx_1bipp'(idx) {
         const byte = Math.floor(idx / 8);
-        const bit = idx % 8;
+        const bit = 7 - (idx % 8);
         const pow = Math.pow(2, bit);
 
         //const tas1 = new Uint32Array(6);
@@ -1304,8 +2991,6 @@ class Pixel_Buffer_Core {
         }
     }
 
-
-
     // Will redo get_pixel.
     //  likely to use tas by default, and built in type checking within minimal calling of any other functions.
 
@@ -1314,7 +2999,7 @@ class Pixel_Buffer_Core {
 
         const idx = pos[1] * this.size[0] + pos[0];
         const byte = Math.floor(idx / 8);
-        const bit = idx % 8;
+        const bit = 7 - (idx % 8);
 
         //console.log('byte, bit', [byte, bit]);
 
@@ -1367,10 +3052,18 @@ class Pixel_Buffer_Core {
     // or a getter function for split_rgb_channels?
 
     get split_rgb_channels() {
+
+        //console.log('core split_rgb_channels');
+
+        // Seems like it had been loaded wrong in the first place.
+        //  Need to improve loading of JPEG as 24 bipp.
+        //   (though the data input from Sharp may be 32 bipp)
+
         const [bipp, bypp] = [this.bits_per_pixel, this.bytes_per_pixel];
 
         // only for images with bipp 24 or 32
-        console.log('bipp', bipp);
+        //console.log('bipp', bipp);
+        //console.log('bypp', bypp);
 
         if (bipp === 24 || bipp === 32) {
             // 3 result objects.
@@ -1460,7 +3153,6 @@ class Pixel_Buffer_Core {
     // Return it as a typed array by default?
 
     'get_pixel'(x, y) {
-
         // (ta_pos, int_color || ta_color)
 
         // Could asess the param sig...
@@ -1470,8 +3162,6 @@ class Pixel_Buffer_Core {
         //     maybe i
         //     maybe d
         //     
-
-
 
 
         const ta_32_scratch = new Uint32Array(6);
@@ -1552,6 +3242,16 @@ class Pixel_Buffer_Core {
             return false;
         }
     }
+
+
+
+
+
+
+
+    // 1bipp images will replace pos lists in many cases.
+    //  also 1bipp images which have got their pos set so they don't need as much space.
+
     // get (rectangle) view
     //  A rectangular square of pixels.
 
@@ -1575,7 +3275,7 @@ class Pixel_Buffer_Core {
         if (bg_color) {
             res.color_whole(bg_color);
         }
-        res.pos = new Uint16Array([bounds[0], bounds[1]]);
+        res.pos = new Int16Array([bounds[0], bounds[1]]);
 
         // each_pixel_rebounded?
         pixel_pos_list.each_pixel((pos) => {
@@ -1586,8 +3286,8 @@ class Pixel_Buffer_Core {
             //if (typeof color !== 'number') {
             //    console.log('color', color);
             //}
-            const target_pos = new Uint16Array([(pos[0] - bounds[0]), (pos[1] - bounds[1])]);
-            //const target_pos = new Uint16Array([(pos[0]), (pos[1])]);
+            const target_pos = new Int16Array([(pos[0] - bounds[0]), (pos[1] - bounds[1])]);
+            //const target_pos = new Int16Array([(pos[0]), (pos[1])]);
             //const target_pos = pos;
             //console.log('target_pos, color', target_pos, color);
             res.set_pixel_ta(target_pos, color);
@@ -1604,6 +3304,13 @@ class Pixel_Buffer_Core {
 
     // Likely to change this to use typed arrays in the params.
     //  Also to call different inner versions depending on bits per pixel.
+
+    // Will be able to get a window from this.
+    //  Pixel buffer window.
+
+    // Maybe Virtual_Pixel_Buffer would be useful for having a windowed view into another Pixel_Buffer.
+    //  Could be very fast for convolutions. Not sure.
+
 
     __copy_rect(x, y, w, h, clip = false) {
         // check within bounds
@@ -1668,10 +3375,10 @@ class Pixel_Buffer_Core {
             });
             // The position of the copied rect...
             if (this.pos) {
-                //res.pos = new Uint16Array([this.pos[0] + x, this.pos[1] + y]);
+                //res.pos = new Int16Array([this.pos[0] + x, this.pos[1] + y]);
                 res.pos = this.pos;
             } else {
-                //res.pos = new Uint16Array([x, y]);
+                //res.pos = new Int16Array([x, y]);
             }
             if (clip) {
                 res.clip = clip;
@@ -1783,8 +3490,8 @@ class Pixel_Buffer_Core {
     // Maybe better to use to_xbipp functions.
     //  As its clearer that it creates and outputs a new object.
 
-    'change_bits_per_pixel'(new_bipp) {
-        const old_bipp = this.bits_per_pixel;
+    'change_bits_per_pixel'(old_bipp, new_bipp) {
+        //const old_bipp = this.bits_per_pixel;
 
         // could make a temporary bixel buffer to work with.
         //  ie, clone, reallocate own ta, read from clone, write to this.
@@ -1792,9 +3499,10 @@ class Pixel_Buffer_Core {
         // Or may be easier to write / use functions that apply directly to the typed arrays.
         //  May be easier to port them over to C++.
 
-        console.log('change_bits_per_pixel [old_bipp, new_bipp]', [old_bipp, new_bipp])
-
         if (old_bipp !== new_bipp) {
+            console.log('change_bits_per_pixel [old_bipp, new_bipp]', [old_bipp, new_bipp]);
+            console.trace();
+            throw 'stop';
 
             if (old_bipp === 1) {
 
@@ -1970,7 +3678,14 @@ class Pixel_Buffer_Core {
     //   can provide the data in a ta but with that data changing later.
     //    meaning writing to a smaller amount of memory. Using that data immediately before it's next updated.
 
-    'moving_pixels_window'(offset_bounds, cb) {
+
+    // Likely to change the moving pixels window, making it more efficient.
+
+
+
+
+
+    '____moving_pixels_window'(offset_bounds, cb) {
         const [offset_l, offset_t, offset_r, offset_b] = offset_bounds;
 
         const check = (pos) => {
@@ -2021,7 +3736,7 @@ class Pixel_Buffer_Core {
     // Moving pixels pixel setter
     //  And provide a 'set' function too?
 
-    'moving_pixels_ppl_selector'(offset_bounds, fn_selector) {
+    '____moving_pixels_ppl_selector'(offset_bounds, fn_selector) {
         let res = new Pixel_Pos_List();
         this.moving_pixels_window(offset_bounds, (pos, ppl) => {
             if (fn_selector(pos, ppl) === true) {
@@ -2100,7 +3815,7 @@ if (require.main === module) {
                     // set_pixel([3, 3], 1);
                     // set_pixel(ta_pos, 1);
 
-                    const ta_pos = new Uint16Array(2);
+                    const ta_pos = new Int16Array(2);
 
                     ta_pos[0] = 3;
                     ta_pos[1] = 3;
