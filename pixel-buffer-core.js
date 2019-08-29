@@ -1210,6 +1210,18 @@ class Pixel_Buffer_Core {
         //  could test that.
         let ta_move_vector;
 
+        /*
+        const ta_bounds = pb.ta_bounds;
+        console.log('ta_bounds', ta_bounds);
+        const ta_rgb = pb.ta_rgb;
+        */
+
+        let ta_bounds;
+        let ta_rgb;
+        let ta_rgb2;
+        let ta_rgba;
+        let ta_row_scratch;
+
 
 
         
@@ -1219,6 +1231,7 @@ class Pixel_Buffer_Core {
         let ta_bounds3_scratch;    // Int16Array(4);
         let ta_bounds4_scratch;    // Int16Array(4);
         let ta_size_scratch;       // Uint16Array(2);
+        let ta_size2_scratch;       // Uint16Array(2);
         let ta_pointers_scratch;
         let ta_pointers2_scratch;
         let ta_pointerpair_scratch;
@@ -1248,6 +1261,24 @@ class Pixel_Buffer_Core {
                 }
             }
         });
+
+
+        // ta_row_scratch
+        //  a typed array sized to hold pixel data for a single row.
+
+        // (this.bypr)
+
+        ro(this, 'ta_row_scratch', () => {
+            if (!ta_row_scratch) {
+                ta_row_scratch = new Uint8ClampedArray(this.bypr);
+            } else {
+                if (ta_row_scratch.length !== this.bypr) {
+                    ta_row_scratch = new Uint8ClampedArray(this.bypr);
+                }
+                return ta_row_scratch;
+            }
+        })
+
 
 
         
@@ -1303,6 +1334,38 @@ class Pixel_Buffer_Core {
         //
 
 
+        // default bounds is it's own space? within its own coords, ie size? or bounds within other?
+        //  better to leave it blank for the moment here.
+        ro(this, 'ta_bounds', () => {
+            if (!ta_bounds) {
+                ta_bounds = new Int16Array(4);
+            }
+            return ta_bounds;
+        });
+
+        ro(this, 'ta_rgb', () => {
+            if (!ta_rgb) {
+
+                // rgb position of the current inner pos?
+
+                // we don't have a proper pointer for a selected position in the current coord space.
+                //  pos only applies to this pb's pos within another space.
+
+
+
+
+                ta_rgb = new Uint8ClampedArray(3);
+            }
+            return ta_rgb;
+        });
+        ro(this, 'ta_rgb2', () => {
+            if (!ta_rgb2) {
+                ta_rgb2 = new Uint8ClampedArray(3);
+            }
+            return ta_rgb2;
+        });
+
+
 
         // Could be of use in SIMD as well?
         //  Maybe especially if they dont need to be set so often in JS and can be the basis for many SIMD operations in C++.
@@ -1353,6 +1416,17 @@ class Pixel_Buffer_Core {
             }
             return ta_size_scratch;
         });
+
+
+        // ta_size2_scratch
+        ro(this, 'ta_size2_scratch', () => {
+            if (!ta_size2_scratch) {
+                ta_size2_scratch = new Uint16Array(2);
+            }
+            return ta_size2_scratch;
+        });
+
+
 
         // ta_pointers_scratch
 
@@ -1491,6 +1565,121 @@ class Pixel_Buffer_Core {
             return this.size[0] * this.bytes_per_pixel;
         });
         */
+
+
+    }
+
+    fill_solid_rect_by_bounds() {
+
+        const bounds = this.ta_bounds;
+
+        const bipp = this.bipp;
+
+        if (bipp === 24) {
+
+            const rgb = this.ta_rgb;
+
+            //console.log('bounds', bounds);
+            //console.log('rgb', rgb);
+
+
+            // However, don't want the full row as scratch.
+            //  Maybe better to create a new ta const here of the right size of the row of the data we are writing.
+
+            // Could compare direct byte writing through iteration with row write iteration.
+            //  Writing whole rows where possible definitely seems fastest in overview. In practise some less used functions in JS would be less optimized when compiled (JIT).
+
+            // Does look like getting and using a bounds / byte iterator looks best here.
+            //  byte index of the first pixel in the bounds
+            //   byte width of the bounds
+
+            const bytes_per_bounds_row = (bounds[2] - bounds[0]) * this.bypp;
+
+            // bypbr - bytes per bounds row
+
+            //console.log('bytes_per_bounds_row', bytes_per_bounds_row);
+
+            // then can create a new temporary solid_row ta
+
+            const solid_row = new Uint8ClampedArray(bytes_per_bounds_row);
+            // fill it withthe pixels...
+
+            // alternate rgb
+
+            let cc = 0;
+
+            for (let c = 0; c < bytes_per_bounds_row; c++) {
+                solid_row[c] = rgb[cc];
+
+                cc++;
+                if (cc === 3) cc = 0;
+            }
+
+            //console.log('solid_row', solid_row);
+
+            // then do the row-based iteration.
+            //  will be simple usage of ta set(other_ta, offset)
+
+            let write_byte_idx = bounds[0] * this.bypp + bounds[1] * this.bypr;
+            //console.log('write_byte_idx', write_byte_idx);
+
+            // then repeat through the rows in the bounds....
+            //  advance the write_byte_idx by a row (this.bypr) each time.
+
+            for (let i_row = bounds[1]; i_row < bounds[3]; i_row++) {
+                this.ta.set(solid_row, write_byte_idx);
+
+                write_byte_idx += this.bypr;
+            }
+
+
+            // should do the trick....
+
+
+
+
+
+
+
+
+            //  iterate row: add the bypr value. seems easy
+
+
+
+
+
+
+
+            // then do the fastest iteration through these bounds...
+
+            //  could try doing row copy / create the first row, then copy that into all the rest?
+            //   maybe use .ta_row or .ta_px_row which returns ta that holds data for a single row?
+            //    or a ta_row_scratch (for the moment, and it's not used as a parameter for anything. scratch means its not 'officially' used, such as with ta_bounds and ta_rgb)
+
+            // a scratch row would indeed be very useful.
+            //  could check it's the right size before returning it.
+
+            // Scratch row would definitely help when it comes to not creating more variables while fastest functions are running multiple times.
+
+
+
+
+
+            // scratch rows delivered at other sizes (such as valid (overlapping) bounds size) could help a lot too.
+
+
+
+
+
+
+
+        } else {
+            console.trace();
+            throw 'NYI';
+        }
+
+        
+
 
 
     }

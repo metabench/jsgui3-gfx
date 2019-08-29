@@ -81,7 +81,9 @@ Rapidly and efficiently doing convolutions will be very useful.
   0.0.21 - pos_center property as a facade to pos and size
    Properties overhaul, using the 'facade' pattern.
     // Pre properties overhaul version???
-  
+
+0.0.22
+  .bypp = 1 convert to greyscale
 
 
 
