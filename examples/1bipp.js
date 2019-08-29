@@ -60,7 +60,7 @@ if (require.main === module) {
                     // then try changing it to 24bpp...
 
                     const pb24 = pb.to_24bipp();
-                    //console.log('pb24.ta', pb24.ta);
+                    console.log('pb24.ta', pb24.ta);
 
                     // Want to use this as a result for thresholding an image.
                     //  new_pb_threshold(threshold value)

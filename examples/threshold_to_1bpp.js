@@ -47,12 +47,15 @@ const {Pixel_Buffer} = gfx;
 
 const Server_Pixel_Buffer = gfx_server.Pixel_Buffer;
 
+
+// seems to be working / fixed now :)
 const copy_from_server_pb = (server_pb) => {
     const res_pb = new Pixel_Buffer({
         size: server_pb.size,
         bits_per_pixel: server_pb.bits_per_pixel
     });
-    res_pb.buffer = res_pb.ta = server_pb.ta;
+    //res_pb.buffer = res_pb.ta = server_pb.ta;
+    res_pb.ta.set(server_pb.ta);
     return res_pb;
 }
 
@@ -61,9 +64,16 @@ const copy_to_server_pb = (standard_pb) => {
         size: standard_pb.size,
         bits_per_pixel: standard_pb.bits_per_pixel
     });
-    res_pb.buffer = res_pb.ta = standard_pb.ta;
+
+    // Setting the buffer... does not work...?
+
+    res_pb.ta.set(standard_pb.ta);
+
+
+    //res_pb.buffer = res_pb.ta = standard_pb.ta;
     return res_pb;
 }
+
 
 
 

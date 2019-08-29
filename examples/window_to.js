@@ -45,12 +45,15 @@ const {Pixel_Buffer} = gfx;
 
 const Server_Pixel_Buffer = gfx_server.Pixel_Buffer;
 
+
+// seems to be working / fixed now :)
 const copy_from_server_pb = (server_pb) => {
     const res_pb = new Pixel_Buffer({
         size: server_pb.size,
         bits_per_pixel: server_pb.bits_per_pixel
     });
-    res_pb.buffer = res_pb.ta = server_pb.ta;
+    //res_pb.buffer = res_pb.ta = server_pb.ta;
+    res_pb.ta.set(server_pb.ta);
     return res_pb;
 }
 
@@ -59,7 +62,9 @@ const copy_to_server_pb = (standard_pb) => {
         size: standard_pb.size,
         bits_per_pixel: standard_pb.bits_per_pixel
     });
-    res_pb.buffer = res_pb.ta = standard_pb.ta;
+    // Setting the buffer... does not work...?
+    res_pb.ta.set(standard_pb.ta);
+    //res_pb.buffer = res_pb.ta = standard_pb.ta;
     return res_pb;
 }
 
@@ -172,8 +177,11 @@ const eg_win_to = async() => {
 
 
 
-    const ta_pos = new Uint16Array(2);
+    const ta_pos = new Int16Array(2);
     const ta_px_value = new Uint8ClampedArray(3);
+
+
+    // make general int info array support +-? Better able to hold (memory) offsets that way.
     const ta_info = new Uint32Array(4);
 
     // And that should be enough to do a fast iteration over the whole image in terms of data allocation.
@@ -207,12 +215,19 @@ const eg_win_to = async() => {
 
         // Yes, this is really fast now. Lets see about convolution windows and moving them.
 
-        
+        console.log('pb_source.size', pb_source.size);
+        console.log('pb_source.bipp', pb_source.bipp);
+        console.log('pb_source.bypp', pb_source.bypp);
+
+        //throw 'stop';
+
 
 
 
         pb_source.each_px(ta_pos, ta_px_value, ta_info, (update) => {
             // Here we use direct reference to the various typed arrays.
+
+            //console.log('ta_pos', ta_pos);
 
             // ta_info: w, h, idx_px, bipp
 
@@ -231,6 +246,8 @@ const eg_win_to = async() => {
             update();
         });
 
+        
+
         //avg[0] = avg[0] / px_count;
         //avg[1] = avg[1] / px_count;
         //avg[2] = avg[2] / px_count;
@@ -239,6 +256,7 @@ const eg_win_to = async() => {
         //console.log('avg', avg);
         //console.log('px_count', px_count);
         performance.measure('A to B', 'A', 'B');
+        //console.log('pb_source.ta', pb_source.ta);
 
 
 
@@ -332,11 +350,65 @@ const eg_win_to = async() => {
 
         const pb_window = new Pixel_Buffer({
             size: [5, 5],
-
-            
             window_to: pb_source,  // (source??)
             pos_center: ta_pos
         });
+
+        // sort out the pos_center getter.
+
+        // its the pos center within the coordinate space of the source.
+        console.log('pb_window.pos_center', pb_window.pos_center);
+
+        // Then can update / move / translate the whole the window.
+        //  Adjusting its position / pos property.
+
+        // maybe worth perf testing this single copy operation...
+
+        performance.mark('A');
+        //const [r, g, b] = pb.split_rgb_channels;
+        
+
+
+        // Should automatically do that when it starts?
+        pb_window.copy_from_source();
+        // 0.53 ms, not bad.
+        //  maybe faster with next ops too, as this time it initialised values???
+        //   see about fastest optimizations.
+
+        performance.mark('B');
+        performance.measure('A to B', 'A', 'B');
+
+        // maybe updating and moving the pos property with .move(2dvector) is the best way?
+        //  or setting the pos would be fine....
+
+        // moving the pos_center does make most sense in some ways though.
+
+
+
+
+
+        //  use a scratch pos / movement vector.  2d_vector type???
+        // then can pb_window.move(new Int16Array(1, 0));
+
+
+
+
+
+        // Just moving the window (call update function?) should result in its internal data being updated to match the data it is viewing.
+
+        // moving its pos to cover a different space in the window_to source will cause / enable a fast data update.
+        //  copy algorithm will run quckly.
+        //   also need to be able to copy back to the source.
+
+        //  direct access to the source / its typed array...
+        //   would need more code to map between pixels in the window and pixels in the original ta.
+
+
+
+
+
+
+
 
         // pos_center should set the pos value...
         //  the pos value of a target will apply to a view of the source...?
@@ -471,9 +543,6 @@ const eg_win_to = async() => {
 
         // copy from the source.
 
-        
-
-
 
 
 
@@ -514,8 +583,8 @@ const eg_win_to = async() => {
 
 
         console.log('pb_window.ta', pb_window.ta);
-        console.log('pb_window', pb_window);
-        console.log('pb_window.bounds', pb_window.bounds);
+        //console.log('pb_window', pb_window);
+        //console.log('pb_window.bounds', pb_window.bounds);
 
 
         // Pos should be negative if we say its centered at 0, 0.
@@ -525,16 +594,147 @@ const eg_win_to = async() => {
 
         // Can use this pos (-2, -2) as well as the size be determine the copy size when we use another pb as the source.
 
-        
+
 
 
         
         console.log('pb_window.pos', pb_window.pos);
-        console.log('pb_window.size', pb_window.size);
+        console.log('pb_window.pos_center', pb_window.pos_center);
+        // pos refers to its position within another space.
 
-        console.trace();
+        const move_vector = pb_window.ta_move_vector;
+        console.log('move_vector', move_vector);
+        move_vector[0] = 1;
+        move_vector[1] = 0;
 
-        throw 'stop';
+        console.log('move_vector', move_vector);
+
+        performance.mark('C');
+        //const [r, g, b] = pb.split_rgb_channels;
+        
+
+        /*
+
+
+
+        pb_window.move(move_vector);
+        pb_window.move(move_vector);
+        pb_window.move(move_vector);
+        pb_window.move(move_vector);
+        pb_window.move(move_vector);
+
+        move_vector[0] = 0;
+        move_vector[1] = 1;
+
+        pb_window.move(move_vector);
+        pb_window.move(move_vector);
+        pb_window.move(move_vector);
+        */
+
+        // well yes, this is still nicely fast.
+        //  likely to be able to speed it up some more, just in js.
+
+        // worth writing the convolution code.
+        //  better to test it on another image though.
+
+
+        // while(pb_window.move_next_pixel) {...}  move_next_pixel will return undefined when there isnt a next pixel within the target bounds.
+
+        // pb_window.move_next_pixel
+
+        let pos;
+
+        // moves to the next px in the source!!!
+        pos = pb_window.move_next_px();
+
+        //(() => {
+            while (pos !== false) {
+                //console.log('pos', pos);
+    
+                pos = pb_window.move_next_px();
+            }
+        //})();
+
+        
+
+        // Not sure the point of a blur conv on an already smooth image.
+        //  Though pixel averaging (very simple conv) would show the border around the image.
+
+
+
+
+
+        // quite fast at 10ms!
+        //  good going so far!
+
+
+
+        
+
+
+        // Would be worth trying a convolution function.
+        //  Moving this pixel window around.
+        //  Want a convolution matrix as well.
+        //   Same size grids, will have very fast ta convolve.
+
+        // Would be worth seeing how long it takes to move the copy window over every pixel.
+        //  Then can use that copy window as a convolution source window / pb.
+
+
+
+
+
+
+
+
+
+        //pb_window.copy_from_source();
+        // 0.53 ms, not bad.
+        //  maybe faster with next ops too, as this time it initialised values???
+        //   see about fastest optimizations.
+
+        performance.mark('D');
+        performance.measure('C to D', 'C', 'D');
+
+        // 0.3ms, nicely fast here.
+        //  but need to consider it 1000s + of times.
+        //   maybe not so fast.
+        console.log('pb_window.pos_center', pb_window.pos_center);
+
+        console.log('pb_window.ta', pb_window.ta);
+
+        console.log('pb_window.pos', pb_window.pos);
+        console.log('pb_window.pos_center', pb_window.pos_center);
+
+
+        // Maybe trying a convolution on Erte Ale would be best?
+        //  Could try a pixel averaging shrinkage method. Would shrink by int_n times.
+
+        // Convolving a shrunken version of Erte Ale would be best.
+        
+        // Though want to get into image resizing as well.
+        
+
+
+
+
+
+
+
+        // this.move_next_px
+        //  would deal with rows. would return the movement vector used.
+
+
+        //console.log('pb_window.size', pb_window.size);
+
+
+        // then run a function to update / copy from source.
+
+
+
+        //console.trace();
+
+        //throw 'stop';
         // Need more API to enable the central position.
         //  Would be very useful for convolutions.
         //  Seems like we will have the lower level image processing tasks very nicely done, high speed, and useful for higher level tasks.
@@ -588,8 +788,6 @@ const eg_win_to = async() => {
             await gfx.save_pixel_buffer('./output/window_to-generated_256x256.png', pb_source, {
                 format: 'png'
             });
-
-
 
         })();
 

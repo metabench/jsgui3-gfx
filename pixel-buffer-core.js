@@ -95,6 +95,14 @@ const {ro, prop} = oext;
 
 
 
+// Recent changes have broken it for some reasons.
+// Lower level tests to see what works?
+
+
+
+
+
+
 
 
 
@@ -284,12 +292,145 @@ class Pixel_Buffer_Core {
         const pos = new Int16Array(2);
         const size = new Int16Array(2);
 
+
+        // Position of the central pixel within this.
+        //  May be best to have a local variable for it, and other things that get used.
+        //   Better than having to create another object when returning a result in functions / getters.
+
+        // pos_center_within_source?
+        // pos_within_source?
+        //  or part of a Source_Reference???
+
+        const pos_center_within_this = new Int16Array(2);
+
+
+
         // Also ta | buffer property.
         //  May be better using defineProperty and a local typed array variable here?
         //   ta as a const, not being able to overwrite it?
         //    or if we do, it copies the values over?
 
         // An overhaul of the properties makes sense.
+
+        let ta; // flexible, can be redefined? Can still make read-only in userland.
+        //  will have a ta prop.
+        //   alias to buffer as well...
+
+        // read-only for the moment?
+        //  worth not allowing overwriting it I suppose?
+        //   but then shared typed arrays could be used?
+        //    would need to be careful about that as well.
+
+        ro(this, 'ta', () => {
+            return ta;
+        });
+        ro(this, 'buffer', () => {
+            return ta;
+        });
+
+
+
+
+
+        // or bytes per pixel cant always be ui8.
+
+        const ta_bpp = new Uint8ClampedArray(2);
+        ta_bpp[1] = 8; // byte to bit multiplier. will stay as 8.
+
+        // getter and setters for bypp and bipp... interact with ta_bpp[0]
+
+
+
+
+
+
+
+
+        // the get / set bytes per pixel and bits per pixel will both use this.
+
+        // move away from prop for the moment...
+
+
+
+
+        // default...?
+        //  bits per pixel, bytes per pixel...?
+
+        // only hold the number of bits per pixel internally.
+        //  
+
+        // shorthand method names???? interesting.
+
+        const def_bipp = {
+            // Using shorthand method names (ES2015 feature).
+            // This is equivalent to:
+            // get: function() { return bValue; },
+            // set: function(newValue) { bValue = newValue; },
+            get() { return ta_bpp[0]; },
+            set(value) { 
+                ta_bpp[0] = value; 
+            },
+            enumerable: true,
+            configurable: false
+          }
+
+        Object.defineProperty(this, 'bits_per_pixel', def_bipp);
+        Object.defineProperty(this, 'bipp', def_bipp);
+
+        const def_bypp = {
+            // Using shorthand method names (ES2015 feature).
+            // This is equivalent to:
+            // get: function() { return bValue; },
+            // set: function(newValue) { bValue = newValue; },
+            get() { return ta_bpp[0] / 8; },
+            set(value) { 
+                ta_bpp[0] = value * 8; 
+            },
+            enumerable: true,
+            configurable: false
+          }
+
+        Object.defineProperty(this, 'bytes_per_pixel', def_bypp);
+        Object.defineProperty(this, 'bypp', def_bypp);
+
+        // bytes_per_row
+
+        // bits_per_row could be useful as well.
+        //  maybe the rows don't need to subdivide into bytes.
+        //   that would be most efficient for 1 bipp images of course, eg sized 3x300.
+        //    dont want to limit it to integer number of bytes per row in this case. that's a case for only using bits_per_row.
+
+        const def_bypr = {
+            get() {
+                //console.log('size[0]', size[0]);
+                //console.log('ta_bpp[0]', ta_bpp[0]);
+                return size[0] * ta_bpp[0] / 8;
+            }
+        }
+        Object.defineProperty(this, 'bytes_per_row', def_bypr);
+        Object.defineProperty(this, 'bypr', def_bypr);
+
+
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+
+          // a get minus_pos function.
+        // would also have its own local ta.
 
         
 
@@ -323,6 +464,25 @@ class Pixel_Buffer_Core {
             configurable: false
         });
 
+        const minus_pos = new Int16Array(2);
+
+        Object.defineProperty(this, 'minus_pos', {
+            // Using shorthand method names (ES2015 feature).
+            // This is equivalent to:
+            // get: function() { return bValue; },
+            // set: function(newValue) { bValue = newValue; },
+            get() {
+                if (pos) {
+                    minus_pos[0] = pos[0] * -1;
+                    minus_pos[1] = pos[1] * -1;
+                    return minus_pos;
+                }
+            },
+            enumerable: true,
+            configurable: false
+        });
+
+
         Object.defineProperty(this, 'size', {
             // Using shorthand method names (ES2015 feature).
             // This is equivalent to:
@@ -339,6 +499,89 @@ class Pixel_Buffer_Core {
                         size[1] = value[1];
                     }
                 }
+                //pos = value; 
+            },
+            enumerable: true,
+            configurable: false
+        });
+
+
+
+        const bounds = new Int16Array(4);
+        // Using shorthand method names (ES2015 feature).
+            Object.defineProperty(this, 'bounds', {
+            // This is equivalent to:
+            // get: function() { return bValue; },
+            // set: function(newValue) { bValue = newValue; },
+
+
+            // Refer to pos_center_within_this...
+            //  
+
+            get() {
+                const size = this.size;
+                const pos = this.pos;
+                bounds[0] = pos[0];
+                bounds[1] = pos[1];
+                bounds[2] = pos[0] + size[0];
+                bounds[3] = pos[1] + size[1];
+                return bounds;
+            },
+            /*
+            set(value) {
+
+                
+            },*/
+            enumerable: true,
+            configurable: false
+        });
+
+        //  Use the size and pos to calculate this.
+
+        const size_bounds = new Int16Array(4);
+        Object.defineProperty(this, 'size_bounds', {
+            get() {
+                const size = this.size;
+                //console.log('size', size);
+                size_bounds[0] = 0;
+                size_bounds[1] = 0;
+                size_bounds[2] = size[0];
+                size_bounds[3] = size[1];
+                return size_bounds;
+            },
+            enumerable: true,
+            configurable: false
+        });
+
+    
+
+
+        let pb_source;
+
+        Object.defineProperty(this, 'source', {
+            // Using shorthand method names (ES2015 feature).
+            // This is equivalent to:
+            // get: function() { return bValue; },
+            // set: function(newValue) { bValue = newValue; },
+            get() { return pb_source; },
+            set(value) {
+                // Were we given a Int16Array? Similar?
+                //  set own pos ta values from the value.
+
+                pb_source = value;
+
+
+                // Pixel_Buffer_Core or any subclass?
+
+                /*
+
+                if (value instanceof Int16Array) {
+                    if (value.length === 2) {
+                        size[0] = value[0];
+                        size[1] = value[1];
+                    }
+                }
+                */
 
 
                 //pos = value; 
@@ -346,6 +589,323 @@ class Pixel_Buffer_Core {
             enumerable: true,
             configurable: false
         });
+
+
+
+        // And the pos_center facade to provide access to that variable.
+        //  It could have its own pos typed array though.
+
+        //  Would make sense if the ta pos_center were created and maintained...
+        //   But always update it when getting it?
+
+        // have a centre_offset typed array?
+
+        //  the offset of the center pixel from the top left pixel...?
+
+        // center_pixel_offset_from_tl
+        //  where the tl maybe won't be 0, 0, because of the pos.
+
+
+
+        // internal, non-scratch ta.
+        //  don't expose it (directly) for the moment.
+
+        // Maybe have safe API to deal with fast internal objects?
+
+        //const ta_central_px_offset = new Int16Array(2);
+
+        // pos_central_position_within_this
+
+
+        // Making it so that Pixel_Buffer can deal with multiple coordinate spaces at once.
+
+        //  This may be a useful start to pixel-remap based resizing.
+        //   Iterate through each pixel. Do a variety of calculations. Load the relevant pixels in the source quickly (maybe 4 or 9 of them?)
+        //   
+
+        // Anyway, more work on pos_center.
+
+
+
+
+
+
+
+
+        // set this when we set pos_center.
+
+
+
+
+        // The iteration for pixels, convolutions etc will be set up with some function(s) to get the iterations values into some tas.
+        //  Iteration / copying should be very fast.
+
+
+
+
+
+
+
+        // pos_center_within_source???
+
+        // pos_my_center_within_this?
+        // pos_my_center_within_source?
+
+        // More specifically named pos_center variable?
+        //  
+
+
+        // pos_my_center_within_source...?
+        //  .window_to_source(target???)
+
+        // pos_my_center_within_source would be a useful property....
+        //  basically calculate it, and return a typed array.
+
+        // Want a few precise, useful and fast functions that calculate / retrieve data and put it in a TA.
+        //  Calculated data in a ta would work nicely.
+
+
+
+
+
+
+
+
+
+        // local ta pos_my_center_within_source variable?
+
+        // definitely useful for returning it.
+
+
+        // pos_center will be read-only.
+
+        // normal pos_center referring to own coords space.
+
+        //  will use local ta, read only, will depend on the size.
+        //  Math.ceil((w - 1) / 2)
+        //   deals with even w or h.
+
+
+
+
+        // width 6:
+
+        // xxxxxx
+        // xxxxxx
+        // xxxxxx
+        // xxxxxx
+        // xxxxxx
+        // xxxxxx
+
+        // Seems like the fairly large changes to the properties will make this work well.
+        //  A PB acting as a window to another PB will be very useful.
+
+        // Many functions will work quickly with good preparatory values set up.
+
+        
+
+        // central px offset within this.
+        //  set this whenever we set the size?
+        //   or just upon getting makes most sense...
+
+
+
+        // ta px_count_left_of_central_px, px_count_above_central_px
+
+
+
+
+        // Maybe will allow negative positions...?
+        const pos_central_px = new Int16Array(2);
+
+        //  Use the size and pos to calculate this.
+
+        const def_pos_center = {
+            // Using shorthand method names (ES2015 feature).
+            // This is equivalent to:
+            // get: function() { return bValue; },
+            // set: function(newValue) { bValue = newValue; },
+
+
+            // Refer to pos_center_within_this...
+            //  
+
+            get() {
+
+                pos_central_px[0] = Math.ceil((size[0] - 1) / 2) + this.pos[0];
+                pos_central_px[1] = Math.ceil((size[1] - 1) / 2) + this.pos[1];
+
+                // need to work out the w / 2...
+
+                console.log('pre return pos_central_px');
+
+
+                return pos_central_px;
+                // Get the value based on the pos as well as the size.
+                //  Half the size, rounded down?
+                //   (w - 1) / 2?
+
+                // use a typed array that represents the value.
+
+                // A single const typed array would make sense.
+
+
+
+
+                // Having and returning a local typed array would make a lot of sense.
+                //  
+
+                console.log('getting pos_my_center_within_source');
+                console.log('pos', pos);
+
+                console.trace();
+                throw 'stop';
+                //return size;
+            },
+            /*
+            set(value) {
+
+                
+            },*/
+            enumerable: true,
+            configurable: false
+        }
+
+
+
+        Object.defineProperty(this, 'pos_central_px', def_pos_center);
+        Object.defineProperty(this, 'pos_center', def_pos_center);
+
+
+
+
+
+
+
+        Object.defineProperty(this, 'pos_my_center_within_source', {
+            // Using shorthand method names (ES2015 feature).
+            // This is equivalent to:
+            // get: function() { return bValue; },
+            // set: function(newValue) { bValue = newValue; },
+
+
+            // Refer to pos_center_within_this...
+            //  
+
+
+
+            get() {
+                // Get the value based on the pos as well as the size.
+                //  Half the size, rounded down?
+                //   (w - 1) / 2?
+
+
+                // Having and returning a local typed array would make a lot of sense.
+
+                //  
+
+                //console.log('getting pos_my_center_within_source');
+
+                //console.log('pos', pos);
+
+                // need to use pos_central_px
+
+
+
+
+
+
+                //console.trace();
+                //throw 'stop';
+
+                return pos;
+
+
+
+                //return size; 
+            },
+            set(value) {
+
+
+                // Maybe need more clarity about coordinate space mapping.
+                //  Coords / pixels will need to be mapped to and from a variety of coordinate spaces.
+
+                
+
+
+
+                console.log('seting pos_my_center_within_source', value);
+                // The pos_center value represents the central position in this image and it possibly corresponding with another position
+                //  in another coordinate space.
+
+                //console.trace();
+                //throw 'stop';
+
+                // Were we given a Int16Array? Similar?
+                //  set own pos ta values from the value.
+                if (value instanceof Int16Array) {
+                    if (value.length === 2) {
+
+                        //console.log('set pos_center going ok...');
+                        // need pos_central_px
+                        //  position within this.
+                        //   then reverse that to get our pos offset....
+
+                        // set the pos....
+                        //  update the pos?
+
+                        // A typed array that listens to its own changes???
+
+                        const cpx = this.pos_central_px;
+                        //console.log('cpx', cpx);
+
+                        // fastest way to set / update own pos???
+                        //  could directly set the ta....
+
+                        pos[0] = -1 * cpx[0] + value[0];
+                        pos[1] = -1 * cpx[1] + value[1];
+                        
+
+
+
+
+
+                        // set a local variable....
+                        //  
+
+
+                        // Work out the pos of the central pixel within this coordinate space...
+
+                        // pos_center represents the central positon within another coordinate space... clarify naming?
+
+                        // pos_central_pixel_in_this...
+                        //  maybe should be a ta to store its value as well?
+                        //  
+
+
+
+
+                        //size[0] = value[0];
+                        //size[1] = value[1];
+
+                        // don't change the pos.
+                    }
+                } else {
+                    console.trace();
+                    throw 'pos_my_center_within_source unsupported value type';
+                }
+
+
+                //pos = value; 
+            },
+            enumerable: true,
+            configurable: false
+        });
+
+
+
+        
+
         
 
 
@@ -360,67 +920,81 @@ class Pixel_Buffer_Core {
 
 
         // define getters and setters here instead, using prop?
-        prop(this, ['bits_per_pixel', 'bipp'], {
-            default: spec.bits_per_pixel || spec.bytes_per_pixel * 8,
 
-            // better to give change events as an object.
-            //  (maybe experiment with optimization at some other point here.)
 
-            change: (e_change) => {
-                // prop change event coming through differently to expected....
-                const {old, value} = e_change;
-                //console.log('change bits_per_pixel e_change:', e_change);
+        // Do want to define the properties for the alias as well.
+        //  could wrap with ofp.
 
-                // this.set('bits_per_pixel', x, {silent: true})
-                
-                // then do the update_bits_per_pixel to do the updating to the the underlying data.
-                //  would reassign the typed array???
-                //   can we update its length?
 
-                // Would need to reassign the typed array to change its length.
-                //  Just don't do that all the time!
-                //console.log('old, value', old, value);
-                if (old !== value) {
-                    silent_update_bytes_per_pixel(value / 8);
-                    this.change_bits_per_pixel(old, value);
+        const old_bpp_props_setup = () => {
+
+            prop(this, ['bits_per_pixel', 'bipp'], {
+                default: spec.bits_per_pixel || spec.bytes_per_pixel * 8,
+    
+                // better to give change events as an object.
+                //  (maybe experiment with optimization at some other point here.)
+    
+                change: (e_change) => {
+                    // prop change event coming through differently to expected....
+                    const {old, value} = e_change;
+                    //console.log('change bits_per_pixel e_change:', e_change);
+    
+                    // this.set('bits_per_pixel', x, {silent: true})
+                    
+                    // then do the update_bits_per_pixel to do the updating to the the underlying data.
+                    //  would reassign the typed array???
+                    //   can we update its length?
+    
+                    // Would need to reassign the typed array to change its length.
+                    //  Just don't do that all the time!
+                    //console.log('old, value', old, value);
+                    if (old !== value) {
+                        silent_update_bytes_per_pixel(value / 8);
+                        this.change_bits_per_pixel(old, value);
+                    }
+    
+                    
+    
+    
+    
+                    // this.realloc_change_bpp(value)
+                },
+                ready: (e_ready) => {
+                    //console.log('***** e_ready', e_ready);
+                    silent_update_bits_per_pixel = e_ready.silent_set;
                 }
-
-                
-
-
-
-                // this.realloc_change_bpp(value)
-            },
-            ready: (e_ready) => {
-                //console.log('***** e_ready', e_ready);
-                silent_update_bits_per_pixel = e_ready.silent_set;
-            }
-        })
-
-        prop(this, ['bytes_per_pixel', 'bypp'], {
-            default: spec.bytes_per_pixel || spec.bits_per_pixel / 8,
-            change: (e_change) => {
-                const {old, value} = e_change;
-
-                if (old !== value) {
-                    silent_update_bits_per_pixel(value * 8);
-                    this.change_bits_per_pixel(old * 8, value * 8);
+            })
+    
+            prop(this, ['bytes_per_pixel', 'bypp'], {
+                default: spec.bytes_per_pixel || spec.bits_per_pixel / 8,
+                change: (e_change) => {
+                    const {old, value} = e_change;
+    
+                    if (old !== value) {
+                        silent_update_bits_per_pixel(value * 8);
+                        this.change_bits_per_pixel(old * 8, value * 8);
+                    }
+    
+                    
+    
+                    // will need to go through all of the pixels, putting them into the new bpp format.
+    
+                    // will use get pixel and set pixel that work with 1 bit per pixel images.
+                    // then may need to do various transformations?
+                    //  update_bpp
+                    //   takes both bits and bytes per pixel. checks that they match
+                    //    most likely this will have to reallocate memory.
+                },
+                ready: (e_ready) => {
+                    silent_update_bytes_per_pixel = e_ready.silent_set;
                 }
+            })
 
-                
 
-                // will need to go through all of the pixels, putting them into the new bpp format.
+        }
 
-                // will use get pixel and set pixel that work with 1 bit per pixel images.
-                // then may need to do various transformations?
-                //  update_bpp
-                //   takes both bits and bytes per pixel. checks that they match
-                //    most likely this will have to reallocate memory.
-            },
-            ready: (e_ready) => {
-                silent_update_bytes_per_pixel = e_ready.silent_set;
-            }
-        })
+
+        
 
         // another prop?
         //  ta_scratch
@@ -429,28 +1003,15 @@ class Pixel_Buffer_Core {
 
         // a getter?
 
-        let ta_scratch;
 
-        ro(this, 'ta_scratch', () => {
-            if (!ta_scratch) {
-                ta_scratch = new this.ta.constructor(this.ta);
-            } else {
-                // check the size...? the types as well?
-                if (ta_scratch.length !== this.ta.length) {
-                    ta_scratch = new this.ta.constructor(this.ta);
-                } else {
-                    const l = this.ta.length;
-                    for (c = 0; c < l; c++) {
-                        ta_scratch[c] = this.ta[c];
-                    }
-                }
+        
 
-            }
-        });
-
-
+        // Would be just 1 bit per pixel...
         if (spec instanceof Pixel_Pos_List) {
             // load it as a buffer.
+
+            throw 'NYI - change to 1bipp';
+
             const ppl = spec;
             //console.log('ppl.length', ppl.length);
             // find out its bounds.
@@ -470,7 +1031,9 @@ class Pixel_Buffer_Core {
             //   Pixel pos list to produce 1 bit per pixel in the near future anyway.
 
             this.bits_per_pixel = 8;
+
             const bpp = this.bytes_per_pixel = 1;
+
             // Not clear why the extra space is needed, but it solves a subtle sizing error.
             //  Maybe the ppl size registers wrong.
             // not sure why the +1 size is needed - it prevents an overflow???
@@ -506,17 +1069,24 @@ class Pixel_Buffer_Core {
             //super(spec);
             if (spec.buffer) {
                 if (spec.buffer instanceof Buffer) {
-                    this.ta = this.buffer = new Uint8ClampedArray(spec.buffer.buffer);
+                    //this.ta = this.buffer = new Uint8ClampedArray(spec.buffer.buffer);
+                    ta = new Uint8ClampedArray(spec.buffer.buffer);
                 } else {
                     // check its uint8array either clamped or not.??
-                    this.ta = this.buffer = spec.buffer;
+                    //this.ta = this.buffer = spec.buffer;
+                    ta = spec.buffer;
+
                 }
             }
             // Size could more logically be its dimensions.
 
             if (spec.size) {
                 //this.size = spec.size;
-                this.size = new Uint16Array(spec.size); // using the size it was given, which was given as an array.
+                //this.size = new Uint16Array(spec.size); // using the size it was given, which was given as an array.
+
+                size[0] = spec.size[0];
+                size[1] = spec.size[1];
+
             } else {
                 throw 'Expected: size [x, y] property in the Pixel_Buffer_Core specification';
             }
@@ -533,15 +1103,31 @@ class Pixel_Buffer_Core {
                     console.trace();
                     throw 'Invalid bits_per_pixel value of ' + spec.bits_per_pixel + ', must be 8, 24 or 32, default is 32.';
                 } else {
-                    this.bits_per_pixel = spec.bits_per_pixel;
+                    //this.bits_per_pixel = spec.bits_per_pixel;
+                    ta_bpp[0] = spec.bits_per_pixel;
                 }
             }
             // then initialize the buffer itself.
+
+            /*
             const bytes_per_pixel = this.bytes_per_pixel = this.bits_per_pixel / 8;
+
+
             this.bytes_per_row = bytes_per_pixel * this.size[0];
+            */
+
+            // should have size property already?
+
+
             if (this.size && !this.buffer) {
                 //console.log('this.size', this.size);
-                this.ta = this.buffer = new Uint8ClampedArray(bytes_per_pixel * this.size[0] * this.size[1]);
+                //this.ta = this.buffer = new Uint8ClampedArray(bytes_per_pixel * this.size[0] * this.size[1]);
+                //console.log('ta_bpp[0]', ta_bpp[0]);
+
+                ta = new Uint8ClampedArray((ta_bpp[0] / 8) * this.size[0] * this.size[1]);
+
+
+
                 //this.buffer = Buffer.alloc(bytes_per_pixel * this.size[0] * this.size[1]);
             }
             if (spec.color) {
@@ -559,21 +1145,149 @@ class Pixel_Buffer_Core {
             }
         });
 
-        if (spec.window_to) {
+        //if ()
+
+        if (spec.window_to || spec.source || spec.window_to_source) {
             console.log('Pixel_Buffer_Core (or subclass) needs to act as a window to another Pixel Buffer.')
 
+            // set the .source property.
+
+            pb_source = spec.window_to || spec.source || spec.window_to_source;
+
+            console.log('pb_source', pb_source);
+            console.log('pb_source.size', pb_source.size);
+            
+
+            // Should be able to get various useful pieces of info on a pb quickly in ta format.
+
+
+
+
+
+            // The pos should have been set when given the pos_center.
+
             console.log('spec.pos', spec.pos);
+            console.log('spec.pos_center', spec.pos_center);
+            // pos could have extra centering value / flag???
+
+
+
             console.log('this.pos', this.pos);
+
+            // 
+
+            // pos centre of this image within the source image.
+            //  
+
+            if (spec.pos_center || spec.pos_my_center_within_source) {
+                this.pos_my_center_within_source = spec.pos_center || spec.pos_my_center_within_source;
+            }
+
+            console.log('this.pos_my_center_within_source', this.pos_my_center_within_source);
+
+            console.log('spec', spec);
 
         }
 
-        let ta_pos_scratch;
+        
+
+
+        // 
+        let ta_scratch;
+        let ta_pos_scratch;        // Int16Array(2)
+
+        // ta_pos_iterator ???
+
+
+        // makes a lot of sense to have another ta pos specifically for iteration.
+
+        let ta_pos_iterator;        // Int16Array(2)
+
+        // ta_move_vector
+
+
+        // maybe defining them as constants to start with would be more efficient?
+        //  could test that.
+        let ta_move_vector;
+
+
+
+        
+
+        let ta_bounds_scratch;     // Int16Array(4);
+        let ta_bounds2_scratch;    // Int16Array(4);
+        let ta_bounds3_scratch;    // Int16Array(4);
+        let ta_bounds4_scratch;    // Int16Array(4);
+        let ta_size_scratch;       // Uint16Array(2);
+        let ta_pointers_scratch;
+        let ta_pointers2_scratch;
+        let ta_pointerpair_scratch;
+        let ta_offsets_scratch;
+        let ta_offsets_info_scratch; 
+
+
+        ro(this, 'ta_scratch', () => {
+            if (!ta_scratch) {
+                ta_scratch = new this.ta.constructor(this.ta);
+            } else {
+
+                // If it's not already an instance of the constructor of this.ta?
+
+
+
+                // check the size...? the types as well?
+                if (ta_scratch.length !== this.ta.length) {
+                    ta_scratch = new this.ta.constructor(this.ta);
+                } else {
+                    const l = this.ta.length;
+                    // Could use faster copy?
+                    //  Is typed array copy that fast compared to assignment operators?
+                    for (c = 0; c < l; c++) {
+                        ta_scratch[c] = this.ta[c];
+                    }
+                }
+            }
+        });
+
+
+        
         ro(this, 'ta_pos_scratch', () => {
             if (!ta_pos_scratch) {
                 ta_pos_scratch = new Int16Array(2);
             }
             return ta_pos_scratch;
         });
+
+        ro(this, 'ta_pos_iterator', () => {
+            if (!ta_pos_iterator) {
+                ta_pos_iterator = new Int16Array(2);
+            }
+            return ta_pos_iterator;
+        });
+
+
+        // ta_source_to_self_translate_vector ???
+        //  more properties could be stored and accessed in this form. tas particularly good for simple vectors.
+
+        // maybe make some kind of optimized string indexed ta.
+        //  look up values to consts, use them...?
+        //  or have const declarations of the numbers, use them? May compile best. Macros for consts???
+
+
+
+        // ta_move_vector
+        ro(this, 'ta_move_vector', () => {
+            if (!ta_move_vector) {
+                ta_move_vector = new Int16Array(2);
+            }
+            return ta_move_vector;
+        });
+
+
+
+        // a size scratch...
+        //  must be a positive size.
+
 
 
         // What about double bounds scratch for rapid checking of overlaps?
@@ -584,8 +1298,17 @@ class Pixel_Buffer_Core {
         // Presumably can get it to a very high speed.
         
 
+        // An assortment of temporary use tas to use for a variery of purposes.
 
-        let ta_bounds_scratch;
+        //
+
+
+
+        // Could be of use in SIMD as well?
+        //  Maybe especially if they dont need to be set so often in JS and can be the basis for many SIMD operations in C++.
+
+
+
         ro(this, 'ta_bounds_scratch', () => {
             if (!ta_bounds_scratch) {
                 ta_bounds_scratch = new Int16Array(4);
@@ -593,7 +1316,7 @@ class Pixel_Buffer_Core {
             return ta_bounds_scratch;
         });
 
-        let ta_bounds2_scratch;
+        
         ro(this, 'ta_bounds2_scratch', () => {
             if (!ta_bounds2_scratch) {
                 ta_bounds2_scratch = new Int16Array(4);
@@ -601,7 +1324,7 @@ class Pixel_Buffer_Core {
             return ta_bounds2_scratch;
         });
 
-        let ta_bounds3_scratch;
+        
         ro(this, 'ta_bounds3_scratch', () => {
             if (!ta_bounds3_scratch) {
                 ta_bounds3_scratch = new Int16Array(4);
@@ -609,7 +1332,7 @@ class Pixel_Buffer_Core {
             return ta_bounds3_scratch;
         });
 
-        let ta_bounds4_scratch;
+        
         ro(this, 'ta_bounds4_scratch', () => {
             if (!ta_bounds4_scratch) {
                 ta_bounds4_scratch = new Int16Array(4);
@@ -623,7 +1346,7 @@ class Pixel_Buffer_Core {
         // ta_bounds_scratch
         //  Int16 size 4
 
-        let ta_size_scratch;
+        
         ro(this, 'ta_size_scratch', () => {
             if (!ta_size_scratch) {
                 ta_size_scratch = new Uint16Array(2);
@@ -633,7 +1356,10 @@ class Pixel_Buffer_Core {
 
         // ta_pointers_scratch
 
-        let ta_pointers_scratch;
+        
+
+
+
         ro(this, 'ta_pointers_scratch', () => {
             if (!ta_pointers_scratch) {
                 // Only allow 2 pointers? by default?
@@ -643,7 +1369,7 @@ class Pixel_Buffer_Core {
         });
 
         
-        let ta_pointers2_scratch;
+        
         ro(this, 'ta_pointers2_scratch', () => {
             if (!ta_pointers2_scratch) {
                 // Only allow 2 pointers? by default?
@@ -653,7 +1379,7 @@ class Pixel_Buffer_Core {
         });
 
 
-        let ta_pointerpair_scratch;
+        
         ro(this, 'ta_pointerpair_scratch', () => {
             if (!ta_pointerpair_scratch) {
                 // Only allow 2 pointers? by default?
@@ -672,7 +1398,7 @@ class Pixel_Buffer_Core {
         // offsets...
         //  (pointer offsets?)
 
-        let ta_offsets_scratch;
+        
         ro(this, 'ta_offsets_scratch', () => {
             if (!ta_offsets_scratch) {
                 // Only allow 2 pointers? by default?
@@ -680,6 +1406,82 @@ class Pixel_Buffer_Core {
             }
             return ta_offsets_scratch;
         });
+
+        ro(this, 'ta_offsets_info_scratch', () => {
+            if (!ta_offsets_info_scratch) {
+                // Only allow 2 pointers? by default?
+                ta_offsets_info_scratch = new Int32Array(8);
+            }
+            return ta_offsets_info_scratch;
+        });
+
+
+
+
+        // have a .byte_idx property?
+        //  and bit_idx???
+
+        // byte idx would be a different representation of the position, as a single 32 bit integer.
+        //  moving to the next pixel becomes simpler that way.
+        //   could even make pos a facade to that???
+
+        // moving to the next pixel could leave pos undefined?
+
+
+
+
+
+
+        // Yes, this move and copy is nicely fast.
+        this.move = ta_2d_vector => {
+            pos[0] += ta_2d_vector[0];
+            pos[1] += ta_2d_vector[1];
+
+            // then recopy from source if there is one....
+
+            if (this.source) {
+                //console.log('have source, so will do auto recopy.');
+
+
+                 
+                // and time this as well...?
+                // not here.
+                this.copy_from_source();
+
+            }
+
+        }
+
+        this.move_next_px = () => {
+            // only adjust the pos if the next pixel is within range.
+            //  within the source size.
+
+            
+
+            const source_size = this.source.size;
+            
+
+
+            if (pos[0] + size[0] < source_size[0] - 1) {
+                pos[0]++;
+            } else {
+                if (pos[1] + size[1] < source_size[1] - 1) {
+                    pos[0] = 0;
+                    pos[1]++;
+                } else {
+                    return false;
+
+                }
+            }
+
+            if (this.source) {
+                this.copy_from_source();
+            }
+
+            return pos;
+        }
+
+        // move_next_pixel
 
 
         /*
@@ -689,6 +1491,600 @@ class Pixel_Buffer_Core {
             return this.size[0] * this.bytes_per_pixel;
         });
         */
+
+
+    }
+
+    //move(ta_2d_vector) {
+
+    //}
+
+    // As a property in the constructor instead?
+    //  Yes, would use local ta.
+
+    /*
+    get bounds() {
+        const res = new Float32Array(4);
+        const size = this.size;
+        const pos = this.pos;
+        res[0] = pos[0];
+        res[1] = pos[1];
+        res[2] = pos[0] + size[0];
+        res[3] = pos[1] + size[1];
+        return res;
+    }
+    */
+
+
+    // source_target_iteration_prep???
+
+
+    // copy_from_source_iteration_prep
+    //  and could make other iteration prep functions too.
+
+
+    // different bipp modes for copy from source too.
+
+
+    // will return objects....
+    //  a single object with keys and valus.
+    //   will make use of the scratch typed arrays for holding the values.
+
+    //  maybe creation of objecs is too much work? its one of the basics of JS though. keep for the moment.
+
+
+    calc_source_target_valid_bounds_overlap() {
+
+        // bounds adjustment values too.
+
+        // Really just adding and subtracting though. Maybe will make this simpler in the future???
+
+        // using size and pos....
+
+        //  this.pos
+
+        // attempted source bounds
+
+        // Could run a bounds check on the source.
+        const source = this.source;
+
+        
+        // look at own bounds?
+
+        //  this.bounds....
+
+        //console.log('this.bounds', this.bounds);
+        //console.log('source.size', source.size);
+        //console.log('source.bounds', source.bounds);
+        //console.log('source.size_bounds', source.size_bounds);
+
+        // size_bounds? bounds based on the image size and not the image position.?
+        //  the position of the source doesn't matter, but would influence the .bounds property.
+
+        // size_bounds would just be the size starting with 0, 0.
+        //  would then do calculation of the distance from this (window) .bounds to the source size_bounds.
+        //   want to use very simple math on these tas where possible.
+        //   will help compilation and usage of SIMD.
+
+        // calc the overlap of the bounds.
+        //  another bounds
+
+        // also the offset from each edge?
+        //  yet, think we need the this(window) to source pos translation vector.
+
+        // use a scratch vector?
+
+        // or a .ta_vector property?
+        // .ta_vector_translation property?
+
+        // lets use a scratch ta for the moment.
+        //  position translation vector?
+        //   ie the reverse of the position vector.
+
+        // yes, reversing the position vector is the way to get the window -> source position translation vector.
+
+        // so, just return the corrected bounds for the moment...?
+
+        const my_bounds = this.bounds;
+        const source_size_bounds = source.size_bounds;
+
+        // first bounds scratch?
+        //  valid_corresponding_bounds scratch?
+
+        const res = this.ta_bounds_scratch;
+        if (my_bounds[0] < source_size_bounds[0]) {
+            res[0] = source_size_bounds[0];
+        } else {
+            res[0] = my_bounds[0];
+        }
+        if (my_bounds[1] < source_size_bounds[1]) {
+            res[1] = source_size_bounds[1];
+        } else {
+            res[1] = my_bounds[1];
+        }
+        if (my_bounds[2] > source_size_bounds[2]) {
+            res[2] = source_size_bounds[2];
+        } else {
+            res[2] = my_bounds[2];
+        }
+        if (my_bounds[3] > source_size_bounds[3]) {
+            res[3] = source_size_bounds[3];
+        } else {
+            res[3] = my_bounds[3];
+        }
+
+        return res;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // bounds adjustments / image translation...?
+        //  want to get this in number of pixels.
+
+        // be able to calculate a number of bytes int from a pixels vector.
+
+        // will need to have translation vectors for both images?
+        //  or have some read-write mechanism that doesn't need them?
+
+
+
+
+
+
+
+
+        //throw 'stop';
+
+        // bounds, source bounds
+
+        // and the source size.
+
+
+
+
+
+
+
+
+
+        //return {
+        //    //source, target
+        //}
+
+    }
+
+
+    copy_from_source_iteration_prep() {
+
+        const valid_bounds_overlap = this.calc_source_target_valid_bounds_overlap();
+        //console.log('valid_bounds_overlap', valid_bounds_overlap); // source coords system.
+
+        // translate from source to target using -1 * pos...
+
+        //console.log('this.pos', this.pos);
+        //console.log('this.minus_pos', this.minus_pos);
+
+        const pos = this.pos;
+        const bypp = this.bypp;
+
+        // source_bounds
+        // my_bounds
+
+        const source_bounds = valid_bounds_overlap;
+        const my_write_bounds = this.ta_bounds3_scratch;
+        my_write_bounds[0] = source_bounds[0] - pos[0];
+        my_write_bounds[1] = source_bounds[1] - pos[1];
+        my_write_bounds[2] = source_bounds[2] - pos[0];
+        my_write_bounds[3] = source_bounds[3] - pos[1];
+
+
+        //console.log('source_bounds', source_bounds);
+        //console.log('my_write_bounds', my_write_bounds);
+
+        const bounds_size = this.ta_size_scratch;
+        bounds_size[0] = source_bounds[2] - source_bounds[0];
+        bounds_size[1] = source_bounds[3] - source_bounds[1];
+
+
+        //console.log('bounds_size', bounds_size);
+
+        // then both read and write offsets information.
+
+        const offsets_info_source = this.source.ta_offsets_info_scratch;
+        const offsets_info_self = this.ta_offsets_info_scratch;
+
+        // a ta from each
+        //  0 bounds row length in bytes
+        //  1 bounds length in bytes
+
+        //  2 bounds left byte index offset
+        //  3 bounds top byte index offset
+        //  4 bounds right byte index offset
+        //  5 bounds bottom byte index offset ???? not needed???
+        //   
+        //  6 next bounds row number of bytes offset
+        //   (used to move between source rows)
+
+        //oi_self[0] = my_write_bounds * bypp;
+
+        // the jump value... needs to use the source bypr.
+        //  make bytes_per_row and bypr into a proper read-only property.
+
+
+
+
+        offsets_info_self[0] = bounds_size[0] * bypp;
+
+        // below number needs to make use of the source full row width.
+        offsets_info_self[1] = bounds_size[0] * bounds_size[1] * bypp;
+
+        // this.source.size[0] * bounds_size[1] * bypp;
+
+        offsets_info_self[2] = my_write_bounds[0] * bypp;
+        
+        offsets_info_self[3] = my_write_bounds[1] * this.size[0] * bypp;
+
+
+        offsets_info_self[4] = my_write_bounds[2] * bypp;
+        offsets_info_self[5] = my_write_bounds[3] * offsets_info_self[0];
+
+        offsets_info_self[6] = this.bytes_per_row - (offsets_info_self[4] - offsets_info_self[2]);
+
+
+        //console.log('offsets_info_self', offsets_info_self);
+        //console.log('this.bytes_per_row', this.bytes_per_row);
+
+
+
+        // then the offsets info for the source.
+
+        // with these, we should be very good to go for fast combined iteration / copying of source and target areas.
+        //  then see how fast this can make convolutions and other operations.
+
+
+        // Need to fix the write start pos.
+        //  Some of these pieces of data here are too unclear.
+        //  // write start pos = ... + bytes_per_row + row_num
+
+
+
+        offsets_info_source[0] = bounds_size[0] * bypp;
+
+        // 
+
+        offsets_info_source[1] = bounds_size[0] * bounds_size[1] * bypp;
+
+        // below number needs to take account of the full width.
+
+        offsets_info_source[2] = source_bounds[0] * bypp;
+
+
+
+        // source size (w)....
+        offsets_info_source[3] = source_bounds[1] * this.source.size[0] * bypp;
+        // change above line?
+        // use:
+        //  offsets_info_self[3] = my_write_bounds[1] * this.size[0] * bypp;
+        
+
+        offsets_info_source[4] = source_bounds[2] * bypp;
+        offsets_info_source[5] = source_bounds[3] * offsets_info_source[0];
+
+
+        // The full bytes per row...?
+        //  Maybe no need to store this here.
+
+        const source_bypr = this.source.bytes_per_row;
+        //console.log('source_bypr', source_bypr);
+
+
+        // next row bytes offset.
+        //  bytes per row - start byte offset - end byte offset.
+
+        // The offset to reach the next row - seems like one of the most important variables to have and use while doing this copy.
+        //  Want to wrap the low level code in a way that makes it fast and convenient to use.
+
+
+
+
+
+        offsets_info_source[6] = source_bypr - (offsets_info_source[4] - offsets_info_source[2]);
+
+        //console.log('target next line advance bytes', offsets_info_self[6]);
+        //console.log('source next line advance bytes', offsets_info_source[6]);
+
+        //console.log('offsets_info_source', offsets_info_source);
+
+        // prep containing all necessary items?
+
+        //  a bounds iterator too? xy iterator?
+        //   could get that later....
+
+
+        // Want patterns / boilerplate for iterating various bounds in the most efficient way.
+
+        // iteration info tas
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // ta_pos_iterator
+        // ta_iterator_pos
+        //  would be very useful for x, y for loops
+        //  while loops
+        //  data locality and reuse of memory.
+
+        // ta_offsets_info_scratch
+        //  larger ta with space for up to 8(?) values
+        //   
+
+
+
+        // these should enable very fast iteration / copying between pixel buffers.
+        //  will be able to iterate / increment relative values with very little overhead.
+
+
+
+
+
+
+        //throw 'stop';
+
+        // Got the source bounds
+        // Got the write bounds
+
+        // Need to get / calc the various byte offsets.
+        //  Dealing with byte offsets is where the fastest ta access will be possible.
+
+        // new row source byte offset...
+        //  will be very useful for advancing to the next row.
+        //   bypr - bytes per source bounds row.
+
+        // so, need to get the row size.
+        //  in pixels
+        //  then in bytes
+
+        // bounds to size function?
+
+        // get another scratch ta
+        //  the bounds size
+
+
+
+        // and a minus_pos getter?
+        //  better for translating from source to this.
+
+
+
+        // calculate the byte positions in both the source and the target for that coordinate space.
+
+
+        // source bounds, write bounds?
+
+        // maybe no need right now.
+
+        // does seem worth return the px info too.
+
+        return {
+
+            // info on byte positions / offsets.
+            ta_info_source: offsets_info_source,
+            ta_info_self: offsets_info_self,
+            ta_bounds_size: bounds_size,
+            ta_source_bounds: source_bounds,
+            ta_write_bounds: my_write_bounds
+        }
+    }
+
+
+
+    copy_from_source() {
+        // And any kind of offset?
+        //  optional offset?
+        //   and not pass i as a parameter?
+
+        // Calculate the local and source bounds to do the copy.
+
+        // Get the relavant info in terms of px as well as byte indexes.
+
+        // Maybe should call functions specifically for mapping.
+
+
+        // Iteration Prep:
+        //  Make use of scratch and other tas. Dont initialise new typed arrays in this function call (except 1-time scratch init).
+
+        // Then maybe call inner function once the prep has been done....
+        //  Would help with inlining of simpler functions.
+
+
+        const bipp = this.bipp;
+
+        if (bipp === 1) {
+            console.trace();
+            throw 'NYI';
+        } else if (bipp === 8 || bipp === 24 || bipp === 32) {
+            const o_prep = this.copy_from_source_iteration_prep();
+
+            //console.log('o_prep', o_prep);
+
+            const {ta_bounds_size, ta_info_source, ta_info_self} = o_prep;
+
+            // then lets do the iteration...
+
+            const xy = this.source.ta_pos_iterator;
+
+            const ta_source = this.source.ta;
+            const ta = this.ta;
+
+            // just iterate through the y dimension.
+            //  set up / use pointer refs for the byte indexes to read / copy from and to.
+
+            // maybe worth using ta.set(source.subset(a, b))
+            //  would get the lengths right.
+
+            // first row number..
+
+            // do source -> target xy conversion.
+            //  don't yet have the source -> target byte / bit index conversions.
+
+            
+            // vars for the current byte offsets?
+
+            //  use ta_info_source / self item 7?
+            //   would make sense, but maybe best to use local variables in some cases....
+
+
+            // source, self bypr
+
+            const bypr = this.bypr;
+            const source_bypr = this.source.bypr;
+
+
+            let i_byte_read = ta_info_source[2] + ta_info_source[3];
+
+            // and the read length as well....
+
+            // read length is the row length in bytes.
+
+            // write to position 
+
+            //  need to move the write position on??? on by the beginning of the write bounds (byte offset???)
+            //   looks about right....
+            let i_byte_write = ta_info_self[2] + ta_info_self[3];
+
+            //console.log('i_byte_read', i_byte_read);
+            //console.log('i_byte_write', i_byte_write);
+
+
+
+
+
+            // .ta_read_idxs
+            // .ta_write_idxs
+
+            // The indexes by which we read and write the data to copy.
+
+            const bytes_per_copy_row = ta_info_source[0];
+            //console.log('bytes_per_copy_row', bytes_per_copy_row);
+
+
+
+
+
+
+            // not so sure that the pointers are properly prepared and iterated...
+            //  
+
+            // The copy_row_then_skip algorithm.
+
+
+
+
+            for (xy[1] = 0; xy[1] < ta_bounds_size[1]; xy[1]++) {
+
+                // the source row.
+                //  
+                //console.log('xy[1]', xy[1]);
+
+
+                // lets get the subarray....
+                //  based on the read positions...
+                //const sa = ta_source.subarray(i_byte_read, i_byte_read + bytes_per_copy_row);
+                //ta.set(sa, i_byte_write);
+
+                ta.set(ta_source.subarray(i_byte_read, i_byte_read + bytes_per_copy_row), i_byte_write);
+                // reading looks like it's working OK...
+
+                //console.log('sa', sa);
+                //console.log('sa.length', sa.length);
+                
+                // then write it to the local ta....
+                
+
+
+
+
+                // advance i_byte_read and i_byte_write
+
+                // just advance by a whole row.
+                //  simple.
+
+                i_byte_read += source_bypr;
+                i_byte_write += bypr;
+
+                //console.log('* ta', ta);
+
+
+
+
+                //i_byte_read += ta_info_source[6] + bytes_per_copy_row;
+                // write byte next row offset needs to be fixed.
+                //  not quite sure why its being done incoorectly.
+
+                //i_byte_write += ta_info_self[6] + bytes_per_copy_row;
+
+
+
+
+
+
+            }
+
+            //console.log('ta.length', ta.length);
+
+
+
+
+            
+
+
+
+        }
+
+        // not quite sure why it's leaving blank space at the end of the dest ta.
+
+
+
+        
+
+
+
+
+
+        // Local, source
+        //  bipp, bypp
+        //  tl pos, br pos
+        //   size
+        //   bytes_per_row
+        //  tl byte pointer, br byte pointer
+        //   tl byte pointer, tr byte pointer reads the 1st line.
 
 
 
@@ -1895,16 +3291,7 @@ class Pixel_Buffer_Core {
 
     // Awareness of a pixel buffer itself having a position.
 
-    get bounds() {
-        const res = new Float32Array(4);
-        const size = this.size;
-        const pos = this.pos;
-        res[0] = pos[0];
-        res[1] = pos[1];
-        res[2] = pos[0] + size[0];
-        res[3] = pos[1] + size[1];
-        return res;
-    }
+    
 
     // index_to_pos function...
     // buffer index - posin buffer - could be called pixel_buffer_index
@@ -2171,7 +3558,14 @@ class Pixel_Buffer_Core {
             //    input_params_are_valid = false;
             //}
 
-            if (ta_pos instanceof Uint16Array || ta_pos instanceof Uint32Array && ta_pos.length >= 2) {
+            // Positions should be int arrays.
+            //  More flexibility there, allowing for negative positions, and possibility of using these data structures to store offsets.
+
+            //console.log('ta_pos', ta_pos);
+            //throw 'stop';
+
+
+            if (ta_pos instanceof Int16Array || ta_pos instanceof Int32Array && ta_pos.length >= 2) {
 
                 // only accept clamped ui8 array for the moment?
 
@@ -2262,6 +3656,8 @@ class Pixel_Buffer_Core {
 
 
         const bipp = this.bipp;
+
+        console.log('bipp', bipp);
 
         if (bipp === 1) {
             return this.each_ta_1bipp(ta_pos, ta_px_value, ta_info, callback);

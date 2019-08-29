@@ -47,12 +47,15 @@ const {Pixel_Buffer} = gfx;
 
 const Server_Pixel_Buffer = gfx_server.Pixel_Buffer;
 
+
+// seems to be working / fixed now :)
 const copy_from_server_pb = (server_pb) => {
     const res_pb = new Pixel_Buffer({
         size: server_pb.size,
         bits_per_pixel: server_pb.bits_per_pixel
     });
-    res_pb.buffer = res_pb.ta = server_pb.ta;
+    //res_pb.buffer = res_pb.ta = server_pb.ta;
+    res_pb.ta.set(server_pb.ta);
     return res_pb;
 }
 
@@ -61,7 +64,13 @@ const copy_to_server_pb = (standard_pb) => {
         size: standard_pb.size,
         bits_per_pixel: standard_pb.bits_per_pixel
     });
-    res_pb.buffer = res_pb.ta = standard_pb.ta;
+
+    // Setting the buffer... does not work...?
+
+    res_pb.ta.set(standard_pb.ta);
+
+
+    //res_pb.buffer = res_pb.ta = standard_pb.ta;
     return res_pb;
 }
 
@@ -70,10 +79,16 @@ const copy_to_server_pb = (standard_pb) => {
 const eg_each_px = async() => {
     console.log('Erte Ale thresh example');
     const spb = await Server_Pixel_Buffer.load('../source_images/Erte Ale Volcano.jpg');
+    //console.log('spb.ta', spb.ta);
     // Load JPEG as 24 bipp by default?
 
 
     const pb = copy_from_server_pb(spb);
+
+
+    //console.log('pb.ta', pb.ta);
+    //throw 'stop';
+
 
     //pb.bipp = 24;
     //  cool inner coding should make that work.
@@ -89,7 +104,7 @@ const eg_each_px = async() => {
 
 
     // then run each_px
-    console.log('pb.bits_per_pixel', pb.bits_per_pixel);
+    //console.log('pb.bits_per_pixel', pb.bits_per_pixel);
     //pb.bits_per_pixel = 24;
     //console.log('pb.bits_per_pixel', pb.bits_per_pixel);
 
@@ -111,16 +126,14 @@ const eg_each_px = async() => {
 
     // Worth looking into node worker threads too.
     //  Relatively simple algorithm / kernel / function processing.
-
-
-
     // will call specific function depending on the bipp.
 
     // A function that involves updates would be nice as well.
     //  Not so sure about direct access to the pixel...?
-    //   An update function could be OK.
+    //   An update function could be OK. Seems to be fast in the right cases / style.
     //    Maybe not the best style but it's logical when necessary.
-    //     Could compare with direct access. Or even delay the update???
+
+
 
 
 
@@ -270,6 +283,9 @@ const eg_each_px = async() => {
         // Could try to get the average color...?
         //const avg = new Float64Array(3);
 
+        // Image not loaded properly at the start?
+        //  May need to replace the ta.
+
         pb.each_px(ta_pos, ta_px_value, ta_info, (update) => {
             // Here we use direct reference to the various typed arrays.
 
@@ -329,13 +345,6 @@ const eg_each_px = async() => {
 
         // Methods for image composition / compositing as well.
         //  Should get into 3D acceleration and objects too.
-
-
-
-
-
-
-
 
 
         (async() => {
@@ -471,7 +480,7 @@ if (require.main === module) {
         //  Likely to be able to perform a load more functions in high speed.
         //  Then look into doing them faster still.
 
-        
+
 
 
         let res = await eg_each_px();
