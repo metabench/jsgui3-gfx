@@ -1,3 +1,49 @@
+
+// How done it is
+// Size of the task
+
+/*
+    1 Small / trivial change
+       2 mins going on 10 mins
+    2  Small change
+       5 mins going on 30 mins
+    3  Medium-Small task
+       15 mins going on 1.5h
+       could be an easier version of a 4 - needs an optimized algorithm to be written and tested, it doesnt require further R&D.
+    4
+       45 mins going on 4.5(+)h
+        as in could be an underestimated 5?
+        may require thinking about maths & optimization
+
+    5 Moderate - a few hours
+        2 hours if it turns out to be relatively easy
+        going on a day
+    6
+        0.5 days to 3 days
+    7   (some level of overhaul or new API design involved)
+        1.5 days to 1 week
+    8  
+        1 week to 3 weeks
+    9 Programming / API overhaul
+        3 weeks to 6 weeks
+    10 Huge overhaul / major rewrite / a medium-large project of its own
+        1 month to 3 months
+
+    
+
+*/
+
+
+// progress (0 to 9), task_size on above scale
+
+const _roadmap = {
+    '0.0.22': [
+        ['pb.bypp = 1 convert to greyscale', 0, 3, 'Medium small task requiring writing of optimized algorithm']
+    ]
+}
+
+
+
 // not sure about having this hold indexed color.
 //  by its name it seems as though it should be able to.
 //  using indexed color mode.
@@ -16,6 +62,18 @@
 // jsgui-node-pixel-buffer-filter
 // jsgui-node-pixel-buffer-processing
 // want to do convolutions on the pixel buffer
+
+// Also want to use Vulkan before all that long.
+//  But in the gfx-server version.
+
+
+
+// Now work on the conversion to greyscale.
+
+
+
+
+
 
 const lang = require('lang-mini');
 
@@ -191,6 +249,12 @@ class Pixel_Buffer_Core {
         // Being able to set the window_to property?
         //  Being able to use the same window on multiple input pixel buffers makes sense.
 
+        // will include the change_bipp function in the constructor.
+        //  it gets used internally anyway.
+
+
+
+
 
 
 
@@ -313,6 +377,12 @@ class Pixel_Buffer_Core {
         // An overhaul of the properties makes sense.
 
         let ta; // flexible, can be redefined? Can still make read-only in userland.
+
+
+        // Will be able to reassign the ta....
+
+
+
         //  will have a ta prop.
         //   alias to buffer as well...
 
@@ -345,6 +415,134 @@ class Pixel_Buffer_Core {
 
 
 
+        /*
+
+
+        'change_bits_per_pixel'(old_bipp, new_bipp)
+
+        */
+
+        // Works very well now :) 0.0.22 ready.
+
+        const _24bipp_to_8bipp = () => {
+
+            //console.log('_24bipp_to_8bipp');
+
+            const old_ta = ta;
+            //console.log('old_ta', old_ta);
+            //console.log('old_ta.length', old_ta.length);
+
+
+
+            //console.log('this.num_px', this.num_px);
+
+            //const new_bypp = 1;
+
+            const new_ta = ta = new Uint8ClampedArray(this.num_px);
+
+            // read byte idx
+            // write byte idx
+
+            // read byte color (3 components)
+            // write byte color ui8
+
+            const l_read = old_ta.length;
+
+            // could be in a ta scratch of some sort.
+            //  Consider benchmarking for this in the near future.
+
+            // Could make a whole version number exploring that difference.
+
+
+
+
+            let iby_read = 0, iby_write = 0;
+
+            //const inc_qty_read = 3, inc_qty_write = 1;
+
+            //let ui8_write;
+
+            // not so sure we need these inc qtys.
+
+            // Maybe this will be very fast, faster than row copy.
+            //  Could investigate direct copy as alternative to row copy.
+            //   May be faster in many cases...?
+
+
+            while (iby_read < l_read) {
+
+                //ui8_write = Math.round((old_ta[iby_read++] + old_ta[iby_read++] + old_ta[iby_read++]) / 3);
+                //new_ta[iby_write++] = ui8_write;
+
+                new_ta[iby_write++] = Math.round((old_ta[iby_read++] + old_ta[iby_read++] + old_ta[iby_read++]) / 3);
+                // Consider other formula with different weightings.
+
+            }
+
+
+
+
+
+
+
+            // num_pixels property...
+            //  bring into constructor?
+
+
+            //const new_ta = ta = new Uint8ClampedArray()
+
+
+
+            // Clone / copy the old ta?
+            //  Use the scratch ta.
+            //   And update the scratch from the ta?
+
+
+        }
+
+        const _change_bipp_inner_update = (old_bipp, new_bipp) => {
+
+            //console.log('_change_bipp_inner_update [old_bipp, new_bipp]', [old_bipp, new_bipp]);
+
+
+            if (old_bipp === 24) {
+
+
+                if (new_bipp === 8) {
+
+                    _24bipp_to_8bipp();
+
+
+                    // specific fn call...?
+                    //  probably most optimized to do a specific fn call....
+
+
+
+                } else {
+
+                    console.trace();
+                    throw 'NYI';
+                }
+
+
+            } else {
+
+                console.trace();
+                throw 'NYI';
+
+            }
+
+            // will do some low level stuff here.
+
+
+
+
+
+        }
+
+
+
+
 
         // the get / set bytes per pixel and bits per pixel will both use this.
 
@@ -368,7 +566,24 @@ class Pixel_Buffer_Core {
             // set: function(newValue) { bValue = newValue; },
             get() { return ta_bpp[0]; },
             set(value) { 
-                ta_bpp[0] = value; 
+
+                const old_bipp = ta_bpp[0];
+
+                ta_bpp[0] = value;
+
+                // And then need to run the change_bipp function.
+                //  give it the old value too?
+
+                // It would recreate the typed array.
+                //  Maybe a different size.
+
+                _change_bipp_inner_update(old_bipp, ta_bpp[0]);
+
+
+
+
+
+
             },
             enumerable: true,
             configurable: false
@@ -384,7 +599,19 @@ class Pixel_Buffer_Core {
             // set: function(newValue) { bValue = newValue; },
             get() { return ta_bpp[0] / 8; },
             set(value) { 
-                ta_bpp[0] = value * 8; 
+
+                const old_bipp = ta_bpp[0];
+
+                ta_bpp[0] = value * 8;
+
+                _change_bipp_inner_update(old_bipp, ta_bpp[0]);
+
+
+                // changing from 24 bipp to 8 bipp...
+
+
+
+
             },
             enumerable: true,
             configurable: false
@@ -2094,6 +2321,8 @@ class Pixel_Buffer_Core {
 
 
 
+
+    // Works quite quick... investigate optimizations further.
     copy_from_source() {
         // And any kind of offset?
         //  optional offset?
@@ -2332,6 +2561,10 @@ class Pixel_Buffer_Core {
 
 
 
+
+
+    // Maybe change / remove this function.
+    //  Have similar copy_from_source now.
 
     copy_rect_by_bounds_to_24bipp(ta_bounds, pb_target) {
 
@@ -3396,6 +3629,15 @@ class Pixel_Buffer_Core {
     }
 
     to_24bipp() {
+
+        // Creates another one
+        //  Consider how the other one could act as a window, but with a different number of channels.
+        //   Would need specific optimized copy function.
+
+
+
+
+
         const bipp = this.bits_per_pixel;
         const bypp = this.bytes_per_pixel;
         let i_px = 0;
@@ -5075,7 +5317,20 @@ class Pixel_Buffer_Core {
     // Maybe better to use to_xbipp functions.
     //  As its clearer that it creates and outputs a new object.
 
+
+    // Should likely be in the constructor for direct interaction with local variables there.
+
+    //  Will reinitialise the typed array.
+    //   And other tas such as the scratch row / ta_scratch would need to be recreated.
+
+
+
+    /*
+
+
     'change_bits_per_pixel'(old_bipp, new_bipp) {
+
+        console.log('change_bits_per_pixel [old_bipp, new_bipp]', [old_bipp, new_bipp]);
         //const old_bipp = this.bits_per_pixel;
 
         // could make a temporary bixel buffer to work with.
@@ -5111,6 +5366,8 @@ class Pixel_Buffer_Core {
         }
 
     }
+
+    */
 
 
 
@@ -5149,6 +5406,8 @@ class Pixel_Buffer_Core {
             return this;
         }
     }
+
+    // Will have inner conversion too.
 
     // 
 
@@ -5268,6 +5527,8 @@ class Pixel_Buffer_Core {
 
 
 
+
+    // Much improving this functionality....
 
 
     '____moving_pixels_window'(offset_bounds, cb) {

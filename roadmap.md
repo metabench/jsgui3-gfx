@@ -10,8 +10,6 @@ Convenience
 Alias method names!!!
 Support that on a lower level, such as with obext.
 
-
-
 PRIORITY 1 Convert to RGB / RGBA / Greyscale
 
 Proper implementation of 1 bit per pixel. 1/8 bytes per pixel. 0.125
@@ -59,18 +57,6 @@ Pixel buffer core could do with a fair bit more work and testing.
 Rapidly and efficiently doing convolutions will be very useful.
 
 
-
-
-
-
-
-
-
-
-
-
-
-
  a float32 number in each for example, or float16.
 
 
@@ -84,6 +70,17 @@ Rapidly and efficiently doing convolutions will be very useful.
 
 0.0.22
   .bypp = 1 convert to greyscale
+   greyscale image helps prepare for convolution.
+
+0.0.23
+  Plan what to do...
+  Some more functionality that supports convolutions / convolution windows.
+    Moving convolution window seems useful / important.
+      A good structure as well to check that the conv is working with the right data along the way.
+
+
+
+
 
 
 
