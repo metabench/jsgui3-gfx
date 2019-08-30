@@ -650,21 +650,13 @@ if (require.main === module) {
 
         // Also lets generate the color square example.
 
-
-
         // then save it.
 
         console.log('tp1', tp1);
 
-
-
-
         // looks OK so far....
 
         await fnlfs.ensure_directory_exists('./output/create_eg_pbs/');
-
-
-
         await gfx.save_pixel_buffer('./output/create_eg_pbs/patch1.png', tp1, {
             format: 'png'
         });
@@ -675,7 +667,7 @@ if (require.main === module) {
         // Conversion to greyscale not working right now...
         //  Setting the bypp value would be a good shorthand that changes it to greyscale.
 
-        
+
 
 
         tp1.bypp = 1;

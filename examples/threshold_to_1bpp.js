@@ -262,16 +262,25 @@ const thresh = async() => {
     // Splitting the channels is nicely fast.
     //  Simple operation done in JS with simple and efficient code.
 
-    await gfx.save_pixel_buffer('./output/test_r_channel-erte_ale.png', r, {
+    await fnlfs.ensure_directory_exists('./output/threshold_to_1bpp/');
+
+
+    // PNG definitely looks like the safer format for comparison of results.
+    //  Be able to compare the decoded images to see if they are the same.
+    //   Maybe better than checking the saved files are identical.
+
+
+
+    await gfx.save_pixel_buffer('./output/threshold_to_1bpp/r_channel-erte_ale.png', r, {
         format: 'png'
     });
-    await gfx.save_pixel_buffer('./output/test_g_channel-erte_ale.png', g, {
+    await gfx.save_pixel_buffer('./output/threshold_to_1bpp/g_channel-erte_ale.png', g, {
         format: 'png'
     });
-    await gfx.save_pixel_buffer('./output/test_b_channel-erte_ale.png', b, {
+    await gfx.save_pixel_buffer('./output/threshold_to_1bpp/b_channel-erte_ale.png', b, {
         format: 'png'
     });
-    await gfx.save_pixel_buffer('./output/thresh_24bipp_210-erte_ale.png', thresh_24bipp, {
+    await gfx.save_pixel_buffer('./output/threshold_to_1bpp/r_channel_thresh_24bipp_210-erte_ale.png', thresh_24bipp, {
         format: 'png'
     });
 

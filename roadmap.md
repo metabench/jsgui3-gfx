@@ -75,10 +75,34 @@ Rapidly and efficiently doing convolutions will be very useful.
 0.0.23
   Plan what to do...
   Some more functionality that supports convolutions / convolution windows.
+  // Running it on a greyscale image would help to begin with.
+  //  Then can try running it on a multi-channel image.
+  //   Could have the view window switch between channels?
+  //  A view into a channel could be useful as well.
+  //   So the view would have different bipp and it would convert on copy.
+  //   
+  Initial Convolution implementation
+
+
+  
+
+
+
     Moving convolution window seems useful / important.
       A good structure as well to check that the conv is working with the right data along the way.
 
 
+0.0.24 - Improvements with convolutions
+  Further convolution examples / benchmarks...?
+    (will also do some work on the server-side version)
+
+
+
+0.0.25 - Improvements with examples system
+  Will be able to run all examples at once, save their output in a dir that's labelled / pathed by:
+    /module_ver/node_ver/datetime_test_run/test_name
+
+  Saving test / example results for comparison / regression testing will be a great help.
 
 
 

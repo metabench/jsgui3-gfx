@@ -45,6 +45,9 @@ const {Pixel_Buffer} = gfx;
 
 const Server_Pixel_Buffer = gfx_server.Pixel_Buffer;
 
+const Convolution = require('../convolution');
+
+
 
 // seems to be working / fixed now :)
 const copy_from_server_pb = (server_pb) => {
@@ -71,7 +74,7 @@ const copy_to_server_pb = (standard_pb) => {
 const old = () => {
     const eg_pb_window_to_pb = async() => {
 
-        const pb_source = new Pixel_Buffer({
+        const pb_24bipp_color_square = new Pixel_Buffer({
             size: [256, 256],
             bits_per_pixel: 24
         });
@@ -166,6 +169,14 @@ const create = require('./create_eg_pbs');
 
 
 const eg_win_to = async() => {
+
+
+    // Multiple subexamples will run within this.
+
+
+
+
+
     // This function should return something?
     //  or make more examples that generate pbs and that's in their name?
 
@@ -192,7 +203,7 @@ const eg_win_to = async() => {
 
 
 
-    console.log('Generating 255x255 example');
+    //console.log('Generating 255x255 example');
     //const spb = await Server_Pixel_Buffer.load('../source_images/Erte Ale Volcano.jpg');
     // Load JPEG as 24 bipp by default?
 
@@ -222,14 +233,21 @@ const eg_win_to = async() => {
 
     /*
 
-    const pb_source = new Pixel_Buffer({
+    const pb_24bipp_color_square = new Pixel_Buffer({
         size: [256, 256],
         bits_per_pixel: 24
     });
 
     */
 
-    const pb_source = create.generate_color_square();
+    const pb_24bipp_color_square = create.generate_color_square();
+    const pb_8bipp_patch = (() => {
+        const res = create.patch_1();
+        res.bipp = 8;
+        return res;
+    })();
+
+    console.log('pb_8bipp_patch.bipp', pb_8bipp_patch.bipp);
 
 
     const ta_pos = new Int16Array(2);
@@ -254,18 +272,8 @@ const eg_win_to = async() => {
 
 
 
-
-
-
-    const setup_colors = () => {
-        
-
-
-        // Separate out above code to setup the color square pb, put it in create_eg_pbs.
-        //  
-
-
-
+    const iterate_colors_with_window_pb = () => {
+        console.log('iterate_colors_with_window_pb');
 
         // Blur wont be so good as a convolution here.
         //  Could make different patterns to start with....
@@ -285,9 +293,6 @@ const eg_win_to = async() => {
         // a center_pos / pos_center property would make a lot of sense.
         //  also be able to change this pos? set it easily, have the window update its data from the relevant typed array???
 
-
-
-
         // nice hack: set the pos_center to an existing pos typed array.
         //  then the values get looped over.
         //   call the update_from_source function....
@@ -296,8 +301,6 @@ const eg_win_to = async() => {
 
         ta_pos[0] = 0;
         ta_pos[1] = 0;
-
-
 
         // Special window_to handling in the constructor.
         //  will set the bits_per_pixel value.
@@ -342,22 +345,18 @@ const eg_win_to = async() => {
         //  Worth getting on with making the convolution window and loop work quickly, soon, and with the right syntax.
 
 
-
-
-
         // Centered on 0,0.
 
         // Should make the pos_center property, make it work well.
         //  Setting its center pixel sets its position so that that central specified position is central within the pb.
         //   (should be useful)
 
-
         // So need to upgrade Pixel_Buffer to fully support pos_center
 
 
         const pb_window = new Pixel_Buffer({
             size: [5, 5],
-            window_to: pb_source,  // (source??)
+            window_to: pb_24bipp_color_square,  // (source??)
             pos_center: ta_pos
         });
 
@@ -620,7 +619,7 @@ const eg_win_to = async() => {
             // Soon worth doing some experiments with C++.
             //  Probably worth getting optimized convolutions working in JS first though.
 
-            await gfx.save_pixel_buffer('./output/window_to-generated_256x256.png', pb_source, {
+            await gfx.save_pixel_buffer('./output/window_to-generated_256x256.png', pb_24bipp_color_square, {
                 format: 'png'
             });
 
@@ -629,7 +628,79 @@ const eg_win_to = async() => {
 
 
     }
-    setup_colors();
+    //iterate_colors_with_window_pb();
+
+
+    const beginning_convolve_8bipp_patch = () => {
+
+        // Use a 3x3 window for the moment.
+        // 3x3 conv. Set the values (for the moment, will be a simple sharpen conv)
+
+        // Move the window, get the convolved px value each time it's been moved.
+        //  put the convolved value into a new pb.
+
+
+        const conv_s3_sharpen = new Convolution({
+            size: [3, 3]
+        });
+
+
+
+        console.log('beginning_convolve_8bipp_patch');
+        ta_pos[0] = 0;
+        ta_pos[1] = 0;
+        const pb_window = new Pixel_Buffer({
+            size: [3, 3],
+            window_to: pb_8bipp_patch,  // (source??)
+            pos_center: ta_pos
+        });
+        pb_window.copy_from_source();
+
+        console.log('pb_window.ta', pb_window.ta);
+
+        // let's set up the convolution too...
+
+
+
+
+        let has_pos;
+
+        // function to process the convolution here?
+
+        /*
+
+
+
+        // moves to the next px in the source!!!
+        has_pos = !!pb_window.move_next_px();
+        //(() => {
+        while (has_pos !== false) {
+            //console.log('pb_window.pos', pb_window.pos);
+
+
+
+            has_pos = !!pb_window.move_next_px();
+        }
+        */
+
+        console.log('been through pos movements');
+        //})();
+
+
+        // And will save the convolved version.
+        //  Let's hope it's fast!
+        //   Then will look at optimizing different parts of it. See about profiling too.
+
+
+
+
+
+
+
+    }
+    beginning_convolve_8bipp_patch();
+
+
 
 
     // Could do with some other functions.
@@ -917,7 +988,6 @@ const eg_win_to = async() => {
         performance.measure('A to B', 'A', 'B');
 
     }
-
     //calc_avg();
 
     // Identifying separate color clusters would be useful too.
@@ -1171,7 +1241,6 @@ const eg_win_to = async() => {
                 format: 'png'
             });
         }
-
         
     }
 

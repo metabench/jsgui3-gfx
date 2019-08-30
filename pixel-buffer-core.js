@@ -38,9 +38,66 @@
 
 const _roadmap = {
     '0.0.22': [
-        ['pb.bypp = 1 convert to greyscale', 0, 3, 'Medium small task requiring writing of optimized algorithm']
+        ['pb.bypp = 1 convert to greyscale', 'done', 3, 'Medium small task requiring writing of optimized algorithm']
+    ],
+
+
+    // Looks like level 6 or 7 for doing a lot of the convolution stuff.
+    //  May require new Convolution object / class / function / combination thereof.
+
+    '0.0.23': [
+        ['window view into specific channel?'],
+        ['run convolution on 8bipp image?'],
+        ['Convolution Class', ]
+
+        // Task breakdown...
+
+        //  Convolution class
+
+        // 8bipp window to other 8bipp
+        // 8bipp window to single channel of 24bipp
+
+        // Same convolution applying to multiple channels?
+        //  so have it work on a multi-channel window.
+
+        // Float16Convolution would hold the convolution.
+        //  could specify convo by size and formula?
+
+
+        // A convolution Class / function system does seem like the best way.
+
+
+
     ]
 }
+
+// Operating convolutions as / on windows to other pixel buffers makes the most sense to me.
+
+
+
+
+// Having a window as a view into a specific channel would make a lot of sense.
+//  Would need to work on the copying algorithm.
+//   Could be a simple offset-read-advance system.
+
+// Applying convolutions to images would make a lot of sense.
+
+
+// Float16Convolution
+//  Would make sense, with various needed properties for compatibility with Pixel_Buffer
+
+// Have it so that the convolution can be automatically applied for one pb's window into another.
+//  Meaning the full image convolution could use the moving convolution window.
+//   Hopefully things will be optimized very well.
+
+
+
+
+
+
+
+
+
 
 
 
@@ -242,7 +299,7 @@ class Pixel_Buffer_Core {
         // window_to in operation
         //  on startup, will copy_from_main
 
-        this.pos = new Int16Array([0, 0]);
+        //this.pos = new Int16Array([0, 0]);
 
         // if it's got window_to, set some things up (extra functionality) in the constructor.
 
@@ -1375,31 +1432,14 @@ class Pixel_Buffer_Core {
         //if ()
 
         if (spec.window_to || spec.source || spec.window_to_source) {
-            console.log('Pixel_Buffer_Core (or subclass) needs to act as a window to another Pixel Buffer.')
+            
 
             // set the .source property.
 
             pb_source = spec.window_to || spec.source || spec.window_to_source;
 
-            console.log('pb_source', pb_source);
-            console.log('pb_source.size', pb_source.size);
+
             
-
-            // Should be able to get various useful pieces of info on a pb quickly in ta format.
-
-
-
-
-
-            // The pos should have been set when given the pos_center.
-
-            console.log('spec.pos', spec.pos);
-            console.log('spec.pos_center', spec.pos_center);
-            // pos could have extra centering value / flag???
-
-
-
-            console.log('this.pos', this.pos);
 
             // 
 
@@ -1410,9 +1450,34 @@ class Pixel_Buffer_Core {
                 this.pos_my_center_within_source = spec.pos_center || spec.pos_my_center_within_source;
             }
 
-            console.log('this.pos_my_center_within_source', this.pos_my_center_within_source);
+            const log_info = () => {
+                console.log('Pixel_Buffer_Core (or subclass) needs to act as a window to another Pixel Buffer.')
+                console.log('pb_source', pb_source);
+                console.log('pb_source.size', pb_source.size);
+                
 
-            console.log('spec', spec);
+                // Should be able to get various useful pieces of info on a pb quickly in ta format.
+
+
+
+
+
+                // The pos should have been set when given the pos_center.
+
+                console.log('spec.pos', spec.pos);
+                console.log('spec.pos_center', spec.pos_center);
+                // pos could have extra centering value / flag???
+
+
+
+                console.log('this.pos', this.pos);
+                console.log('this.pos_my_center_within_source', this.pos_my_center_within_source);
+
+                console.log('spec', spec);
+            }
+            //log_info();
+
+           
 
         }
 
