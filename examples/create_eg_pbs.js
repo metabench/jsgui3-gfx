@@ -35,11 +35,6 @@ const {
 
 const { PerformanceObserver, performance } = require('perf_hooks');
 
-const obs = new PerformanceObserver((items) => {
-  console.log(items.getEntries()[0].duration, 'ms');
-  performance.clearMarks();
-});
-obs.observe({ entryTypes: ['measure'] });
 
 // options
 // max size
@@ -641,6 +636,14 @@ if (require.main === module) {
         // The inversion is really fast even just in JS at about 15ms.
         //  Likely to be able to perform a load more functions in high speed.
         //  Then look into doing them faster still.
+
+        
+        const obs = new PerformanceObserver((items) => {
+            console.log(items.getEntries()[0].duration, 'ms');
+            performance.clearMarks();
+        });
+        obs.observe({ entryTypes: ['measure'] });
+
 
 
         const tp1 = generate_tp1();

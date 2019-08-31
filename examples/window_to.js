@@ -18,11 +18,9 @@ const {
 
 const { PerformanceObserver, performance } = require('perf_hooks');
 
-const obs = new PerformanceObserver((items) => {
-  console.log(items.getEntries()[0].duration, 'ms');
-  performance.clearMarks();
-});
-obs.observe({ entryTypes: ['measure'] });
+// If there is not already a performance observer?
+//  It measures it twice / writes console output twice.
+
 
 // options
 // max size
@@ -648,39 +646,79 @@ const eg_win_to = async() => {
 
 
         console.log('beginning_convolve_8bipp_patch');
-        ta_pos[0] = 0;
-        ta_pos[1] = 0;
-        const pb_window = new Pixel_Buffer({
-            size: [3, 3],
-            window_to: pb_8bipp_patch,  // (source??)
-            pos_center: ta_pos
-        });
-        pb_window.copy_from_source();
+        //ta_pos[0] = 0;
+        //ta_pos[1] = 0;
 
+
+
+        // set it up as a centered_window?
+
+        //  a square window, size 3?
+        //   does make sense to handle a single size value like that.
+
+
+        // Will make more convenient syntax later
+
+        //const new_fns_to_make = ['new_window', 'each_pos_within_bounds'];
+
+
+
+        // More internal setup / getting of byte index info useful for iteration when it is set up?
+        //  Perpating this would make iteration faster still.
+
+
+        const pb_window = pb_8bipp_patch.new_window({
+            size: [3, 3],
+            pos_bounds: [-1, -1, pb_8bipp_patch.size[0] - 1, pb_8bipp_patch.size[1] - 1],
+            pos: [-1, -1]
+        });
+
+        // Write the iteration code here?
+        //  already have copy_from_source
+        //  will have copy made when the window is created.
+
+        const pos_window = pb_window.pos;
+        const ta_window = pb_window.ta;
+
+
+        //console.log('pb_window', pb_window);
         console.log('pb_window.ta', pb_window.ta);
 
-        // let's set up the convolution too...
+        // Will move the pos_property within the pos bounds.
 
-        console.log('conv_s3_sharpen', conv_s3_sharpen);
-        console.log('conv_s3_sharpen.ta', conv_s3_sharpen.ta);
+        // perf test here?
 
-        // get the convolved value from pb_window.ta
+
+
+        performance.mark('F');
+        //const [r, g, b] = pb.split_rgb_channels;
+        
+        // May as well do convolutions and write them into the convolution result pb.
+
+        // 160ms approx for iteration here, with copies made (by row)
+        //  Could be better.
+        //   Accelerated lower level function will help too.
+        //    Need to make sure JS version works first as as prototype.
+        //     Make sure the API concepts are stable, then port some of it to C++.
 
         const pb_conv_res = new Pixel_Buffer({
             size: pb_8bipp_patch.size,
             bits_per_pixel: 8
-        })
-        const res_ta = pb_conv_res.ta;
+        });
 
-        let byte_idx_write = 0;
+        let i_write = 0;
+        const ta_conv_res = pb_conv_res.ta;
 
 
-        // calc_from_8bipp_ta
 
-        let pixel_conv_res = conv_s3_sharpen.calc_from_8bipp_ta(pb_window.ta);
-        console.log('pixel_conv_res', pixel_conv_res);
-        res_ta[byte_idx_write++] = pixel_conv_res;
 
+
+        // Byte index double iterator here would work faster, most likely.
+        //  Explore faster iteration mechanisms, and ways to prepare the variables for them.
+
+        // Byte_Iterator_Helper?
+        //  or functions to deal with it?
+        // OO makes sense because it could save and modify state.
 
 
         
@@ -689,41 +727,27 @@ const eg_win_to = async() => {
 
 
 
-        let has_pos;
 
-        // function to process the convolution here?
+        // Should automatically do that when it starts?
+        pb_window.each_pos_within_bounds(() => {
+            // access ta / pb_window variables / functions.
 
-        
+            //console.log('pos_window', pos_window);
+            //console.log('ta_window', ta_window);
 
+            // Then can get the conv result, put it into a new image.
+            //  But it goes into a different position within the new index.
+            //   Byte index iteration writing may work best.
 
+            ta_conv_res[i_write++] = conv_s3_sharpen.calc_from_8bipp_ta(ta_window);
+        });
+        // 0.53 ms, not bad.
+        //  maybe faster with next ops too, as this time it initialised values???
+        //   see about fastest optimizations.
 
-        // moves to the next px in the source!!!
-        has_pos = !!pb_window.move_next_px();
-        // Seems likely that move_next_px or its usage here is the culprit.
+        performance.mark('G');
+        performance.measure('F to G', 'F', 'G');
 
-        
-
-        // a problem with move_next_px perhaps?
-        //  could be getting some kind of row skip value wrong.
-        //   maybe better (for the moment) to recalculate pixel index?
-
-
-
-
-
-        //(() => {
-        while (has_pos !== false) {
-            //console.log('pb_window.pos', pb_window.pos);
-
-            has_pos = !!pb_window.move_next_px();
-            pixel_conv_res = conv_s3_sharpen.calc_from_8bipp_ta(pb_window.ta);
-
-            // Looks very wrong so far!
-
-            //console.log('pixel_conv_res', pixel_conv_res);
-            res_ta[byte_idx_write++] = pixel_conv_res;
-
-        }
 
         (async() => {
             console.log('saving convolved 8bipp patch');
@@ -737,6 +761,256 @@ const eg_win_to = async() => {
             });
 
         })();
+
+        // Nice - convolution sharpen actually worked - and quickly.
+        //  Could optimize a little more?
+
+
+
+
+
+        
+
+        // could do double for loop iteration within the pos_bounds
+        //  with byte index calculation.
+
+
+
+
+
+
+
+
+
+
+        // const pb_window = pb_8bipp_patch.get_centered_window(3);
+        //  And this would handle setting up the pos_bounds too.
+        //   could have an iterate_pos_bounds function.
+        //    pos_bounds and pos will be very useful for iteration.
+        //     including in loops
+
+        // setting up the iteration variables typed arrays.
+        //  and also having programmatic indexes to them, but not used in a way that slows down their access.
+
+
+
+        // May have faster window pos iteration?
+
+        // .each_source_pixel
+        //  That could be a very useful function.
+
+
+
+        // Need specific handling of centered windows too.
+        //  These are essential for convolution.
+        //   Implement every feature of convolutions, as efficiently as possible.
+
+        // pb.get_centered_window
+        //     could reuse one. or have a .centered_window property.
+        //      own .centered window could be useful for applying convolutions or generating it itself.
+
+
+
+
+        //   .create_centered_window
+        //   .new_centered_window
+        //     implies its not a singleton. do this for now.
+
+        // .create_window_to
+        //  the window being centered does not make such a difference.
+        //   we do that by setting it pos_bounds.
+
+        // .create_square_window_to?
+
+        // .new_window
+        //  makes sense
+
+        // definition of bounds would make a lot of sense.
+        //  overflow of the source basically being 1/2 the window size (rounded down?)
+
+        // need to be very precise in dealing with this source overflow.
+
+        // the pos_bounds work on a lower level.
+
+
+
+
+
+        /* .new_window({
+            size: 3, // square
+            source_overflow: 1 // sets the pos_bounds
+
+
+            // will start the window pos at top left by default.
+
+
+            // source_size_allowed_overflow???
+
+
+            // source_overflow: [1, 1, 2, 2]?  [1, 2]?
+            //  before center, after center?
+
+        })
+
+
+        */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        //  -- Functions to find out the variables needed in interation loops --
+        //  --------------------------------------------------------------------
+
+        // Slightly complex as it needs to account for bounds / in and out of bounds and handling out of source bounds acceptable (where allowed by the params).
+
+
+
+        // Essential values:
+        //  Row read length in bytes (same in this and source)
+        //  Source bytes_per_row
+        //  Self bytes_per_row
+        //  Source byte index of the beginning of each row
+        //  Source byte index of the end of each row
+        //  
+
+        // 
+
+
+
+        // Possible values:
+        //  Source byte index of the first (in bounds) pixel to read (according to set pos)
+        //   (seems useful)
+
+
+
+
+        // pb.pos_window_movement_iteration_info ???
+        // pb.pos_iteration_info - returns a typed array
+
+
+
+
+
+
+
+
+        //  get_centered_window going into pb core.
+
+
+
+        
+        const old_pb_window_iterate_attempt = () => {
+
+            const pb_window = new Pixel_Buffer({
+                size: [3, 3],
+                window_to: pb_8bipp_patch,  // (source??)
+                pos_center: ta_pos
+            });
+            pb_window.copy_from_source();
+    
+            console.log('pb_window.ta', pb_window.ta);
+    
+            // let's set up the convolution too...
+    
+            console.log('conv_s3_sharpen', conv_s3_sharpen);
+            console.log('conv_s3_sharpen.ta', conv_s3_sharpen.ta);
+    
+            // get the convolved value from pb_window.ta
+    
+            const pb_conv_res = new Pixel_Buffer({
+                size: pb_8bipp_patch.size,
+                bits_per_pixel: 8
+            })
+            const res_ta = pb_conv_res.ta;
+    
+            let byte_idx_write = 0;
+    
+    
+            // calc_from_8bipp_ta
+    
+            let pixel_conv_res = conv_s3_sharpen.calc_from_8bipp_ta(pb_window.ta);
+            console.log('pixel_conv_res', pixel_conv_res);
+            res_ta[byte_idx_write++] = pixel_conv_res;
+    
+    
+    
+            
+    
+    
+    
+    
+    
+            let has_pos;
+    
+            // function to process the convolution here?
+    
+            
+    
+    
+    
+            // moves to the next px in the source!!!
+            has_pos = !!pb_window.move_next_px();
+            // Seems likely that move_next_px or its usage here is the culprit.
+    
+    
+    
+            // a problem with move_next_px perhaps?
+            //  could be getting some kind of row skip value wrong.
+            //   maybe better (for the moment) to recalculate pixel index?
+    
+    
+    
+    
+    
+            //(() => {
+            while (has_pos !== false) {
+                //console.log('pb_window.pos', pb_window.pos);
+    
+                has_pos = !!pb_window.move_next_px();
+                pixel_conv_res = conv_s3_sharpen.calc_from_8bipp_ta(pb_window.ta);
+    
+                // Looks very wrong so far!
+    
+                //console.log('pixel_conv_res', pixel_conv_res);
+                res_ta[byte_idx_write++] = pixel_conv_res;
+    
+            }
+    
+            (async() => {
+                console.log('saving convolved 8bipp patch');
+                // Soon worth doing some experiments with C++.
+                //  Probably worth getting optimized convolutions working in JS first though.
+    
+                await fnlfs.ensure_directory_exists('./output/window_to/');
+    
+                await gfx.save_pixel_buffer('./output/window_to/convolve_sharpen-8bipp_patch.png', pb_conv_res, {
+                    format: 'png'
+                });
+    
+            })();
+
+
+        }
+
+
+
+        
 
         // then save the 8bipp patch conv result....
 
@@ -1340,6 +1614,13 @@ if (require.main === module) {
         // The inversion is really fast even just in JS at about 15ms.
         //  Likely to be able to perform a load more functions in high speed.
         //  Then look into doing them faster still.
+
+        
+        const obs = new PerformanceObserver((items) => {
+            console.log(items.getEntries()[0].duration, 'ms');
+            performance.clearMarks();
+        });
+        obs.observe({ entryTypes: ['measure'] });
 
         
 

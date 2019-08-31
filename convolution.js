@@ -110,7 +110,7 @@ class Float32Convolution extends Convolution {
 
         if (spec.value) {
             const tv = tf(spec.value);
-            console.log('tv', tv);
+            //console.log('tv', tv);
 
             if (tv === 'a') {
                 if (spec.value.length === this.num_px) {
@@ -183,9 +183,6 @@ class Float32Convolution extends Convolution {
 
         //  later will look into not defining / using ANY new valiables when carrying out some functions, only using consts too.
 
-
-
-
         // .calc_from_8bipp_ta(ta, pos); ???
 
         // .calc_from_8bipp_matched_size_ta(ta)
@@ -198,37 +195,11 @@ class Float32Convolution extends Convolution {
         // calc_3channels_from_24bipp_ta(ta)
         //  doing 3 channels at once on the input buffer would allow for decent data localisation and algorithmic speed.
 
-
-
-
-
-
-
-
-
-
-
         //  but would need position mapping to do the calculation?
         //   
 
 
         //  convolution from a single channel really does make the most sense.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

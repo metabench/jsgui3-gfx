@@ -19,6 +19,17 @@ Proper implementation of 1 bit per pixel. 1/8 bytes per pixel. 0.125
 
 
 
+Immediate Plan:
+
+*) Continue working on variety of interface and convenience things.
+    Testing / examples.
+   Hold off from releasing 0.0.23.
+
+
+
+
+
+
 Examples
 
 Will run in node.js. Will use some dev dependencies.
@@ -81,10 +92,24 @@ Rapidly and efficiently doing convolutions will be very useful.
   //  A view into a channel could be useful as well.
   //   So the view would have different bipp and it would convert on copy.
   //   
+
+
   Initial Convolution implementation
 
-  Bug fix: move_next_px
+  Bug fix: move_next_px - not fixed yet
     Sort out definition of bound movement range when using window_to source pb.
+    Rethinking image centering and centered window pb movement.
+      Coming up with possible ways it will be more efficient than before as well as more accurate.
+
+    (.each_window_px)
+      // And would do the corresponding copy to own ta to represent what's in the window.
+      //  would do that before the callback.
+      // Not yet - lets use pos_bounds and incorporate that into existing iteration.
+
+    
+
+
+
 
 
   
@@ -93,6 +118,32 @@ Rapidly and efficiently doing convolutions will be very useful.
 
     Moving convolution window seems useful / important.
       A good structure as well to check that the conv is working with the right data along the way.
+
+
+0.0.23(a?) - Further improvements to iteration system, including byte iteration variables and methods.
+  Copy and paste various kinds of iteration boilerplate too.
+  Dealing with the typed arrays themselves more, more mathematical functions that deal with abstractions of multiple values.
+    Also providing the basic non-abstract info.
+  Getting the byte index info (or general purpose and iteration...)
+    Function that returns a very human-readable object (with explanations?)
+      Would also return the typed arrays, and explain their indexing
+    Function that just returns the typed arrays.
+  
+  Iterations for more than one coordinate space at once (ie coordinate spaces from multiple images?)
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 0.0.24 - Improvements with convolutions
@@ -107,7 +158,16 @@ Rapidly and efficiently doing convolutions will be very useful.
 
   Saving test / example results for comparison / regression testing will be a great help.
 
+0.0.26 ???
+  1bipp convolutions / image processing
+  1bipp window to 1bipp image
+    efficient copying
+  
 
 
 
+// .coordinate_space or .coords variable?
+//  .coords could be made to be a fast and flexible API. would handle pos, size, bounds, iterations, pos within another image, many things.
+
+  
 

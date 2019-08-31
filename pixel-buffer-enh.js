@@ -17,6 +17,14 @@
 // jsgui-node-pixel-buffer-processing
 // want to do convolutions on the pixel buffer
 
+
+/*
+    31/08/2019 - Does not seem as relevant right now. High perf functionality being built into the core, will act as a better platform than currently used here.
+
+*/
+
+
+
 const lang = require('lang-mini');
 
 const {

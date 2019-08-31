@@ -47,10 +47,135 @@ const _roadmap = {
     //  May require new Convolution object / class / function / combination thereof.
 
     '0.0.23': [
+
+
+        `
+        Task Size and Complexity Measure: 5
+
+        Rethinking and implementing pos_bounds
+
+
+        Better to have more API-based centering, and adjust the central position?
+            Possibly not best for convolution, for perf reasons.
+            Don't want more calculations done during iteration...?
+
+        
+        
+
+
+        new_centered_window() ???
+            centered on 0,0.
+            center of that window corresponds to a pixel in this window.
+            bounds determined...
+                does make sense for the moment.
+                implement this fn, makes sense for convs right now.
+
+            
+
+
+
+            get_conv_window?
+
+
+
+
+
+
+
+
+        
+        
+        `
+
+        // Needing to reconsider / rethink a few things.
+        //  Size 4 or 5 task. Thinking about bounds, and different types of them.
+        //   Movement bounds - allowed positions of the window.
+        //    Think about not being able to move any part of the window outside of those set bounds.
+        //     Will be a lower level value set by some other things in some cases.
+
+
+        // Operation bounds?
+        //  px iteration bounds?
+
+        // Will think in terms of operating over ranges, doing iterations.
+        //  Some inner functions or simple loops using the values will handle the necessary iterations.
+
+
+        // Will have window_to_bounds?
+        //  window_to_pos_bounds?
+
+        // or it would be its own pos_bounds?
+        //  or just .bounds?
+        //   .bounds is based on the size.
+
+        // .pos_bounds makes sense.
+
+        // .pos.bounds?
+
+
+
+
+        // Write down important functions to implement
+        //  Can update progress here.
+
+
+
+
+
+
+
+
+
+
+        
+
         ['window view into specific channel?'],
         ['run convolution on 8bipp image?'],
         ['Convolution Class', ],
-        ['Bug fix move_next_px, need to use boundary ranges for proper movement of the window within a source', 4]
+        ['Bug fix move_next_px, need to use boundary ranges for proper movement of the window within a source', 4, [
+
+            // Proposed solutions / features required to get this working:
+
+            // 
+
+            // seems like it should be a new Int16Array.
+            ['cancelled - doing pb.pos_bounds', 'pb.window_movement_bounds', `
+
+                Need to make / finish function
+                Considering different types of bounds
+
+
+                
+
+
+
+            
+            
+            
+            `],
+
+
+            ['pos_bounds', `
+                consider iterate_pos_within_bounds
+                just each_pos_px?
+
+                As well as positions, need to properly calculate iteration values and indexes.
+                Put these into a typed array, access them through use of a function
+
+
+
+
+
+
+            
+            `]
+
+
+            // pb.window_connection object?
+            //  .pb, .movement_bounds
+        ]]
+
+
         //  Allowing for some out-of bounds movement, useful for convolution.
         //  Movement boundary being difficulty 3 or 4.
         //   Need to consider the overall API.
@@ -61,7 +186,36 @@ const _roadmap = {
 
         // .ta_movement_bounds
 
-        
+        // Setting movement bounds (or removing it / setting it to 0) would help to define iteration movement.
+        ///  Of a / the pos value while iterating either within self or within source.
+
+        // movement self offset bounds - ie [-1, -1, 1, 1] where it adds the self size to values 2 and 3.
+
+        // movement offset bounds does seem like a fairly useful low level property
+        //  more work on movement and iteration.
+
+        // iteration through self space, source space or target space.
+        //  not really used target space. may me useful for writing to...?
+
+
+        // self_movement_bounds
+        //  may be useful for some restricted pixel iterations
+        //   could calculate the byte jump values from this as well...?
+
+
+        // window_movement_bounds seems most appropriate for convolution iteration.
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -158,7 +312,8 @@ const {
     fp,
     tof,
     get_a_sig,
-    are_equal
+    are_equal,
+    tf
 } = lang;
 
 const Pixel_Pos_List = require('./pixel-pos-list');
@@ -441,7 +596,17 @@ class Pixel_Buffer_Core {
         // pos_within_source?
         //  or part of a Source_Reference???
 
-        const pos_center_within_this = new Int16Array(2);
+
+
+        // Should make this read-only?
+        //  call it pos_center?
+        
+        // pos_center is the position of the central px within this pb.
+
+
+
+
+        
 
 
 
@@ -737,11 +902,22 @@ class Pixel_Buffer_Core {
 
         
 
-
+        // const pos_center_within_this = new Int16Array(2);
 
 
 
         // and pos_center is a facade property with no local variable.
+
+
+        // pos within other coord space?
+        //  iteration pos within this?
+
+
+
+        // 
+
+
+        // pos_within_source?
 
         Object.defineProperty(this, 'pos', {
             // Using shorthand method names (ES2015 feature).
@@ -766,6 +942,136 @@ class Pixel_Buffer_Core {
             enumerable: true,
             configurable: false
         });
+
+
+        // And different movement / position boundaries:
+
+        // window_movement_bounds
+        //  the positions that can be moved into within (or outside) the source window.
+        //  will help with position iteration based on the position within the source window.
+
+
+
+        // really its pos_bounds
+        //  because we can not move the pos outside of these bounds.
+        //  iteration functions move the pos within these bounds.
+        //  will be useful for moving convolution windows.
+
+        // const pos_center_within_this = new Int16Array(2);
+
+        // 
+
+
+
+
+
+
+
+        
+
+        // be able to set the window movement bounds as well.
+        //  will set the values.
+
+        // window_movement_bounds will be very useful for moving a pb window around a source for doing a convolution.
+
+
+        // pos_center makes a lot of sense as a read-only property
+        //  could update it whenever the size is set.
+
+        // both read-only properties.
+        const pos_bounds = new Int16Array(4);
+        //  pos_within_source / pos_within_container / pos_within_parent / pos_within
+
+
+
+
+
+
+        const pos_center = new Int16Array(2);
+        const edge_offsets_from_center = new Int16Array(4);
+
+
+        ro(this, 'pos_center', () => pos_center);
+        ro(this, 'edge_offsets_from_center', () => edge_offsets_from_center);
+
+
+
+        // have edge offsets from center in terms of bytes too?
+
+
+        // Differentiate between pos_within_source and an internal pos_iterator or pos of operations to be done.
+        // new_centered_window will make use of this.
+
+        // Better to have it existing already.
+
+        // pos_within_parent_bounds
+
+        // or more full positioning property and system?
+
+
+        Object.defineProperty(this, 'pos_bounds', {
+            // Using shorthand method names (ES2015 feature).
+            // This is equivalent to:
+            // get: function() { return bValue; },
+            // set: function(newValue) { bValue = newValue; },
+            get() {
+                //if (!pos_bounds) {
+                //    pos_bounds = new Int16Array(4);
+                //}
+                return pos_bounds; 
+            },
+            set(value) {
+
+                // look at type of value... maybe its an array.
+                const tv = tf(value);
+                //console.log('pos_bounds set tv', tv);
+
+                // if tv is an array...
+
+                if (tv === 'a') {
+
+                    if (value.length === 4) {
+                        pos_bounds.set(value);
+                    } else {
+                        throw 'Expected Array with .length 4, value.length: ' + value.length;
+                    }
+                    
+                } else {
+                    console.trace();
+                    console.log('pos_bounds set tv', tv);
+                    throw 'Expected Array';
+                }
+
+                //console.log('have set pos_bounds', pos_bounds);
+
+                // Were we given a Int16Array? Similar?
+                //  set own pos ta values from the value.
+
+                /*
+
+                if (value instanceof Int16Array) {
+                    if (value.length === 2) {
+                        pos[0] = value[0];
+                        pos[1] = value[1];
+                    }
+                }
+                */
+
+
+                //pos = value; 
+            },
+            enumerable: true,
+            configurable: false
+        });
+
+
+
+
+
+
+
+
+
 
         const minus_pos = new Int16Array(2);
 
@@ -801,6 +1107,9 @@ class Pixel_Buffer_Core {
                         size[0] = value[0];
                         size[1] = value[1];
                     }
+                } else {
+                    console.trace();
+                    throw 'NYI';
                 }
                 //pos = value; 
             },
@@ -810,25 +1119,66 @@ class Pixel_Buffer_Core {
 
 
 
-        const bounds = new Int16Array(4);
+
+
+
+
+        // Size bounds?
+        //  May be better made more specific like that.
+
+
+
+        // Seems mis-named? Not specific? What does this have to do with the pos? Rename....
+
+
+        // size_bounds?
+        //  self_size_bounds?
+
+
+        // or by setting up / creating a window_to, a few iteration properties will be set up to begin with....
+
+        // rethink the 'bounds' property?
+        //  to self_bounds?
+
+
+
+
+        // .own_bounds? .self_bounds?
+
+
+
+        // pos_allowed_bounds?
+
+        // bounds of this shape within the space of target...?
+
+
+        // bounds_within_target / source?
+
+
+
+
+        const bounds_within_source = new Int16Array(4);
         // Using shorthand method names (ES2015 feature).
-            Object.defineProperty(this, 'bounds', {
+        Object.defineProperty(this, 'bounds_within_source', {
             // This is equivalent to:
             // get: function() { return bValue; },
             // set: function(newValue) { bValue = newValue; },
-
 
             // Refer to pos_center_within_this...
             //  
 
             get() {
+
+                //console.trace();
+                //throw 'rename this function to something more specific.'
+
                 const size = this.size;
                 const pos = this.pos;
-                bounds[0] = pos[0];
-                bounds[1] = pos[1];
-                bounds[2] = pos[0] + size[0];
-                bounds[3] = pos[1] + size[1];
-                return bounds;
+                bounds_within_source[0] = pos[0];
+                bounds_within_source[1] = pos[1];
+                bounds_within_source[2] = pos[0] + size[0];
+                bounds_within_source[3] = pos[1] + size[1];
+                return bounds_within_source;
             },
             /*
             set(value) {
@@ -860,6 +1210,8 @@ class Pixel_Buffer_Core {
 
 
         let pb_source;
+        // use window_movement_bounds
+        //  understand the positioning (restrictions?) of the movement of the window within the source.
 
         Object.defineProperty(this, 'source', {
             // Using shorthand method names (ES2015 feature).
@@ -930,11 +1282,6 @@ class Pixel_Buffer_Core {
 
 
 
-
-
-
-
-
         // set this when we set pos_center.
 
 
@@ -942,10 +1289,6 @@ class Pixel_Buffer_Core {
 
         // The iteration for pixels, convolutions etc will be set up with some function(s) to get the iterations values into some tas.
         //  Iteration / copying should be very fast.
-
-
-
-
 
 
 
@@ -966,12 +1309,6 @@ class Pixel_Buffer_Core {
 
         // Want a few precise, useful and fast functions that calculate / retrieve data and put it in a TA.
         //  Calculated data in a ta would work nicely.
-
-
-
-
-
-
 
 
 
@@ -1019,196 +1356,245 @@ class Pixel_Buffer_Core {
 
 
         // Maybe will allow negative positions...?
-        const pos_central_px = new Int16Array(2);
-
-        //  Use the size and pos to calculate this.
-
-        const def_pos_center = {
-            // Using shorthand method names (ES2015 feature).
-            // This is equivalent to:
-            // get: function() { return bValue; },
-            // set: function(newValue) { bValue = newValue; },
-
-
-            // Refer to pos_center_within_this...
-            //  
-
-            get() {
-
-                pos_central_px[0] = Math.ceil((size[0] - 1) / 2) + this.pos[0];
-                pos_central_px[1] = Math.ceil((size[1] - 1) / 2) + this.pos[1];
-
-                // need to work out the w / 2...
-
-                console.log('pre return pos_central_px');
-
-
-                return pos_central_px;
-                // Get the value based on the pos as well as the size.
-                //  Half the size, rounded down?
-                //   (w - 1) / 2?
-
-                // use a typed array that represents the value.
-
-                // A single const typed array would make sense.
 
 
 
+        // round_central_px_down = true?
 
-                // Having and returning a local typed array would make a lot of sense.
+
+        // Need to replace systems concerning self to source bounds positions / (translations?)
+        //  No translations yet - need to successfully deal with out-of-bounds copy attempts (not copy those pixels)
+
+        // Just correctly set the bounds postions for iterations of this within a source window.
+
+
+        const old_def_pos_central_and_associated = () => {
+            const pos_central_px = new Int16Array(2);
+
+            //  Use the size and pos to calculate this.
+
+
+            // Better not to calculate it each time....
+
+            const def_pos_center = {
+                // Using shorthand method names (ES2015 feature).
+                // This is equivalent to:
+                // get: function() { return bValue; },
+                // set: function(newValue) { bValue = newValue; },
+
+
+                // Refer to pos_center_within_this...
                 //  
 
-                console.log('getting pos_my_center_within_source');
-                console.log('pos', pos);
-
-                console.trace();
-                throw 'stop';
-                //return size;
-            },
-            /*
-            set(value) {
-
-                
-            },*/
-            enumerable: true,
-            configurable: false
-        }
+                get() {
 
 
+                    // setup the window_movement_bounds?
 
-        Object.defineProperty(this, 'pos_central_px', def_pos_center);
-        Object.defineProperty(this, 'pos_center', def_pos_center);
-
-
+                    console.log('get pb.pos_center');
 
 
+                    pos_central_px[0] = Math.ceil((size[0] - 1) / 2) + this.pos[0];
+                    pos_central_px[1] = Math.ceil((size[1] - 1) / 2) + this.pos[1];
+
+                    // need to work out the w / 2...
+
+                    console.log('pre return pos_central_px');
 
 
+                    return pos_central_px;
+                    // Get the value based on the pos as well as the size.
+                    //  Half the size, rounded down?
+                    //   (w - 1) / 2?
 
-        Object.defineProperty(this, 'pos_my_center_within_source', {
-            // Using shorthand method names (ES2015 feature).
-            // This is equivalent to:
-            // get: function() { return bValue; },
-            // set: function(newValue) { bValue = newValue; },
+                    // use a typed array that represents the value.
 
-
-            // Refer to pos_center_within_this...
-            //  
-
-
-
-            get() {
-                // Get the value based on the pos as well as the size.
-                //  Half the size, rounded down?
-                //   (w - 1) / 2?
-
-
-                // Having and returning a local typed array would make a lot of sense.
-
-                //  
-
-                //console.log('getting pos_my_center_within_source');
-
-                //console.log('pos', pos);
-
-                // need to use pos_central_px
+                    // A single const typed array would make sense.
 
 
 
 
+                    // Having and returning a local typed array would make a lot of sense.
+                    //  
 
+                    console.log('getting pos_my_center_within_source');
+                    console.log('pos', pos);
 
-                //console.trace();
-                //throw 'stop';
-
-                return pos;
-
-
-
-                //return size; 
-            },
-            set(value) {
-
-
-                // Maybe need more clarity about coordinate space mapping.
-                //  Coords / pixels will need to be mapped to and from a variety of coordinate spaces.
-
-                
-
-
-
-                console.log('seting pos_my_center_within_source', value);
-                // The pos_center value represents the central position in this image and it possibly corresponding with another position
-                //  in another coordinate space.
-
-                //console.trace();
-                //throw 'stop';
-
-                // Were we given a Int16Array? Similar?
-                //  set own pos ta values from the value.
-                if (value instanceof Int16Array) {
-                    if (value.length === 2) {
-
-                        //console.log('set pos_center going ok...');
-                        // need pos_central_px
-                        //  position within this.
-                        //   then reverse that to get our pos offset....
-
-                        // set the pos....
-                        //  update the pos?
-
-                        // A typed array that listens to its own changes???
-
-                        const cpx = this.pos_central_px;
-                        //console.log('cpx', cpx);
-
-                        // fastest way to set / update own pos???
-                        //  could directly set the ta....
-
-                        pos[0] = -1 * cpx[0] + value[0];
-                        pos[1] = -1 * cpx[1] + value[1];
-                        
-
-
-
-
-
-                        // set a local variable....
-                        //  
-
-
-                        // Work out the pos of the central pixel within this coordinate space...
-
-                        // pos_center represents the central positon within another coordinate space... clarify naming?
-
-                        // pos_central_pixel_in_this...
-                        //  maybe should be a ta to store its value as well?
-                        //  
-
-
-
-
-                        //size[0] = value[0];
-                        //size[1] = value[1];
-
-                        // don't change the pos.
-                    }
-                } else {
                     console.trace();
-                    throw 'pos_my_center_within_source unsupported value type';
-                }
+                    throw 'stop';
+                    //return size;
+                },
+                /*
+                set(value) {
+
+                    
+                },*/
+                enumerable: true,
+                configurable: false
+            }
 
 
-                //pos = value; 
-            },
-            enumerable: true,
-            configurable: false
-        });
+
+            // pos_central_px may be a better, more specific name.
 
 
 
-        
+            Object.defineProperty(this, 'pos_central_px', def_pos_center);
+            Object.defineProperty(this, 'pos_center', def_pos_center);
 
+
+            // Will imply what the acceptable range outside of the source is?
+            //  Make that explicit?
+
+
+            // Not so sure this is the right API...?
+
+            // Maybe have a self_to_source_offset?
+            // source_to_self_offset?
+
+            // offset_self_to_source.
+
+
+
+
+            // Seems like a bit of a dodgy api...?
+
+
+            //  offsets / translates between source and window.
+            //   
+
+
+
+            Object.defineProperty(this, 'pos_my_center_within_source', {
+                // Using shorthand method names (ES2015 feature).
+                // This is equivalent to:
+                // get: function() { return bValue; },
+                // set: function(newValue) { bValue = newValue; },
+
+
+                // Refer to pos_center_within_this...
+                //  
+
+
+
+                get() {
+                    // Get the value based on the pos as well as the size.
+                    //  Half the size, rounded down?
+                    //   (w - 1) / 2?
+
+
+                    // Having and returning a local typed array would make a lot of sense.
+
+                    //  
+
+                    //console.log('getting pos_my_center_within_source');
+
+                    //console.log('pos', pos);
+
+                    // need to use pos_central_px
+
+
+
+
+
+
+                    //console.trace();
+                    //throw 'stop';
+
+                    return pos;
+
+
+
+                    //return size; 
+                },
+                set(value) {
+
+
+                    // Maybe need more clarity about coordinate space mapping.
+                    //  Coords / pixels will need to be mapped to and from a variety of coordinate spaces.
+
+                    
+
+
+
+                    console.log('seting pos_my_center_within_source', value);
+                    // The pos_center value represents the central position in this image and it possibly corresponding with another position
+                    //  in another coordinate space.
+
+                    // More explicit definition of the acceptable pos range of a window within its source.
+
+
+
+                    //console.trace();
+                    //throw 'stop';
+
+                    // Were we given a Int16Array? Similar?
+                    //  set own pos ta values from the value.
+                    if (value instanceof Int16Array) {
+                        if (value.length === 2) {
+
+                            //console.log('set pos_center going ok...');
+                            // need pos_central_px
+                            //  position within this.
+                            //   then reverse that to get our pos offset....
+
+                            // set the pos....
+                            //  update the pos?
+
+                            // A typed array that listens to its own changes???
+
+                            const cpx = this.pos_central_px;
+                            //console.log('cpx', cpx);
+
+                            // fastest way to set / update own pos???
+                            //  could directly set the ta....
+
+                            pos[0] = -1 * cpx[0] + value[0];
+                            pos[1] = -1 * cpx[1] + value[1];
+                            
+
+
+
+
+
+                            // set a local variable....
+                            //  
+
+
+                            // Work out the pos of the central pixel within this coordinate space...
+
+                            // pos_center represents the central positon within another coordinate space... clarify naming?
+
+                            // pos_central_pixel_in_this...
+                            //  maybe should be a ta to store its value as well?
+                            //  
+
+
+
+
+                            //size[0] = value[0];
+                            //size[1] = value[1];
+
+                            // don't change the pos.
+                        }
+                    } else {
+                        console.trace();
+                        throw 'pos_my_center_within_source unsupported value type';
+                    }
+
+
+                    //pos = value; 
+                },
+                enumerable: true,
+                configurable: false
+            });
+
+
+
+
+
+
+        }
         
 
 
@@ -1227,74 +1613,6 @@ class Pixel_Buffer_Core {
 
         // Do want to define the properties for the alias as well.
         //  could wrap with ofp.
-
-
-        const old_bpp_props_setup = () => {
-
-            prop(this, ['bits_per_pixel', 'bipp'], {
-                default: spec.bits_per_pixel || spec.bytes_per_pixel * 8,
-    
-                // better to give change events as an object.
-                //  (maybe experiment with optimization at some other point here.)
-    
-                change: (e_change) => {
-                    // prop change event coming through differently to expected....
-                    const {old, value} = e_change;
-                    //console.log('change bits_per_pixel e_change:', e_change);
-    
-                    // this.set('bits_per_pixel', x, {silent: true})
-                    
-                    // then do the update_bits_per_pixel to do the updating to the the underlying data.
-                    //  would reassign the typed array???
-                    //   can we update its length?
-    
-                    // Would need to reassign the typed array to change its length.
-                    //  Just don't do that all the time!
-                    //console.log('old, value', old, value);
-                    if (old !== value) {
-                        silent_update_bytes_per_pixel(value / 8);
-                        this.change_bits_per_pixel(old, value);
-                    }
-    
-                    
-    
-    
-    
-                    // this.realloc_change_bpp(value)
-                },
-                ready: (e_ready) => {
-                    //console.log('***** e_ready', e_ready);
-                    silent_update_bits_per_pixel = e_ready.silent_set;
-                }
-            })
-    
-            prop(this, ['bytes_per_pixel', 'bypp'], {
-                default: spec.bytes_per_pixel || spec.bits_per_pixel / 8,
-                change: (e_change) => {
-                    const {old, value} = e_change;
-    
-                    if (old !== value) {
-                        silent_update_bits_per_pixel(value * 8);
-                        this.change_bits_per_pixel(old * 8, value * 8);
-                    }
-    
-                    
-    
-                    // will need to go through all of the pixels, putting them into the new bpp format.
-    
-                    // will use get pixel and set pixel that work with 1 bit per pixel images.
-                    // then may need to do various transformations?
-                    //  update_bpp
-                    //   takes both bits and bytes per pixel. checks that they match
-                    //    most likely this will have to reallocate memory.
-                },
-                ready: (e_ready) => {
-                    silent_update_bytes_per_pixel = e_ready.silent_set;
-                }
-            })
-
-
-        }
 
 
         
@@ -1451,6 +1769,8 @@ class Pixel_Buffer_Core {
         //if ()
 
         if (spec.window_to || spec.source || spec.window_to_source) {
+
+            // Need to understand the pos boundaries within the source.
             
 
             // set the .source property.
@@ -1465,9 +1785,9 @@ class Pixel_Buffer_Core {
             // pos centre of this image within the source image.
             //  
 
-            if (spec.pos_center || spec.pos_my_center_within_source) {
-                this.pos_my_center_within_source = spec.pos_center || spec.pos_my_center_within_source;
-            }
+            //if (spec.pos_center || spec.pos_my_center_within_source) {
+            //    this.pos_my_center_within_source = spec.pos_center || spec.pos_my_center_within_source;
+           // }
 
             const log_info = () => {
                 console.log('Pixel_Buffer_Core (or subclass) needs to act as a window to another Pixel Buffer.')
@@ -1498,6 +1818,10 @@ class Pixel_Buffer_Core {
 
            
 
+        }
+
+        if (spec.pos_bounds) {
+            this.pos_bounds = spec.pos_bounds;
         }
 
         
@@ -1533,10 +1857,6 @@ class Pixel_Buffer_Core {
         let ta_rgba;
         let ta_row_scratch;
 
-
-
-        
-
         let ta_bounds_scratch;     // Int16Array(4);
         let ta_bounds2_scratch;    // Int16Array(4);
         let ta_bounds3_scratch;    // Int16Array(4);
@@ -1550,268 +1870,283 @@ class Pixel_Buffer_Core {
         let ta_offsets_info_scratch; 
 
 
-        ro(this, 'ta_scratch', () => {
-            if (!ta_scratch) {
-                ta_scratch = new this.ta.constructor(this.ta);
-            } else {
-
-                // If it's not already an instance of the constructor of this.ta?
+        const setup_ta_ro_props = () => {
 
 
-
-                // check the size...? the types as well?
-                if (ta_scratch.length !== this.ta.length) {
+            ro(this, 'ta_scratch', () => {
+                if (!ta_scratch) {
                     ta_scratch = new this.ta.constructor(this.ta);
                 } else {
-                    const l = this.ta.length;
-                    // Could use faster copy?
-                    //  Is typed array copy that fast compared to assignment operators?
-                    for (c = 0; c < l; c++) {
-                        ta_scratch[c] = this.ta[c];
+    
+                    // If it's not already an instance of the constructor of this.ta?
+    
+    
+    
+                    // check the size...? the types as well?
+                    if (ta_scratch.length !== this.ta.length) {
+                        ta_scratch = new this.ta.constructor(this.ta);
+                    } else {
+                        const l = this.ta.length;
+                        // Could use faster copy?
+                        //  Is typed array copy that fast compared to assignment operators?
+                        for (c = 0; c < l; c++) {
+                            ta_scratch[c] = this.ta[c];
+                        }
                     }
                 }
-            }
-        });
-
-
-        // ta_row_scratch
-        //  a typed array sized to hold pixel data for a single row.
-
-        // (this.bypr)
-
-        ro(this, 'ta_row_scratch', () => {
-            if (!ta_row_scratch) {
-                ta_row_scratch = new Uint8ClampedArray(this.bypr);
-            } else {
-                if (ta_row_scratch.length !== this.bypr) {
+            });
+    
+    
+            // ta_row_scratch
+            //  a typed array sized to hold pixel data for a single row.
+    
+            // (this.bypr)
+    
+            ro(this, 'ta_row_scratch', () => {
+                if (!ta_row_scratch) {
                     ta_row_scratch = new Uint8ClampedArray(this.bypr);
+                } else {
+                    if (ta_row_scratch.length !== this.bypr) {
+                        ta_row_scratch = new Uint8ClampedArray(this.bypr);
+                    }
+                    return ta_row_scratch;
                 }
-                return ta_row_scratch;
-            }
-        })
+            })
+    
+    
+    
+            
+            ro(this, 'ta_pos_scratch', () => {
+                if (!ta_pos_scratch) {
+                    ta_pos_scratch = new Int16Array(2);
+                }
+                return ta_pos_scratch;
+            });
+    
+            ro(this, 'ta_pos_iterator', () => {
+                if (!ta_pos_iterator) {
+                    ta_pos_iterator = new Int16Array(2);
+                }
+                return ta_pos_iterator;
+            });
+    
+    
+            // ta_source_to_self_translate_vector ???
+            //  more properties could be stored and accessed in this form. tas particularly good for simple vectors.
+    
+            // maybe make some kind of optimized string indexed ta.
+            //  look up values to consts, use them...?
+            //  or have const declarations of the numbers, use them? May compile best. Macros for consts???
+    
+    
+    
+            // ta_move_vector
+            ro(this, 'ta_move_vector', () => {
+                if (!ta_move_vector) {
+                    ta_move_vector = new Int16Array(2);
+                }
+                return ta_move_vector;
+            });
+    
+    
+    
+            // a size scratch...
+            //  must be a positive size.
+    
+    
+    
+            // What about double bounds scratch for rapid checking of overlaps?
+            //  Could make use of this / other scratch ta properties to handle input and output
+    
+            // Still, need to make a very fast copy rectangle function.
+    
+            // Presumably can get it to a very high speed.
+            
+    
+            // An assortment of temporary use tas to use for a variery of purposes.
+    
+            //
+    
+    
+            // default bounds is it's own space? within its own coords, ie size? or bounds within other?
+            //  better to leave it blank for the moment here.
+            ro(this, 'ta_bounds', () => {
+                if (!ta_bounds) {
+                    ta_bounds = new Int16Array(4);
+                }
+                return ta_bounds;
+            });
+    
+            ro(this, 'ta_rgb', () => {
+                if (!ta_rgb) {
+    
+                    // rgb position of the current inner pos?
+    
+                    // we don't have a proper pointer for a selected position in the current coord space.
+                    //  pos only applies to this pb's pos within another space.
+    
+    
+    
+    
+                    ta_rgb = new Uint8ClampedArray(3);
+                }
+                return ta_rgb;
+            });
+            ro(this, 'ta_rgb2', () => {
+                if (!ta_rgb2) {
+                    ta_rgb2 = new Uint8ClampedArray(3);
+                }
+                return ta_rgb2;
+            });
+    
+    
+    
+            // Could be of use in SIMD as well?
+            //  Maybe especially if they dont need to be set so often in JS and can be the basis for many SIMD operations in C++.
+    
+    
+    
+            ro(this, 'ta_bounds_scratch', () => {
+                if (!ta_bounds_scratch) {
+                    ta_bounds_scratch = new Int16Array(4);
+                }
+                return ta_bounds_scratch;
+            });
+    
+            
+            ro(this, 'ta_bounds2_scratch', () => {
+                if (!ta_bounds2_scratch) {
+                    ta_bounds2_scratch = new Int16Array(4);
+                }
+                return ta_bounds2_scratch;
+            });
+    
+            
+            ro(this, 'ta_bounds3_scratch', () => {
+                if (!ta_bounds3_scratch) {
+                    ta_bounds3_scratch = new Int16Array(4);
+                }
+                return ta_bounds3_scratch;
+            });
+    
+            
+            ro(this, 'ta_bounds4_scratch', () => {
+                if (!ta_bounds4_scratch) {
+                    ta_bounds4_scratch = new Int16Array(4);
+                }
+                return ta_bounds4_scratch;
+            });
+    
+            // ta_bounds2_scratch // can be useful / necessary to have 2 sets of bounds.
+    
+    
+            // ta_bounds_scratch
+            //  Int16 size 4
+    
+            
+            ro(this, 'ta_size_scratch', () => {
+                if (!ta_size_scratch) {
+                    ta_size_scratch = new Uint16Array(2);
+                }
+                return ta_size_scratch;
+            });
+    
+    
+            // ta_size2_scratch
+            ro(this, 'ta_size2_scratch', () => {
+                if (!ta_size2_scratch) {
+                    ta_size2_scratch = new Uint16Array(2);
+                }
+                return ta_size2_scratch;
+            });
+    
+    
+    
+            // ta_pointers_scratch
+    
+            
+    
+    
+    
+            ro(this, 'ta_pointers_scratch', () => {
+                if (!ta_pointers_scratch) {
+                    // Only allow 2 pointers? by default?
+                    ta_pointers_scratch = new Uint32Array(4);
+                }
+                return ta_pointers_scratch;
+            });
+    
+            
+            
+            ro(this, 'ta_pointers2_scratch', () => {
+                if (!ta_pointers2_scratch) {
+                    // Only allow 2 pointers? by default?
+                    ta_pointers2_scratch = new Uint32Array(4);
+                }
+                return ta_pointers2_scratch;
+            });
+    
+    
+            
+            ro(this, 'ta_pointerpair_scratch', () => {
+                if (!ta_pointerpair_scratch) {
+                    // Only allow 2 pointers? by default?
+                    ta_pointerpair_scratch = new Uint32Array(2);
+                }
+                return ta_pointerpair_scratch;
+            });
+    
+            // pointer pair scratch?
+            //  start and end?
+    
+    
+    
+    
+    
+            // offsets...
+            //  (pointer offsets?)
+    
+            
+            ro(this, 'ta_offsets_scratch', () => {
+                if (!ta_offsets_scratch) {
+                    // Only allow 2 pointers? by default?
+                    ta_offsets_scratch = new Int32Array(4);
+                }
+                return ta_offsets_scratch;
+            });
+    
+            ro(this, 'ta_offsets_info_scratch', () => {
+                if (!ta_offsets_info_scratch) {
+                    // Only allow 2 pointers? by default?
+                    ta_offsets_info_scratch = new Int32Array(8);
+                }
+                return ta_offsets_info_scratch;
+            });
+    
+    
+    
+    
+            // have a .byte_idx property?
+            //  and bit_idx???
+    
+            // byte idx would be a different representation of the position, as a single 32 bit integer.
+            //  moving to the next pixel becomes simpler that way.
+            //   could even make pos a facade to that???
+    
+            // moving to the next pixel could leave pos undefined?
+
+
+        }
+        setup_ta_ro_props();
 
 
 
         
-        ro(this, 'ta_pos_scratch', () => {
-            if (!ta_pos_scratch) {
-                ta_pos_scratch = new Int16Array(2);
-            }
-            return ta_pos_scratch;
-        });
 
-        ro(this, 'ta_pos_iterator', () => {
-            if (!ta_pos_iterator) {
-                ta_pos_iterator = new Int16Array(2);
-            }
-            return ta_pos_iterator;
-        });
 
 
-        // ta_source_to_self_translate_vector ???
-        //  more properties could be stored and accessed in this form. tas particularly good for simple vectors.
-
-        // maybe make some kind of optimized string indexed ta.
-        //  look up values to consts, use them...?
-        //  or have const declarations of the numbers, use them? May compile best. Macros for consts???
-
-
-
-        // ta_move_vector
-        ro(this, 'ta_move_vector', () => {
-            if (!ta_move_vector) {
-                ta_move_vector = new Int16Array(2);
-            }
-            return ta_move_vector;
-        });
-
-
-
-        // a size scratch...
-        //  must be a positive size.
-
-
-
-        // What about double bounds scratch for rapid checking of overlaps?
-        //  Could make use of this / other scratch ta properties to handle input and output
-
-        // Still, need to make a very fast copy rectangle function.
-
-        // Presumably can get it to a very high speed.
-        
-
-        // An assortment of temporary use tas to use for a variery of purposes.
-
-        //
-
-
-        // default bounds is it's own space? within its own coords, ie size? or bounds within other?
-        //  better to leave it blank for the moment here.
-        ro(this, 'ta_bounds', () => {
-            if (!ta_bounds) {
-                ta_bounds = new Int16Array(4);
-            }
-            return ta_bounds;
-        });
-
-        ro(this, 'ta_rgb', () => {
-            if (!ta_rgb) {
-
-                // rgb position of the current inner pos?
-
-                // we don't have a proper pointer for a selected position in the current coord space.
-                //  pos only applies to this pb's pos within another space.
-
-
-
-
-                ta_rgb = new Uint8ClampedArray(3);
-            }
-            return ta_rgb;
-        });
-        ro(this, 'ta_rgb2', () => {
-            if (!ta_rgb2) {
-                ta_rgb2 = new Uint8ClampedArray(3);
-            }
-            return ta_rgb2;
-        });
-
-
-
-        // Could be of use in SIMD as well?
-        //  Maybe especially if they dont need to be set so often in JS and can be the basis for many SIMD operations in C++.
-
-
-
-        ro(this, 'ta_bounds_scratch', () => {
-            if (!ta_bounds_scratch) {
-                ta_bounds_scratch = new Int16Array(4);
-            }
-            return ta_bounds_scratch;
-        });
-
-        
-        ro(this, 'ta_bounds2_scratch', () => {
-            if (!ta_bounds2_scratch) {
-                ta_bounds2_scratch = new Int16Array(4);
-            }
-            return ta_bounds2_scratch;
-        });
-
-        
-        ro(this, 'ta_bounds3_scratch', () => {
-            if (!ta_bounds3_scratch) {
-                ta_bounds3_scratch = new Int16Array(4);
-            }
-            return ta_bounds3_scratch;
-        });
-
-        
-        ro(this, 'ta_bounds4_scratch', () => {
-            if (!ta_bounds4_scratch) {
-                ta_bounds4_scratch = new Int16Array(4);
-            }
-            return ta_bounds4_scratch;
-        });
-
-        // ta_bounds2_scratch // can be useful / necessary to have 2 sets of bounds.
-
-
-        // ta_bounds_scratch
-        //  Int16 size 4
-
-        
-        ro(this, 'ta_size_scratch', () => {
-            if (!ta_size_scratch) {
-                ta_size_scratch = new Uint16Array(2);
-            }
-            return ta_size_scratch;
-        });
-
-
-        // ta_size2_scratch
-        ro(this, 'ta_size2_scratch', () => {
-            if (!ta_size2_scratch) {
-                ta_size2_scratch = new Uint16Array(2);
-            }
-            return ta_size2_scratch;
-        });
-
-
-
-        // ta_pointers_scratch
-
-        
-
-
-
-        ro(this, 'ta_pointers_scratch', () => {
-            if (!ta_pointers_scratch) {
-                // Only allow 2 pointers? by default?
-                ta_pointers_scratch = new Uint32Array(4);
-            }
-            return ta_pointers_scratch;
-        });
-
-        
-        
-        ro(this, 'ta_pointers2_scratch', () => {
-            if (!ta_pointers2_scratch) {
-                // Only allow 2 pointers? by default?
-                ta_pointers2_scratch = new Uint32Array(4);
-            }
-            return ta_pointers2_scratch;
-        });
-
-
-        
-        ro(this, 'ta_pointerpair_scratch', () => {
-            if (!ta_pointerpair_scratch) {
-                // Only allow 2 pointers? by default?
-                ta_pointerpair_scratch = new Uint32Array(2);
-            }
-            return ta_pointerpair_scratch;
-        });
-
-        // pointer pair scratch?
-        //  start and end?
-
-
-
-
-
-        // offsets...
-        //  (pointer offsets?)
-
-        
-        ro(this, 'ta_offsets_scratch', () => {
-            if (!ta_offsets_scratch) {
-                // Only allow 2 pointers? by default?
-                ta_offsets_scratch = new Int32Array(4);
-            }
-            return ta_offsets_scratch;
-        });
-
-        ro(this, 'ta_offsets_info_scratch', () => {
-            if (!ta_offsets_info_scratch) {
-                // Only allow 2 pointers? by default?
-                ta_offsets_info_scratch = new Int32Array(8);
-            }
-            return ta_offsets_info_scratch;
-        });
-
-
-
-
-        // have a .byte_idx property?
-        //  and bit_idx???
-
-        // byte idx would be a different representation of the position, as a single 32 bit integer.
-        //  moving to the next pixel becomes simpler that way.
-        //   could even make pos a facade to that???
-
-        // moving to the next pixel could leave pos undefined?
-
+        // move_to basically sets the position.
+        //  but would do the copy from source too.
 
 
 
@@ -1826,14 +2161,48 @@ class Pixel_Buffer_Core {
 
             if (this.source) {
                 //console.log('have source, so will do auto recopy.');
-
-
                  
                 // and time this as well...?
                 // not here.
                 this.copy_from_source();
 
             }
+
+        }
+
+        this.each_pos_within_bounds = (callback) => {
+
+            //console.log('each_pos_within_bounds');
+            // Still within the constructor (extra speed?)
+            //  will use the pos_bounds here too.
+
+            //pos[0] = pos_bounds[0];
+            //pos[1] = pos_bounds[1];
+
+            // Double for loop definitely seems easiest here.
+            
+            // Byte index iteration in some cases may be better though.
+            //  Could do both at the same time.
+
+            // Byte index iteration by itself may be a bit faster?
+            const has_source = !!this.source;
+
+            //console.log('pos_bounds', pos_bounds);
+            //console.log('this.pos_bounds', this.pos_bounds);
+            //console.log('pos_bounds', pos_bounds);
+
+
+
+
+            for (pos[1] = pos_bounds[1]; pos[1] < pos_bounds[3]; pos[1] ++) {
+                for (pos[0] = pos_bounds[0]; pos[0] < pos_bounds[2]; pos[0] ++) {
+
+                    if (has_source) this.copy_from_source();
+                    callback();
+
+                }
+            }
+
 
         }
 
@@ -1877,6 +2246,9 @@ class Pixel_Buffer_Core {
 
 
         this.move_next_px = () => {
+
+            // within pos_bounds
+
             // only adjust the pos if the next pixel is within range.
             //  within the source size.
 
@@ -1934,9 +2306,7 @@ class Pixel_Buffer_Core {
 
             return pos;
         }
-
         // move_next_pixel
-
 
         /*
         // bytes_per_row
@@ -1945,9 +2315,287 @@ class Pixel_Buffer_Core {
             return this.size[0] * this.bytes_per_pixel;
         });
         */
+    }
+
+    new_window(options) {
+        //const {size} = options;
+
+        //console.log('pb .new_window options', options);
+
+        options.window_to = this;
+
+        const res = new this.constructor(options);
+        // automatic copy_from when it's constructed?
+
+        res.copy_from_source();
+
+        return res;
 
 
     }
+
+
+
+
+
+    new_centered_window(size_or_options) {
+
+        // size given as number...
+        //  worth looking at args sig???
+
+        const t1 = tf(size_or_options);
+        console.log('t1', t1);
+
+        // Centered window?
+        //  may have better name for that....
+
+        // .new_window???
+
+        //  specifically defining movement bounds here would make a lot of sense.
+
+        // pos_bounds
+        //  so all .pos iteration would use these bounds.
+
+
+        //  pos: ['centered-on', [0, 0]]
+
+
+
+
+
+        // edge offsets...
+        //  from source left edge       to the left of
+        //  top edge                    above
+        //  right edge                  to the right of
+        //  bottom edge                 below
+
+
+        // So yes, need to properly assign rows left and right, above and below, based on the size
+
+        // Keep this as new_centered_window, its a nice enough name.
+
+
+
+        let size;
+
+        if (t1 === 'a') {
+
+            if (size_or_options.length === 2) {
+                size = new Int16Array([size_or_options, size_or_options]);
+            } else {
+                console.log('size_or_options', size_or_options);
+                console.trace();
+                throw 'Size array expected length: 2';
+            }
+
+        } else if (t1 === 'n') {
+            size = new Int16Array([size_or_options, size_or_options]);
+        } else {
+            console.trace();
+            throw 'NYI';
+        }
+
+        // Come up with the proper bounds.
+        //  the pos_bounds
+        //  Calculate the offset_from_center length?
+        //   2 2d Vectors?
+        //   Seems like we may need more values as it needs to cope with different +ve and -ve offsets from the center pos.
+        //    Or could depend on rounding up or down?
+
+        // Different option for centering a 4x4 block...
+        //  .pos_center read-only property.
+        //  
+        //   could be set to different values if it can be different values, but not an illegal value?
+
+        // Need to give full enough consideration to how the centering gets done when there is not a clear center row.
+
+        //  center_down property...
+        //   default as true. means centering goes towards the lower value.
+        //    meaning the offset is greater on the +ve side.
+
+
+        // could go for boolean property
+        //  center_pos_low
+        //   true (default) - [4, 4] has center pos of [1, 1]. offsets from center [-1, -1, 2, 2]
+
+
+        // edge_offsets_from_center
+        //  read-only property
+        //  yes, would definitely make sense for windows.
+        //   a ta property.
+
+        // Quite a lot of detail needed for the various properties that are needed to effiently deal with all of this.
+
+
+
+
+
+        // pos_center???
+        //  make it read-only
+
+
+
+
+
+
+        // Source
+        //  Also system to translate from pos to source pos.
+        //   Seems like we will need a vector or two.
+
+
+
+
+        // window to this
+        //  define its bounds as well.
+        //  will get its pos_center value.
+        //   will use that to determine how far the bounds need to be set
+        //    use .edge_offset_from_center property as well.
+        //     .edge_offsets_from_center being a read-only, ta property.
+        //      use them for moving around a centered window
+        //  source_px_center / source_px centered makes more sense.
+
+
+        // source_px centering as a kind-of mode makes a lot of sense.
+        //  moving pixel windows will use them
+        //   underlying this will be pos_bounds.
+
+        // set up source px centering, get pos_bounds set up automatically.
+        //  integrate movement of a pb window within a source more into the core of the code.
+
+        // pos_bounds property will sort out pos iteration.
+        //  each_px?
+
+        // Setting up / getting source iteration variables may be the best way, then use in a simpler (no fn call) loop.
+        //  Maybe move_next_px is ok?
+
+        // Direct access to typed arrays would be better as standard - easier porting to C++.
+
+
+
+        // Better defined movement, what pos means?
+        
+        // pos as pos_within_source (or within frame / doc?) makes sense.
+
+        // need an internal iteration pos too...
+
+        // .pos is pos within source.
+        // each_pos...
+        // each_pos_within_source?
+        //  each_source_pos?
+
+        // each_pos
+        //  works when the pos bounds are set
+        //  when a source is set
+
+        // each_pos_within_source
+        //  clearer name
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // each_source_px
+        //  may be the right name for when we iterate through the source image, moving and copying per pixel.
+
+
+
+        // .pos_within_source
+        // .pos_bounds_within_source
+
+        // .source_link(pos, pos_bounds)???
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // Getting more interested in direct_reference mode.
+        //  Where this does not maintain its own typed array copy.
+
+        // but lets get 0.0.23 done soon.
+
+
+
+
+
+
+
+        const res_pb = new this.constructor({
+            size: size,
+            bits_per_pixel: this.bits_per_pixel,
+            window_to: this
+        });
+
+        // then set its pos_bounds to the get correct offsets (based on size and centering (rounding), as well as source size)
+        
+        // Its pos_bounds are used for iterating over the whole of the source image.
+
+        // then do each_pos_px?
+        //  each_px?
+
+        // each_self_px, would also go over the corresponding source pixels?
+
+        // each_source_px?
+        //  and will use pos for the iteration...?
+
+        // byte indexes will make for faster iteration.
+        //  bit indexes (too) for bipp?
+
+
+
+
+
+
+
+
+
+
+        // worth using mfp or similar?
+
+
+
+
+
+    }
+
+
+
+    // Could use internally set iteration / movement bounds.
+
+    // Consider internal bounds and external bounds.
+    //  Possible 2 or 3 properties of each.
+
+
+
+
 
     fill_solid_rect_by_bounds() {
 
@@ -2102,7 +2750,31 @@ class Pixel_Buffer_Core {
     //  maybe creation of objecs is too much work? its one of the basics of JS though. keep for the moment.
 
 
+
+    // ** Would be nice to use a more basic function referenced from outside of here.
+
+    // change .bounds to .size_bounds?
+    //  because it's the bounds given by its own pos and size?
+    //  
+
+
+
+    // size_bounds makes sense.
+    //  so does pos_bounds
+
+    //  so does center_pos_bounds_in_source???
+
+
+
+
+
     calc_source_target_valid_bounds_overlap() {
+
+        //console.log('calc_source_target_valid_bounds_overlap');
+
+        // possibly setting up .window_to will create more values that are useful for this type of copying.
+
+
 
         // bounds adjustment values too.
 
@@ -2154,7 +2826,24 @@ class Pixel_Buffer_Core {
 
         // so, just return the corrected bounds for the moment...?
 
-        const my_bounds = this.bounds;
+
+        // bounds from what though?
+
+        //  my size bounds? allow position bounds?
+        //   still on a properties overhaul to get the convolution and window system working.
+
+        const my_bounds = this.bounds_within_source;
+        // see to what extent these bounds are allowed within the source.
+        //  Possibly calc these things when a variety of properties are set.
+        //   Need manual property updates in some cases / manually running functions that use updated properties (or typed array items).
+
+
+
+
+
+
+
+
         const source_size_bounds = source.size_bounds;
 
         // first bounds scratch?
@@ -2237,6 +2926,11 @@ class Pixel_Buffer_Core {
     }
 
 
+    // More standardised / understandable / understood iteration and bounds data in local tas.
+
+
+
+    // ** reconsider function / rethink api.
     copy_from_source_iteration_prep() {
 
         const valid_bounds_overlap = this.calc_source_target_valid_bounds_overlap();
@@ -2316,9 +3010,6 @@ class Pixel_Buffer_Core {
 
         //console.log('offsets_info_self', offsets_info_self);
         //console.log('this.bytes_per_row', this.bytes_per_row);
-
-
-
         // then the offsets info for the source.
 
         // with these, we should be very good to go for fast combined iteration / copying of source and target areas.
@@ -2340,9 +3031,6 @@ class Pixel_Buffer_Core {
         // below number needs to take account of the full width.
 
         offsets_info_source[2] = source_bounds[0] * bypp;
-
-
-
         // source size (w)....
         offsets_info_source[3] = source_bounds[1] * this.source.size[0] * bypp;
         // change above line?
@@ -2477,6 +3165,13 @@ class Pixel_Buffer_Core {
 
     // Works quite quick... investigate optimizations further.
     copy_from_source() {
+
+        // Copy from a position within the source.
+        //  a different type of bounds to the movement bounds of the window within the source.
+
+
+
+
         // And any kind of offset?
         //  optional offset?
         //   and not pass i as a parameter?
@@ -2620,12 +3315,6 @@ class Pixel_Buffer_Core {
                 //  not quite sure why its being done incoorectly.
 
                 //i_byte_write += ta_info_self[6] + bytes_per_copy_row;
-
-
-
-
-
-
             }
 
             //console.log('ta.length', ta.length);
@@ -3613,11 +4302,14 @@ class Pixel_Buffer_Core {
 
 
     each_px_convolution(ta_size, pb_conv_window, ta_pos, callback) {
+
+
+        throw 'NYI';
         // const ta_size = new Uint16Array(2);
         ta_pos[0] = 0;
         ta_pos[1] = 0;
 
-        console.log('ta_size', ta_size);
+        //console.log('ta_size', ta_size);
 
 
         // Would 4 levels of loop for a moving convolution window be too much?
