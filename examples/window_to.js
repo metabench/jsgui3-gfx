@@ -641,7 +641,8 @@ const eg_win_to = async() => {
 
 
         const conv_s3_sharpen = new Convolution({
-            size: [3, 3]
+            size: [3, 3],
+            value: [0, -1, 0, -1, 5, -1, 0, -1, 0]
         });
 
 
@@ -660,6 +661,31 @@ const eg_win_to = async() => {
 
         // let's set up the convolution too...
 
+        console.log('conv_s3_sharpen', conv_s3_sharpen);
+        console.log('conv_s3_sharpen.ta', conv_s3_sharpen.ta);
+
+        // get the convolved value from pb_window.ta
+
+        const pb_conv_res = new Pixel_Buffer({
+            size: pb_8bipp_patch.size,
+            bits_per_pixel: 8
+        })
+        const res_ta = pb_conv_res.ta;
+
+        let byte_idx_write = 0;
+
+
+        // calc_from_8bipp_ta
+
+        let pixel_conv_res = conv_s3_sharpen.calc_from_8bipp_ta(pb_window.ta);
+        console.log('pixel_conv_res', pixel_conv_res);
+        res_ta[byte_idx_write++] = pixel_conv_res;
+
+
+
+        
+
+
 
 
 
@@ -667,23 +693,65 @@ const eg_win_to = async() => {
 
         // function to process the convolution here?
 
-        /*
+        
 
 
 
         // moves to the next px in the source!!!
         has_pos = !!pb_window.move_next_px();
+        // Seems likely that move_next_px or its usage here is the culprit.
+
+        
+
+        // a problem with move_next_px perhaps?
+        //  could be getting some kind of row skip value wrong.
+        //   maybe better (for the moment) to recalculate pixel index?
+
+
+
+
+
         //(() => {
         while (has_pos !== false) {
             //console.log('pb_window.pos', pb_window.pos);
 
-
-
             has_pos = !!pb_window.move_next_px();
-        }
-        */
+            pixel_conv_res = conv_s3_sharpen.calc_from_8bipp_ta(pb_window.ta);
 
-        console.log('been through pos movements');
+            // Looks very wrong so far!
+
+            //console.log('pixel_conv_res', pixel_conv_res);
+            res_ta[byte_idx_write++] = pixel_conv_res;
+
+        }
+
+        (async() => {
+            console.log('saving convolved 8bipp patch');
+            // Soon worth doing some experiments with C++.
+            //  Probably worth getting optimized convolutions working in JS first though.
+
+            await fnlfs.ensure_directory_exists('./output/window_to/');
+
+            await gfx.save_pixel_buffer('./output/window_to/convolve_sharpen-8bipp_patch.png', pb_conv_res, {
+                format: 'png'
+            });
+
+        })();
+
+        // then save the 8bipp patch conv result....
+
+        //  soon (0.0.25? or leading up to it) will have result saving done externally from examples / automatically.
+
+        // example-testing module?
+
+        // etdd?
+
+        
+
+
+        
+
+        //console.log('been through pos movements');
         //})();
 
 

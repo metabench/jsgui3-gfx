@@ -34,6 +34,7 @@
 */
 
 
+
 // progress (0 to 9), task_size on above scale
 
 const _roadmap = {
@@ -48,7 +49,25 @@ const _roadmap = {
     '0.0.23': [
         ['window view into specific channel?'],
         ['run convolution on 8bipp image?'],
-        ['Convolution Class', ]
+        ['Convolution Class', ],
+        ['Bug fix move_next_px, need to use boundary ranges for proper movement of the window within a source', 4]
+        //  Allowing for some out-of bounds movement, useful for convolution.
+        //  Movement boundary being difficulty 3 or 4.
+        //   Need to consider the overall API.
+        //   Movement boundary range likely to be useful for iterations generally.
+        //    Seems like a useful feature to have and optimize.
+
+        // movement_bounds
+
+        // .ta_movement_bounds
+
+        
+
+
+
+
+
+
 
         // Task breakdown...
 
@@ -1818,20 +1837,89 @@ class Pixel_Buffer_Core {
 
         }
 
+
+        // Yes - got the culprit here for convolution windows.
+
+
+        // move_next_px could do with awareness of the movement bounds.
+
+        //  the center pos could be bound within the space of the image it's a window to.
+        //   that type of position binding / framing makes most sense.
+
+        // binding a window px to a source px with the center_pos?
+        //  binding as in bounds setting.
+
+        // center pos of window bound to size of source.
+        //  see about setting this option in the Pixel_Buffer constructor / spec.
+        
+        // Window position binding would be of use for pixel iteration, using .move_next_px
+        //  Binding the center pos works out to a different window binding position range.
+        //   a 3x3 conv would be bound within (-1, -1, size + 1, size + 1);
+
+
+
+        // Position and position iteration boundaries specification makes a lot of sense.
+        //  Avoiding bugs by going into a lot of detail about the various numbers that get used, and the relationships between those numbers.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         this.move_next_px = () => {
             // only adjust the pos if the next pixel is within range.
             //  within the source size.
+
 
             
 
             const source_size = this.source.size;
             
+            // boundary error here?
+
+            // Just a little complex here.
+            //  Needs to take account of boundaries.
+
+            // Available positions depend on the source window.
+            //  pos is own pos.
+
+            // Maybe need some more specific tests for this function...?
+
+            // Idea being that a px can only be within the bounds of the source image...
+            //  That's the wrong assumption here.
+            //   Maybe we need to define a movement bounds.
+            //    The movement bounds can range outside of the source image's bounds - it's just that those OOB pixels won't / can't be copied over.
 
 
-            if (pos[0] + size[0] < source_size[0] - 1) {
+
+
+
+
+
+
+
+
+            if (pos[0] + size[0] < source_size[0]) {
                 pos[0]++;
             } else {
-                if (pos[1] + size[1] < source_size[1] - 1) {
+                // Going to the next row seems like a big problem.
+                //  Needs to go back to x pos 0 - the pos in the window.???
+                //   Or some kind of offset center pos???
+
+
+
+
+                if (pos[1] + size[1] < source_size[1]) {
                     pos[0] = 0;
                     pos[1]++;
                 } else {

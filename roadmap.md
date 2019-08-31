@@ -83,6 +83,9 @@ Rapidly and efficiently doing convolutions will be very useful.
   //   
   Initial Convolution implementation
 
+  Bug fix: move_next_px
+    Sort out definition of bound movement range when using window_to source pb.
+
 
   
 

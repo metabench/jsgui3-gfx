@@ -77,7 +77,7 @@ class Convolution {
 
     constructor(spec) {
 
-        const size = new UInt16Array(2);
+        const size = new Uint16Array(2);
 
         if (spec.size) {
             size[0] = spec.size[0];
@@ -112,16 +112,21 @@ class Float32Convolution extends Convolution {
             const tv = tf(spec.value);
             console.log('tv', tv);
 
+            if (tv === 'a') {
+                if (spec.value.length === this.num_px) {
+                    ta.set(spec.value);
+                } else {
+                    const msg = 'Unexpected value array length: ' + spec.value.length + ', expected this.num_px: ' + this.num_px;
+                    throw msg;
+                }
+            }
             // if it's an array...
             //  check it matches the number of px.
 
             // tf treating typed array and array the same?
             //  ita being is_typed_array function?
             //   would make sense. tta or tfta? tatf? ttf? atf? dtf for detailed tf?
-
         }
-
-
         // set up the convolve values from the spec?
         //  
 
@@ -131,10 +136,10 @@ class Float32Convolution extends Convolution {
         -1   5    -1
         0    -1   0
 
+        [0, -1, 0, -1, 5, -1, 0, -1, 0]
+
         // Could have a funtion to calculate the convolution.
         //  param being the 2d vector offset from the center.
-
-
 
         */
 
@@ -143,11 +148,6 @@ class Float32Convolution extends Convolution {
 
         // .conv or .convolution property? .c property shorthand? .value property because its general?
         //  .value makes a lot of sense.
-
-
-
-
-
 
         // ta_res
 
@@ -245,6 +245,9 @@ class Float32Convolution extends Convolution {
     //  a formula which is the vector distance from the center.
 
 
+    // unsafe versions of functions too?
+    //  or more versions with different bounds safety checking options.?
+
     calc_from_8bipp_ta(ta_8bipp) {
         // 
 
@@ -253,9 +256,24 @@ class Float32Convolution extends Convolution {
             let accumulator = 0;
             const l = ta.length;
             for (let c = 0; c < l; c++) {
-                accumulator += ta[c] * ta_8bipp[c];
+                accumulator += (ta[c] * ta_8bipp[c]);
             }
-            return accumulator;
+
+            //console.log('accumulator', accumulator);
+
+            // And clamp the result to between 0 and 255?
+
+            // Math.max(min, Math.min(max, val))
+
+            // Maybe no divide by l?
+            let res = Math.max(0, Math.min(255, accumulator));
+            //let res = Math.max(0, Math.min(255, Math.round(accumulator / l)));
+
+            //console.log('res', res);
+
+            return res;
+
+            //return Math.round(accumulator / l);
 
 
         } else {
