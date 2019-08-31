@@ -50,20 +50,49 @@ const _roadmap = {
 
 
         `
-        Task Size and Complexity Measure: 5
+        Task Size and Complexity Measure: 5 changed to 6.5
+            Going into a larger properties overhaul - new size 6 or 7
+
+
 
         Rethinking and implementing pos_bounds
+            pos_within_source_bounds
+
+        Rename pos
+            pos_within_source
+
+        
+        // Positions only really make sense when they are relative to something.
+            In this case, can't assume all positions are relative to the self pb, so need to be extra explicit in the variable names regarding what they relate to.
+
+
+
+        Consider other pos type variables. Explicit names for what they do.
+            pos_iteration_within_self
+            pos_cursor_within_self
+
+
+
+
+
 
 
         Better to have more API-based centering, and adjust the central position?
             Possibly not best for convolution, for perf reasons.
             Don't want more calculations done during iteration...?
+            Maybe don't need to deal with centering as directly right now?
+                Seems useful for convolutions, centering the window of the px is a core part of the convolution logic. Worth having the platform support it as easily as possible.
 
-        
+            
+
+        new_window
+            implemented
         
 
 
         new_centered_window() ???
+            NOT doing this for the moment. done new_window
+
             centered on 0,0.
             center of that window corresponds to a pixel in this window.
             bounds determined...
@@ -4906,17 +4935,8 @@ class Pixel_Buffer_Core {
                     //  bipp (but we know that's 24???)
                     //   nice to set a value for it.
 
-
-
-
                 }
-
-
             }
-
-
-
-
 
 
 
@@ -4925,15 +4945,60 @@ class Pixel_Buffer_Core {
         }
 
 
-
     }
+
+    // Will make more utility tas that can be set to get iteration working well?
+    //  Or keep them updated upon some other changes.
+
+
+    // tas available on setup... on move (pos change).
+    // tas that need to be calculated before a specific operation
+
+
+
+    // should not use this.pos ta for iterating inside.
+
+    // .xy?
+    
+    // Probably do need better differentiation between position variables.
+
+
+    // More explicit naming here does make a lot of sense.
+
+
+
+    // pos_within_source_window_bounds
+    // pos_within_source_window
+
+    // pos_within_source_window.bounds ???
+    //  makes for more complex typed arrays, less like basic C / C++ arrays. Dont do this right now. May be an option for nice JS API but dont go this direction now.
+
+    // May be worth writing up progress in Github issues.
+    //  What is planned for a release
+    //    Further analysis / written work on plans
+    //  Progress of those items (can copy and paste simple / formatted checklist)
+    //  Closing the issue once the release has been published to npm and github.
+    //   Or as a Github Project or part of one.
+
+
+
+
+
+
+
+
+
+
+    //  
+
+
 
     each_px(ta_pos, ta_px_value, ta_info, callback) {
 
 
         const bipp = this.bipp;
 
-        console.log('bipp', bipp);
+        //console.log('bipp', bipp);
 
         if (bipp === 1) {
             return this.each_ta_1bipp(ta_pos, ta_px_value, ta_info, callback);

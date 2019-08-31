@@ -44,8 +44,12 @@ const {Pixel_Buffer} = gfx;
 const Server_Pixel_Buffer = gfx_server.Pixel_Buffer;
 
 const Convolution = require('../convolution');
+const create = require('./create_eg_pbs');
 
 
+
+
+// Using generated images rather than samples such as Erte Ale.
 
 // seems to be working / fixed now :)
 const copy_from_server_pb = (server_pb) => {
@@ -68,80 +72,6 @@ const copy_to_server_pb = (standard_pb) => {
     //res_pb.buffer = res_pb.ta = standard_pb.ta;
     return res_pb;
 }
-
-const old = () => {
-    const eg_pb_window_to_pb = async() => {
-
-        const pb_24bipp_color_square = new Pixel_Buffer({
-            size: [256, 256],
-            bits_per_pixel: 24
-        });
-
-        // Could create an initial image here.
-        //  varying red and green, same amount of blue?
-
-        
-
-
-        // then iterate over the pixel positions...
-        //  how fast can this type of each pixel function be?
-        //   probably worth making optimized versions depending on the number of bpp.
-
-        // updating the position in a typed array that's given as a param?
-        //  updating a color typed array (not sending it as a param / creating a new one?)
-
-        // worth having some different means of doing these basic operations, some could be more convenient, some more optimized.
-        //  also worth being able to copy and paste some of their code to use inline.
-
-        // pb.each_px_pos
-        //  .each_px
-        //    includes the pos of each px?
-
-        // .each_px(ta_pos, ta_color)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        const res = 'res eg_pb_window_to_pb';
-        console.log('res eg_pb_window_to_pb', res);
-
-
-        return res;
-    }
-
-
-
-    if (require.main === module) {
-        (async() => {
-            // Set file paths here...?
-            let res = await eg_pb_window_to_pb();
-            console.log('main: res eg_pb_window_to_pb', res);
-        })();
-    }
-
-
-
-    // Should probably write some smaller example to do with 1bpp masks and various operations with much smaller pixel buffers.
-
-
-
-}
-
-
-const create = require('./create_eg_pbs');
 
 // Worth having different sub-examples.
 //  Would be nice to have the example runs each create their own directory with separate output files.
@@ -166,87 +96,14 @@ const create = require('./create_eg_pbs');
 
 
 
-const eg_win_to = async() => {
-
-
-    // Multiple subexamples will run within this.
-
-
-
-
-
-    // This function should return something?
-    //  or make more examples that generate pbs and that's in their name?
-
-    //  put more in patch, rename patch?
-
-    //  'patch' to 'create_eg_pbs'
-    //   and it creates a set of examples. Some or all of those pbs will be used in other examples / tests.
-
-
-
-
-
-
-    // Worth making this a separate sample example?
-
-
-    // sub-examples inside.
-
-
-
-
-
-
-
-
-
-    //console.log('Generating 255x255 example');
-    //const spb = await Server_Pixel_Buffer.load('../source_images/Erte Ale Volcano.jpg');
-    // Load JPEG as 24 bipp by default?
-
-
-    //const pb = copy_from_server_pb(spb);
-
-    //pb.bipp = 24;
-    //  cool inner coding should make that work.
-    //   change_bits_per_pixel
-    //    and likely a variety of change_from_1bipp_to_32bipp type functions.
-    //     could be a bunch of them with fast and specific internal implementations.
-    //     I think this style will make good use of the JS compiler's own polymorphism and monomorphism.
-
-
-
-
-
-
-
-    // then run each_px
-    //console.log('pb.bits_per_pixel', pb.bits_per_pixel);
-    //pb.bits_per_pixel = 24;
-    //console.log('pb.bits_per_pixel', pb.bits_per_pixel);
-
-
-    // Will generate the image colors using the each pixel system...
-
-    /*
-
-    const pb_24bipp_color_square = new Pixel_Buffer({
-        size: [256, 256],
-        bits_per_pixel: 24
-    });
-
-    */
-
+const eg_byte_iteration_info = async() => {
     const pb_24bipp_color_square = create.generate_color_square();
     const pb_8bipp_patch = (() => {
         const res = create.patch_1();
         res.bipp = 8;
         return res;
     })();
-
     console.log('pb_8bipp_patch.bipp', pb_8bipp_patch.bipp);
-
 
     const ta_pos = new Int16Array(2);
     const ta_px_value = new Uint8ClampedArray(3);
@@ -269,367 +126,52 @@ const eg_win_to = async() => {
     //  iterating_window
 
 
+    // Maybe attempt faster convolve with faster iteration?
+    //  Maybe use faster copy on a lower level for the Pixel_Buffer window.
 
-    const iterate_colors_with_window_pb = () => {
-        console.log('iterate_colors_with_window_pb');
 
-        // Blur wont be so good as a convolution here.
-        //  Could make different patterns to start with....
-        //   Or try with different source images?
+    // To begin with, functions to iterate within a defined range of a single image.
+    //  May well be the case that we can image ranges with matching sizes and bpps for copies.
 
-        // Can see the values proceeding OK with this image at least.
-        //  Thats whats needed as a test / example.
 
-        // will automatically use the same color depth as the source.
+    // Know which parts of an operation are constant, which are not.
+    //  Different to which parts use constant variables, as they may all use constant typed arrays.
 
-        // centre_pos...? center_pos?
-        //  so that the position given is in the central position.
-        //   useful for convolution windows, and moving them around.
 
-        // pos: ['center', [0, 0]]???
 
-        // a center_pos / pos_center property would make a lot of sense.
-        //  also be able to change this pos? set it easily, have the window update its data from the relevant typed array???
 
-        // nice hack: set the pos_center to an existing pos typed array.
-        //  then the values get looped over.
-        //   call the update_from_source function....
-        //  This is likely to be able to run very quickly. Will be nice to use it in-browser / get some stats.
 
 
-        ta_pos[0] = 0;
-        ta_pos[1] = 0;
 
-        // Special window_to handling in the constructor.
-        //  will set the bits_per_pixel value.
 
-        // Need to change / improve Pixel_Buffer to handle window_to
+    const byte_iterate_8bipp_patch = () => {
 
-        // pos_center would make a lot of sense.
-        //  maybe hold off from implementing it?
 
-        // half-size properties?
-        //  i_half_size properties?
+        // Can set a px_read_range?
+        //  operation_pos_range?
 
-        // storing half the size as an integer?
-        //  or really the offset from the centre... expansion from centre size in that dimension.
-
-        // offsets of the corners / edges from the center.
-        //  Need to be very precise with this type of positional maths.
-
-        // pos_center definitly seems like it would be of use.
-        //  especially with it being a typed_array.
-        //   do want to keep the pos property up-to-date
-        //    working off edge bounds offsets from the size...
-
-        // would be worth having them calculated / stored / available in a ta variable.
-
-        // Dealing with precise pixel maths.
-
-        // Define how the centering works for even image sizes? Assume a default?
-        //  Binding position???
-        //   And other types of windows?
-        
-        // binding_pos [2,2]???
-
-        // central pos certainly makes sense.
-        //  updating the window, using the central pos and offsets from it, would work very well.
-        //  however, may be most efficient to move a bounds (4 values) that have already been set
-
-        // by updating each of the bounds with the movements (window_bounds ta ui16) we can most reasonably get and set the Pixel_Buffer's definitive position.
-        //  then carry out source-to-window updates using these bounds.
-
-        // May be worth making specific Convolution data structures?
-        //  Worth getting on with making the convolution window and loop work quickly, soon, and with the right syntax.
-
-
-        // Centered on 0,0.
-
-        // Should make the pos_center property, make it work well.
-        //  Setting its center pixel sets its position so that that central specified position is central within the pb.
-        //   (should be useful)
-
-        // So need to upgrade Pixel_Buffer to fully support pos_center
-
-
-        const pb_window = new Pixel_Buffer({
-            size: [5, 5],
-            window_to: pb_24bipp_color_square,  // (source??)
-            pos_center: ta_pos
-        });
-
-        // sort out the pos_center getter.
-
-        // its the pos center within the coordinate space of the source.
-        console.log('pb_window.pos_center', pb_window.pos_center);
-
-        // Then can update / move / translate the whole the window.
-        //  Adjusting its position / pos property.
-
-        // maybe worth perf testing this single copy operation...
-
-        performance.mark('A');
-        //const [r, g, b] = pb.split_rgb_channels;
-        
-
-
-        // Should automatically do that when it starts?
-        pb_window.copy_from_source();
-        // 0.53 ms, not bad.
-        //  maybe faster with next ops too, as this time it initialised values???
-        //   see about fastest optimizations.
-
-        performance.mark('B');
-        performance.measure('A to B', 'A', 'B');
-
-
-        console.log('pb_window.ta', pb_window.ta);
-        //console.log('pb_window', pb_window);
-        //console.log('pb_window.bounds', pb_window.bounds);
-
-
-        // Pos should be negative if we say its centered at 0, 0.
-        //  Start of a convolution.
-
-        // Minimum copy of data will lead to the best perf.
-
-        // Can use this pos (-2, -2) as well as the size be determine the copy size when we use another pb as the source.
-
-
-
-
-        
-        console.log('pb_window.pos', pb_window.pos);
-        console.log('pb_window.pos_center', pb_window.pos_center);
-        // pos refers to its position within another space.
-
-        //const move_vector = pb_window.ta_move_vector;
-        //console.log('move_vector', move_vector);
-        //move_vector[0] = 1;
-        //move_vector[1] = 0;
-
-        //console.log('move_vector', move_vector);
-
-        performance.mark('C');
-        //const [r, g, b] = pb.split_rgb_channels;
-        
-
-        /*
-
-
-
-        pb_window.move(move_vector);
-        pb_window.move(move_vector);
-        pb_window.move(move_vector);
-        pb_window.move(move_vector);
-        pb_window.move(move_vector);
-
-        move_vector[0] = 0;
-        move_vector[1] = 1;
-
-        pb_window.move(move_vector);
-        pb_window.move(move_vector);
-        pb_window.move(move_vector);
-        */
-
-        // well yes, this is still nicely fast.
-        //  likely to be able to speed it up some more, just in js.
-
-        // worth writing the convolution code.
-        //  better to test it on another image though.
-
-
-        // while(pb_window.move_next_pixel) {...}  move_next_pixel will return undefined when there isnt a next pixel within the target bounds.
-
-        // pb_window.move_next_pixel
-
-        let pos;
-
-        // moves to the next px in the source!!!
-        pos = pb_window.move_next_px();
-
-        //(() => {
-            while (pos !== false) {
-                //console.log('pos', pos);
-    
-                pos = pb_window.move_next_px();
-            }
-        //})();
-
-
-        // Definitely want to do a convolution / blur algorithm.
-
-        // Maybe algorithmically make my own stripes / squares test images.
-
-        // A fairly simple and recognisable image that can undergo different processes.
-
-        // A test_patch.
-
-        // Examples that generate and save a test patch would help.
-        //  Other examples could generate the test patch, then run various processes such as resize and blur / convolutions on it.
-        
-
-
-
-
-
-
-
-
-
-
-
-        
-
-        // Not sure the point of a blur conv on an already smooth image.
-        //  Though pixel averaging (very simple conv) would show the border around the image.
-
-
-
-
-
-        // quite fast at 10ms!
-        //  good going so far!
-
-
-
-        
-
-
-        // Would be worth trying a convolution function.
-        //  Moving this pixel window around.
-        //  Want a convolution matrix as well.
-        //   Same size grids, will have very fast ta convolve.
-
-        // Would be worth seeing how long it takes to move the copy window over every pixel.
-        //  Then can use that copy window as a convolution source window / pb.
-
-
-
-
-
-
-
-
-
-        //pb_window.copy_from_source();
-        // 0.53 ms, not bad.
-        //  maybe faster with next ops too, as this time it initialised values???
-        //   see about fastest optimizations.
-
-        performance.mark('D');
-        performance.measure('C to D', 'C', 'D');
-
-        // 0.3ms, nicely fast here.
-        //  but need to consider it 1000s + of times.
-        //   maybe not so fast.
-        console.log('pb_window.pos_center', pb_window.pos_center);
-
-        console.log('pb_window.ta', pb_window.ta);
-
-        console.log('pb_window.pos', pb_window.pos);
-        console.log('pb_window.pos_center', pb_window.pos_center);
-
-
-        // Maybe trying a convolution on Erte Ale would be best?
-        //  Could try a pixel averaging shrinkage method. Would shrink by int_n times.
-
-        // Convolving a shrunken version of Erte Ale would be best.
-        
-        // Though want to get into image resizing as well.
-
-        // Best to try a convolution on Erte Ale.
-        //  Should get a copy of it to use as the source?
-
-
-
-
-        
-
-
-
-
-
-
-
-        // this.move_next_px
-        //  would deal with rows. would return the movement vector used.
-
-
-        //console.log('pb_window.size', pb_window.size);
-
-
-        // then run a function to update / copy from source.
-
-
-
-        //console.trace();
-
-        //throw 'stop';
-        // Need more API to enable the central position.
-        //  Would be very useful for convolutions.
-        //  Seems like we will have the lower level image processing tasks very nicely done, high speed, and useful for higher level tasks.
-        //   Then even faster still using possible available acceleration (GPU / SIMD / C++).
-
-
-
-
-
-
-
-
-
-
-        // then can set the pos_center to a pos?
-
-
-        // and it constructs the necessary typed arrays?
-        //  having a pos_center typed array could make sense.
-        //  or it's in a ta_info?
-
-
-
-
-
-
-
-
-
-        // Yes, this direct / more direct method is very quick. Even/especially with the update callback.
-        //  Have each_px as the basis for a moving convolution window?
-        //   Could update the window's Pixel_Buffer pos according to which pixel.
-        //    Could also make use of the pixel update function based on the data that is copied from pre-convolution.
-
-        // Have Pixel_Buffer reference and use the memory of a Canvas in the browser?
-        //  Would likely be useful.
-
-        // Methods for image composition / compositing as well.
-        //  Should get into 3D acceleration and objects too.
-
+        // Try variables that are not properties of the pb for the moment.
+        //  Easier to consider, write and try them when they are less permanent regarding not changing an existing API.
 
 
 
         /*
+            Iterating through the whole thing
 
-        (async() => {
-            // Save the inverted volcano file.
+            Iterating through iteration bounds
 
-            // Soon worth doing some experiments with C++.
-            //  Probably worth getting optimized convolutions working in JS first though.
+            Dealing with pixels that are outside of the bounds of the actual image.
+                Return default color? Some other value such as undefined for the pixel?
+                0 or a different default may work better with convolutions.
+                Maybe use out_of_bounds_default_px_color property.
 
-            await gfx.save_pixel_buffer('./output/window_to-generated_256x256.png', pb_24bipp_color_square, {
-                format: 'png'
-            });
+                
 
-        })();
         */
 
 
-    }
-    //iterate_colors_with_window_pb();
 
 
-    const beginning_convolve_8bipp_patch = () => {
 
         // Use a 3x3 window for the moment.
         // 3x3 conv. Set the values (for the moment, will be a simple sharpen conv)
@@ -1615,9 +1157,9 @@ if (require.main === module) {
         
 
 
-        let res = await eg_win_to();
+        let res = await eg_byte_iteration_info();
 
 
-        console.log('res eg_each_px', res);
+        console.log('res eg_byte_iteration_info', res);
     })();
 }

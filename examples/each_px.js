@@ -1,5 +1,10 @@
 // Should probably write some smaller example to do with 1bpp masks and various operations with much smaller pixel buffers.
 
+// Will have improved iteration methods - see byte_iteration_info.
+//  Functions to provide the values for some really simple loop structures that are synced for the data being written / read.
+
+
+
 
 
 

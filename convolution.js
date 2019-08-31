@@ -37,18 +37,8 @@
     // Convolution API could use a Pixel_Buffer window to do its job.
     //  or 3 or 4 of them?
 
-
     // Need to also work on / do 1 bipp convolutions / image processing.
     //  May be very useful for object detection.
-
-
-
-
-
-
-
-
-
 
 
 */

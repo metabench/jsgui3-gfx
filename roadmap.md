@@ -25,6 +25,87 @@ Immediate Plan:
     Testing / examples.
    Hold off from releasing 0.0.23.
 
+   Get 0.0.23 release a bit more tested and covering some more ground.
+    Better movement / iteration API and byte_index optimized methods.
+
+
+
+
+
+
+
+
+Immediate Plan Details:
+
+// Properties to describe the relationship to the source window.
+
+
+// pos_within_source_window_bounds
+//  was .pos_bounds
+// pos_within_source_window
+//  was .pos
+
+
+Possible:
+
+.source_window_processing
+
+
+// an array of different functions to be called on the data once it has been written to this.
+//  eg could have one or more convolutions assigned.
+//   may be an efficient way of getting multiple successive convolutions done on a source image
+
+
+
+Movement Definitions:
+  Movement of pointers get defined more
+  Relationships get defined more?
+    have.source already.
+      change to .window_source to be clearer?
+
+  each_source_pos?
+    Quite a powerful function that will move the window over all possible (given bounds) positions within the source.
+
+    and will copy from the source appropriately.
+    makes a lot of sense with this name.
+      but consider pos_within_source.each()??
+
+
+
+  pos_within_window_source?
+
+  // coords.within.window_source?
+
+
+  
+
+// Convolution-style functions?
+//  Easier calling of convolutions and use of convolution results.
+//  A convolution function or API that itself makes use of the pixel window system.
+
+
+// Getting byte index data about a specified movement within bounds...
+//  A separate jS file for these functions could be useful, at least to start with.
+//   Then when the API is stable, make sure they are optimized (internal?) versions.
+
+// Or an iteration_data example for the moment?
+//  And when it's working in the example, implement the functions either in a new (helper / more pure fns) file, or within pixel-buffer-core
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -105,11 +186,6 @@ Rapidly and efficiently doing convolutions will be very useful.
       // And would do the corresponding copy to own ta to represent what's in the window.
       //  would do that before the callback.
       // Not yet - lets use pos_bounds and incorporate that into existing iteration.
-
-    
-
-
-
 
 
   

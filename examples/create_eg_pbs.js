@@ -413,7 +413,7 @@ const generate_tp1 = () => {
 
     ta_pos[0] = 12;
     ta_pos[1] = 12;
-    console.log('ta_pos', ta_pos);
+    //console.log('ta_pos', ta_pos);
 
     // rect size - a 2d vector. a ta_size_scratch or ta_size even.
 
@@ -421,7 +421,7 @@ const generate_tp1 = () => {
     ta_size[0] = 16;
     ta_size[1] = 16;
 
-    console.log('ta_size', ta_size);
+    //console.log('ta_size', ta_size);
 
     // v2d_pattern_repeat_size - make it 4x4
 
@@ -429,7 +429,7 @@ const generate_tp1 = () => {
     v2d_pattern_repeat_size[0] = 4;
     v2d_pattern_repeat_size[1] = 4;
 
-    console.log('v2d_pattern_repeat_size', v2d_pattern_repeat_size);
+    //console.log('v2d_pattern_repeat_size', v2d_pattern_repeat_size);
 
     // make it black / dark red.
 
@@ -437,7 +437,7 @@ const generate_tp1 = () => {
     rgb[1] = 0;
     rgb[2] = 0;
 
-    console.log('rgb', rgb);
+    //console.log('rgb', rgb);
 
 
     // returns the full size / bounds of the pattern?
