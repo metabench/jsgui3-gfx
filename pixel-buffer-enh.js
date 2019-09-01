@@ -110,6 +110,11 @@ class Pixel_Buffer_Enh extends Core {
 
     // Could have a 'paint' file / module.
     'paint_solid_border'(thickness, color) {
+
+
+        // separate methods for different bipps, this fn chooses one?
+
+
         return this.process((me, res) => {
             let x, y;
             const [w, h] = this.size;

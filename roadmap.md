@@ -166,6 +166,7 @@ Rapidly and efficiently doing convolutions will be very useful.
 
 0.0.23
   Plan what to do...
+    Decided on cursors in 0.0.24
   Some more functionality that supports convolutions / convolution windows.
   // Running it on a greyscale image would help to begin with.
   //  Then can try running it on a multi-channel image.
@@ -188,43 +189,101 @@ Rapidly and efficiently doing convolutions will be very useful.
       // Not yet - lets use pos_bounds and incorporate that into existing iteration.
 
 
-  
-
-
-
     Moving convolution window seems useful / important.
       A good structure as well to check that the conv is working with the right data along the way.
 
 
 0.0.23(a?) - Further improvements to iteration system, including byte iteration variables and methods.
   Copy and paste various kinds of iteration boilerplate too.
+    Made a fast (but restricted use) copy between pbs function.
   Dealing with the typed arrays themselves more, more mathematical functions that deal with abstractions of multiple values.
     Also providing the basic non-abstract info.
   Getting the byte index info (or general purpose and iteration...)
     Function that returns a very human-readable object (with explanations?)
       Would also return the typed arrays, and explain their indexing
     Function that just returns the typed arrays.
+  Have made a fast byte iteration and copy pb data function.
+    Will make more functions in the near future that apply to the pixel buffers' internal data.
+
+  Does seem like inlining various functions in various situations, not passing args to functions, gets the best speed.
+  Variables both defined and accessed in the local block scope.
+  Worth making the different ways of doing things comparible in benchmarks.
+
+
+
+0.0.23 final:
+  easy to use convolutions API.
+  convolve.js example
+    consider most optimized paths separately, seek to integrate but accept some API convenience performance lossless
+      and later can optimize some fns using C++ on the server and test that.
+
+  more flexible, (faster) copy between pbs
+  standard typed arrays for parameters, with restricted number of tas being passed to the functions.
+    try a single function object too, containing all the tas? is that faster?
+  larger convolutions, benchmarks.
+  multiple convolutions done (different params?) on larger single input image.
+
+  Edge detection convolution
+    examples
+
+  
+
+
+
   
   Iterations for more than one coordinate space at once (ie coordinate spaces from multiple images?)
 
+  Further convolutions, and refinements to them?
+  Speed bencmarking multiple convolution processes?
+
+
+
+// Create half size image?
+//  Could be a useful stage towards other scaling
+//   downscaling and upscaling?
+
+// Each pixel in the res image would be an average of 4 pixels in the source image.
+
+
+
+
+
+0.0.24 Image resizing (pixel remapping?)
+
+// May be enabled by further work involving multiple view windows, and remapping of coordinate spaces.
+//  This is the kind of thing which would work well on a platform with its own very fast operations.
+
+
+// May be enabled with some pixel rescaling / virtual resolution maths I've been thinking about.
+
+Have a pb window that does not have own copies of its values (no ta)
+All get and set operations are done by coordinates, and it then remaps to the coordinate space of the the source, and gets it from there.
+
+// Each pixel in the original image becomes a square in a virtual high-res remapped image.
+
+
+
   
 
 
 
+0.0.24? Improved convolutions?
 
 
 
-
-
-
-
-
-
-
-
-0.0.24 - Improvements with convolutions
+0.0.24 - Cursors??? No
   Further convolution examples / benchmarks...?
     (will also do some work on the server-side version)
+  (Improvements with convolutions)???
+  (More work using bounds, regions? can just use an xy ta)
+  ta_xy? xyta?
+
+
+0.0.24 - Pixel remapping
+  Used in part for convolutions
+  May be worth making copy functions with explicit pixel remapping.
+
+
 
 
 

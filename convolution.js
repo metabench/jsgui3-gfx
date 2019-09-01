@@ -45,6 +45,13 @@
 
 
 
+// Convolutions may require / benefit from better mapping / rereferencing between different coord spaces.
+
+
+
+
+
+
 const lang = require('lang-mini');
 
 const {
@@ -190,13 +197,12 @@ class Float32Convolution extends Convolution {
 
 
         //  convolution from a single channel really does make the most sense.
-
-
-
-
-        
-
     }
+
+    // 3 channel result would be useful enough.
+    //  not so sure about returning a new typed array for the result though.
+
+
 
     // 3 channel and 4 channel convolution functions.
     //  will convolve the channels separately.

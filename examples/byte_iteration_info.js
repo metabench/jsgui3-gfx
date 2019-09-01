@@ -48,6 +48,11 @@ const create = require('./create_eg_pbs');
 
 
 
+const ta_math = require('../ta-math');
+
+//ta_math.copy_rect_8bipp()
+
+
 
 // Using generated images rather than samples such as Erte Ale.
 
@@ -105,6 +110,8 @@ const eg_byte_iteration_info = async() => {
     })();
     console.log('pb_8bipp_patch.bipp', pb_8bipp_patch.bipp);
 
+    const pb_24bipp_patch = create.patch_1();
+
     const ta_pos = new Int16Array(2);
     const ta_px_value = new Uint8ClampedArray(3);
 
@@ -140,171 +147,412 @@ const eg_byte_iteration_info = async() => {
 
 
 
+    // And will also iterate the 24bipp pb.
 
 
 
 
-    const byte_iterate_8bipp_patch = () => {
+
+    // Try this for different bounds sizes too.
+    //  Maybe test / example this with some pixel-by-pixel copying / copying and modifying to a new ta.
 
 
-        // Can set a px_read_range?
-        //  operation_pos_range?
+    // Work on any needed functions / internal implementations on ta of byte_iterate_8bipp_patch
 
-        // Try variables that are not properties of the pb for the moment.
-        //  Easier to consider, write and try them when they are less permanent regarding not changing an existing API.
 
+
+    // Faster copying could be incorporated into other parts now...
+
+    // Could also do / try byte-by-byte row copying.
+    //  See if its faster than ta.set(subset).
+
+
+
+    // More use of byte iterate iteration...
+    //  Within copy_from_source?
+
+    // A module of ta_operations would make sense.
+    //  The Pixel_Buffer class will call those functions.
+    //   Make the code more modular and portable this way.
+    //   Will be able to be ported and implmented in C++ / other languages more easily.
+
+    // Kernels - get applied at each position.
+
+
+
+
+
+
+
+
+
+
+    // byte iterate 24 bipp patch.
+    //  will copy a region to a res pb.
+
+    // Yes, quite fast too.
+    //  Worth seeing about making C++ versions soon?
+    //   Including more mathematical functions?
+
+    // Worth making some ta math functions too.
+    //  
+
+    // ta-math.js file
+
+
+
+
+
+
+
+    const byte_iterate_24bipp_patch = () => {
+        console.log('byte_iterate_24bipp_patch');
+        const bytes_per_pixel = 3;
+
+        const ta_iteration_bounds = new Int16Array([100, 100, 200, 200]);
+        const ta_iteration_xy = new Int16Array([ta_iteration_bounds[0], ta_iteration_bounds[1]]);
+        const pb_bytes_per_row = pb_24bipp_patch.bypr;
+        const iteration_width = ta_iteration_bounds[2] - ta_iteration_bounds[0];
+        const iteration_size = new Int16Array([ta_iteration_bounds[2] - ta_iteration_bounds[0], ta_iteration_bounds[3] - ta_iteration_bounds[1]]);
+        const iteration_bytes_per_row = iteration_width * bytes_per_pixel;
+        const bytes_read_row_end_jump = pb_bytes_per_row - iteration_bytes_per_row;
+
+
+        const byte_idx_pb_first = (ta_iteration_xy[0] * bytes_per_pixel) + (ta_iteration_xy[1] * pb_bytes_per_row);
+        // byte_idx_pb_read
+        //  will be incremented after each x by bytes_per_pixel
+        //   after each y by the bytes_read_row_end_jump
+
+        // Hopefully this works out to be a much faster system of doing these loops / iterations.
+        //  Would port well / better to C++ as well.
+
+        let byte_idx_pb_read = byte_idx_pb_first;
+
+
+        console.log('ta_iteration_bounds', ta_iteration_bounds);
+        console.log('ta_iteration_xy', ta_iteration_xy);
+        console.log('pb_bytes_per_row', pb_bytes_per_row);
+        console.log('iteration_bytes_per_row', iteration_bytes_per_row);
+        console.log('iteration_width', iteration_width);
+        console.log('bytes_read_row_end_jump', bytes_read_row_end_jump);
+        console.log('byte_idx_pb_first', byte_idx_pb_first);
+
+        const xy = ta_iteration_xy;
+        const ta = pb_24bipp_patch.ta;
+
+        // Calculating the average pixel value / color?
+
+        // Seems like a good iteration, without unnecessary calculations of byte positions from x, y
+
+        //let ui8_px_value;
+
+
+        // Run a convolution on each point?
+
+        // Let's try with smaller bounds, and saving the extracted image.
+
+
+        // not working????
+
+        const pb_copy_res = new pb_24bipp_patch.constructor({
+            bits_per_pixel: 24,
+            size: iteration_size
+        })
+
+        const ta_res = pb_copy_res.ta;
+        let byte_idx_write_res = 0;
+
+        const ta_byte_indexes = new Uint32Array([byte_idx_pb_read, byte_idx_write_res]);
+
+
+        // ta further info may be better to avoid here (for perf reasons too).
+        //  further investigate various overheads
+        const ta_op_further_info = new Int32Array([bytes_read_row_end_jump]);
+
+
+
+        performance.mark('C');
+
+        //copy_individual_bytes();
+
+        // specifically for 24bipp
 
 
         /*
-            Iterating through the whole thing
 
-            Iterating through iteration bounds
+        for (xy[1] = ta_iteration_bounds[1]; xy[1] < ta_iteration_bounds[3]; xy[1]++) {
+            for (xy[0] = ta_iteration_bounds[0]; xy[0] < ta_iteration_bounds[2]; xy[0]++) {
 
-            Dealing with pixels that are outside of the bounds of the actual image.
-                Return default color? Some other value such as undefined for the pixel?
-                0 or a different default may work better with convolutions.
-                Maybe use out_of_bounds_default_px_color property.
+                //const ui8_px_value = ta[byte_idx_pb_read];
+                //ui8_px_value = ta[byte_idx_pb_read];
 
+                //console.log('byte_idx_pb_read')
+                ta_res[byte_idx_write_res++] = ta[byte_idx_pb_read++];
+                ta_res[byte_idx_write_res++] = ta[byte_idx_pb_read++];
+                ta_res[byte_idx_write_res++] = ta[byte_idx_pb_read++];
+                // But don't need to copy the px value in many cases.
+                //  Maybe have / use lower level fuctions for copying between different pbs / tas.
+                //  Iterating spaces.
+                //   Iterating spaces defined by a function / equation?
+                //    Eg could functionally / mathematically define a circle and draw it.
                 
+                // got the xy iteration pos set correctly here :)
+
+                // could copy px values?
+                //  reading and using them directly may work best....
+
+                //byte_idx_pb_read += bytes_per_pixel;
+
+            }
+            // then row jump increase.
+            byte_idx_pb_read += bytes_read_row_end_jump;
+        }
 
         */
 
-
-
-
-
-        // Use a 3x3 window for the moment.
-        // 3x3 conv. Set the values (for the moment, will be a simple sharpen conv)
-
-        // Move the window, get the convolved px value each time it's been moved.
-        //  put the convolved value into a new pb.
-
-
-        const conv_s3_sharpen = new Convolution({
-            size: [3, 3],
-            value: [0, -1, 0, -1, 5, -1, 0, -1, 0]
-        });
-
-
-
-        console.log('beginning_convolve_8bipp_patch');
-        //ta_pos[0] = 0;
-        //ta_pos[1] = 0;
-
-
-
-        // set it up as a centered_window?
-
-        //  a square window, size 3?
-        //   does make sense to handle a single size value like that.
-
-
-        // Will make more convenient syntax later
-
-        //const new_fns_to_make = ['new_window', 'each_pos_within_bounds'];
-
-
-
-        // More internal setup / getting of byte index info useful for iteration when it is set up?
-        //  Perpating this would make iteration faster still.
-
-
-        const pb_window = pb_8bipp_patch.new_window({
-            size: [3, 3],
-            pos_bounds: [-1, -1, pb_8bipp_patch.size[0] - 1, pb_8bipp_patch.size[1] - 1],
-            pos: [-1, -1]
-        });
-
-        // Write the iteration code here?
-        //  already have copy_from_source
-        //  will have copy made when the window is created.
-
-        const pos_window = pb_window.pos;
-        const ta_window = pb_window.ta;
-
-
-        //console.log('pb_window', pb_window);
-        //console.log('pb_window.ta', pb_window.ta);
-
-        // Will move the pos_property within the pos bounds.
-
-        // perf test here?
+        // So its slower to call this external fn than to call it inline.
+        //  Possibly setup then use of the iteration info is significantly faster when inline?
+        //  Worth considering.
 
         
-        //const [r, g, b] = pb.split_rgb_channels;
+
+
+        ta_math.copy_rect_24bipp(xy, ta_iteration_bounds, ta, ta_res, ta_byte_indexes, bytes_read_row_end_jump);
+
+
         
-        // May as well do convolutions and write them into the convolution result pb.
 
-        // 160ms approx for iteration here, with copies made (by row)
-        //  Could be better.
-        //   Accelerated lower level function will help too.
-        //    Need to make sure JS version works first as as prototype.
-        //     Make sure the API concepts are stable, then port some of it to C++.
-
-        const pb_conv_res = new Pixel_Buffer({
-            size: pb_8bipp_patch.size,
-            bits_per_pixel: 8
-        });
-
-        let i_write = 0;
-        const ta_conv_res = pb_conv_res.ta;
-
-        // Byte index double iterator here would work faster, most likely.
-        //  Explore faster iteration mechanisms, and ways to prepare the variables for them.
-
-        // Byte_Iterator_Helper?
-        //  or functions to deal with it?
-        // OO makes sense because it could save and modify state.
-
-        performance.mark('F');
+        performance.mark('D');
+        //console.log('avg', avg);
+        //console.log('px_count', px_count);
+        performance.measure('C to D', 'C', 'D');
 
 
 
-        // Should automatically do that when it starts?
-        pb_window.each_pos_within_bounds(() => {
-            // access ta / pb_window variables / functions.
-
-            //console.log('pos_window', pos_window);
-            //console.log('ta_window', ta_window);
-
-            // Then can get the conv result, put it into a new image.
-            //  But it goes into a different position within the new index.
-            //   Byte index iteration writing may work best.
-
-            ta_conv_res[i_write++] = conv_s3_sharpen.calc_from_8bipp_ta(ta_window);
-        });
-        // 0.53 ms, not bad.
-        //  maybe faster with next ops too, as this time it initialised values???
-        //   see about fastest optimizations.
-
-        performance.mark('G');
-        performance.measure('F to G', 'F', 'G');
-
+        
 
         (async() => {
-            console.log('saving convolved 8bipp patch');
+            console.log('saving extracted part of 24bipp patch, using fast byte iteration loop (custom code here)');
             // Soon worth doing some experiments with C++.
-            //  Probably worth getting optimized convolutions working in JS first though.
+            //  Probably worth getting optimized convolutions working in JS first though
+            await fnlfs.ensure_directory_exists('./output/byte_iteration_info/');
 
-            await fnlfs.ensure_directory_exists('./output/window_to/');
-
-            await gfx.save_pixel_buffer('./output/window_to/convolve_sharpen-8bipp_patch.png', pb_conv_res, {
+            await gfx.save_pixel_buffer('./output/byte_iteration_info/extracted_part-24bipp_patch.png', pb_copy_res, {
                 format: 'png'
             });
 
         })();
 
-        // Nice - convolution sharpen actually worked - and quickly.
-        //  Could optimize a little more?
 
 
 
+    }
+
+
+
+
+
+    const byte_iterate_8bipp_patch = () => {
+        console.log('byte_iterate_8bipp_patch');
+
+
+        // Get / calculate the iteration info.
+
+        //  Let's make it based on an iteration bounds...
+
+        // Could set the iteration_bounds property
+        //  Or use a ta for it, provide the ta?
+        //   Want to reuse tas where possible.
+
+
+
+        // Set or create iteration bounds.
+
+        // Could use a subsection iteration bounds....
+
+
+
+        const bytes_per_pixel = 1;
+
+
+
+        //const ta_iteration_bounds = new Int16Array([0, 0, pb_8bipp_patch.size[0], pb_8bipp_patch.size[1]]);
+        const ta_iteration_bounds = new Int16Array([100, 100, 200, 200]);
+
+        // these wont change.
+        const ta_iteration_xy = new Int16Array([ta_iteration_bounds[0], ta_iteration_bounds[1]]);
+
+        const pb_bytes_per_row = pb_8bipp_patch.bypr;
+        const iteration_width = ta_iteration_bounds[2] - ta_iteration_bounds[0];
+
+        const iteration_size = new Int16Array([ta_iteration_bounds[2] - ta_iteration_bounds[0], ta_iteration_bounds[3] - ta_iteration_bounds[1]]);
+
+
+        const iteration_bytes_per_row = iteration_width * bytes_per_pixel;
+
+        const bytes_read_row_end_jump = pb_bytes_per_row - iteration_bytes_per_row;
+
+
+        // iteration_pixels_per_row?
+        //  iteration_width
+
+
+
+
+        // source_bytes_per_row?
+        // pb_bytes_per_row, that makes sense.
+
+
+
+
+        // self bytes per row
+        // iteration (space) bytes per row
+
+
+
+
+        // Comparison between the ta_iteration_bounds and this.size_bounds
+        //  for dealing with its normal coord space.
+
+        // A coord space abstraction could be very useful, also for high quality resizing.
+        // Lets get iteration improved and into the 0.0.23 release.
+        //  Maybe work on 1bipp coord spaces too, using bute_subindex_bit or similar? ui8_idx_bit_in_byte?
+        //   Would (maybe)? make sense as a uint8 value.
+
+        // Yes, would be good to try an iteration bounds ? shape bounds size that differs from own size_bounds.
+        //  byte index first read
+        //  byte length of row in the iteration / read / shape / rect / rect region bounds
+        //   that is bytes_per_row of the ta_iteration_bounds
+
+
+
+
+
+        //  EITHER:
+        //   bytes per row of this (for row copy)
+        //  OR
+        //   end of row byte jump distance (self bytes per row - iteration (space) bytes per row)
+
+
+
+
+
+        // maybe just call it xy. will make xyz more explicit.
+
+        // it_xy?
+        // it for iteration? Makes sense.
+
+
+        // end of row jump
+        //  for dealing with the (possible) difference between the iteration bounds coordinate space and the (normal? self? size?) coordinate space/
+        //   size_bounds for the moment.
+
+
+        // byte_idx_first_read
+        const byte_idx_pb_first = (ta_iteration_xy[0] * bytes_per_pixel) + (ta_iteration_xy[1] * pb_bytes_per_row);
+        // byte_idx_pb_read
+        //  will be incremented after each x by bytes_per_pixel
+        //   after each y by the bytes_read_row_end_jump
+
+        // Hopefully this works out to be a much faster system of doing these loops / iterations.
+        //  Would port well / better to C++ as well.
+
+        let byte_idx_pb_read = byte_idx_pb_first;
+
+
+        console.log('ta_iteration_bounds', ta_iteration_bounds);
+        console.log('ta_iteration_xy', ta_iteration_xy);
+        console.log('pb_bytes_per_row', pb_bytes_per_row);
+        console.log('iteration_bytes_per_row', iteration_bytes_per_row);
+        console.log('iteration_width', iteration_width);
+        console.log('bytes_read_row_end_jump', bytes_read_row_end_jump);
+        console.log('byte_idx_pb_first', byte_idx_pb_first);
+
+
+        // byte position within row?
+        //  maybe x position counter and check is simple enough?
+
+        // and y position value
+
+        // we have ta_iteration_xy
+        //  lets keep it updated / use it for the iteration.
+
+        // does make sense for iterating individual pixels rather than doing row copy.
+
+        const xy = ta_iteration_xy;
+        const ta = pb_8bipp_patch.ta;
+
+        // Calculating the average pixel value / color?
+
+        // Seems like a good iteration, without unnecessary calculations of byte positions from x, y
+
+        //let ui8_px_value;
+
+
+        // Run a convolution on each point?
+
+        // Let's try with smaller bounds, and saving the extracted image.
+
+
+        // not working????
+
+        const pb_copy_res = new pb_8bipp_patch.constructor({
+            bits_per_pixel: 8,
+            size: iteration_size
+        })
+
+        const ta_res = pb_copy_res.ta;
+
+        let byte_idx_write_res = 0;
 
 
         
 
-        // could do double for loop iteration within the pos_bounds
-        //  with byte index calculation.
+        // Fairly fast iteration....
+
+
+
+        // Yes, this is nicely fast at 11ms.
+        //  Likely the lower level copy function supporting convolutions can be sped up nicely with
+        //  direct pixel copy (rather than rows), test different methods.
+
+        
+
+        // Nice... this is going quick!
+        //  and it's working.
+
+        // See about using technique / loops more widely?
+        //  Better than the system with the callback?
+
+
+
+        // prepare_bounds_iteration_info
+
+        // could provide some constants / other values.
+        //  likely will be integrated into pb at some point.
+        //   maybe used by?
+
+        // Want to continue easier-to-port code that's outside of pb.
+        
+
+        // And separate out the inner function, and better see what variables it uses.
+
+
+        // Maybe using a position cursor makes sense?
+        //  Cursor always applies to a position within this.
+        //  A cursor definitely makes sense for drawing and has similarities with other established systems.
+
+        // Carry on working on 0.0.23 until ready to start / do cursors.
+
+
+        // 0.0.24 - Cursors?
+        //  And then a cursor would have a corresponding space within the source image / the parent image.
+        //  Put into roadmap. It's an important and useful concept.
+        //  Maybe a Cursor class?
+        //   Can calculate corresponding points and byte indexes.
+        //  Would provide utility outside of the Pixel_Buffer itself.
+        //   Would help the pb code to be clearer - so long as it was not deoptimized too much.
+        //    Calling more functions generally slows things down. Want less abstraction in some places so the code runs fastest.
 
 
 
@@ -315,255 +563,264 @@ const eg_byte_iteration_info = async() => {
 
 
 
-        // const pb_window = pb_8bipp_patch.get_centered_window(3);
-        //  And this would handle setting up the pos_bounds too.
-        //   could have an iterate_pos_bounds function.
-        //    pos_bounds and pos will be very useful for iteration.
-        //     including in loops
-
-        // setting up the iteration variables typed arrays.
-        //  and also having programmatic indexes to them, but not used in a way that slows down their access.
+        // xy, ta_iteration_bounds, ta_res, ta (ta_read), byte_idx_write_res, byte_idx_pb_read
 
 
-
-        // May have faster window pos iteration?
-
-        // .each_source_pixel
-        //  That could be a very useful function.
+        // Consider drawing with super-resolution / virtual-super-resolution (clever maths)
+        //  Coordinate_Space class?
+        //  Coordinate_2D_Space ???
 
 
+        // Individual byte copy.
+        //  May be the fastest way because .set(subset would have overhead of its own.)
 
-        // Need specific handling of centered windows too.
-        //  These are essential for convolution.
-        //   Implement every feature of convolutions, as efficiently as possible.
 
-        // pb.get_centered_window
-        //     could reuse one. or have a .centered_window property.
-        //      own .centered window could be useful for applying convolutions or generating it itself.
+        // Faster when there is no function....
+        //  Maybe more calls of it would get it to optimize more?
+        //   Maybe its worth having the function elsewhere for reference usage as well.
+
+
+        // copy_individual_bytes(xy, iteration_bounds, ta_res, ta, ta_rw_byte_indexes)
+
+
+        // Reusage of boilerplate may turn out to be faster than calling functions.
+        //  Not sure though.
+        //  May have function compilation on first call / it only gets optimized later?
 
 
 
-
-        //   .create_centered_window
-        //   .new_centered_window
-        //     implies its not a singleton. do this for now.
-
-        // .create_window_to
-        //  the window being centered does not make such a difference.
-        //   we do that by setting it pos_bounds.
-
-        // .create_square_window_to?
-
-        // .new_window
-        //  makes sense
-
-        // definition of bounds would make a lot of sense.
-        //  overflow of the source basically being 1/2 the window size (rounded down?)
-
-        // need to be very precise in dealing with this source overflow.
-
-        // the pos_bounds work on a lower level.
+        // Or use an outside function
+        //  copy_8bipp_rect_between_tas
 
 
 
+        // Worth making it into a function that runs externally.
 
 
-        /* .new_window({
-            size: 3, // square
-            source_overflow: 1 // sets the pos_bounds
+        // Individual bytes method.
+        //  However, could be improved by ysing byte ranges (only?)
+
+        // So we may want to have a variety of different function methodologies there next to each other and available.
+
+        // copy bytes
+        // copy pixels
+        // copy rows
+
+        // may need custom ones for 1bipp images too.
+
+        //  would be nice to use these within a specific math file.
 
 
-            // will start the window pos at top left by default.
+        //  All of the args would be typed arrays!
+        //  Makes sense to separate out some maths code, but code locality is one factor in speed.
+        //   May be best keeping copies / versions of it within some specific JS functions. C++ would compile better re code locality.
 
 
-            // source_size_allowed_overflow???
+
+        // copy_rect_8bipp = (xy, bounds, ta, ta_res, ta_byte_indexes)
 
 
-            // source_overflow: [1, 1, 2, 2]?  [1, 2]?
-            //  before center, after center?
 
-        })
 
+        //const copy_rect_ta_to_ta_
+
+
+        const _slower_to_use_a_fn_here_copy_individual_bytes = () => {
+
+
+            for (xy[1] = ta_iteration_bounds[1]; xy[1] < ta_iteration_bounds[3]; xy[1]++) {
+                for (xy[0] = ta_iteration_bounds[0]; xy[0] < ta_iteration_bounds[2]; xy[0]++) {
+    
+                    //const ui8_px_value = ta[byte_idx_pb_read];
+                    //ui8_px_value = ta[byte_idx_pb_read];
+    
+                    //console.log('byte_idx_pb_read')
+    
+                    ta_res[byte_idx_write_res++] = ta[byte_idx_pb_read++];
+    
+                    // But don't need to copy the px value in many cases.
+    
+                    //  Maybe have / use lower level fuctions for copying between different pbs / tas.
+                    //  Iterating spaces.
+                    //   Iterating spaces defined by a function / equation?
+                    //    Eg could functionally / mathematically define a circle and draw it.
+                    
+                    // got the xy iteration pos set correctly here :)
+    
+                    // could copy px values?
+                    //  reading and using them directly may work best....
+    
+                    //byte_idx_pb_read += bytes_per_pixel;
+    
+                }
+                // then row jump increase.
+                byte_idx_pb_read += bytes_read_row_end_jump;
+            }
+        }
+
+        const ta_byte_indexes = new Uint32Array([byte_idx_pb_read, byte_idx_write_res]);
+        // ta further info may be better to avoid here (for perf reasons too).
+        //  further investigate various overheads
+        const ta_op_further_info = new Int32Array([bytes_read_row_end_jump]);
+        performance.mark('A');
+
+        //copy_individual_bytes();
+
+        // Inline copy works really quickly in comparison to an external function call.
+        //  External functions calls could be very useful for prototyping, and will get optimized by V8 / engine improvements.
+
+        
+
+
+        /*
+
+        for (xy[1] = ta_iteration_bounds[1]; xy[1] < ta_iteration_bounds[3]; xy[1]++) {
+            for (xy[0] = ta_iteration_bounds[0]; xy[0] < ta_iteration_bounds[2]; xy[0]++) {
+
+                //const ui8_px_value = ta[byte_idx_pb_read];
+                //ui8_px_value = ta[byte_idx_pb_read];
+
+                //console.log('byte_idx_pb_read')
+                ta_res[byte_idx_write_res++] = ta[byte_idx_pb_read++];
+                // But don't need to copy the px value in many cases.
+                //  Maybe have / use lower level fuctions for copying between different pbs / tas.
+                //  Iterating spaces.
+                //   Iterating spaces defined by a function / equation?
+                //    Eg could functionally / mathematically define a circle and draw it.
+                
+                // got the xy iteration pos set correctly here :)
+
+                // could copy px values?
+                //  reading and using them directly may work best....
+
+                //byte_idx_pb_read += bytes_per_pixel;
+
+            }
+            // then row jump increase.
+            byte_idx_pb_read += bytes_read_row_end_jump;
+        }
 
         */
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        //  -- Functions to find out the variables needed in interation loops --
-        //  --------------------------------------------------------------------
-
-        // Slightly complex as it needs to account for bounds / in and out of bounds and handling out of source bounds acceptable (where allowed by the params).
-
-
-
-        // Essential values:
-        //  Row read length in bytes (same in this and source)
-        //  Source bytes_per_row
-        //  Self bytes_per_row
-        //  Source byte index of the beginning of each row
-        //  Source byte index of the end of each row
-        //  
-
-        // 
-
-
-
-        // Possible values:
-        //  Source byte index of the first (in bounds) pixel to read (according to set pos)
-        //   (seems useful)
-
-
-
-
-        // pb.pos_window_movement_iteration_info ???
-        // pb.pos_iteration_info - returns a typed array
-
-
-
-
-
-
-
-
-        //  get_centered_window going into pb core.
-
-
-
         
-        const old_pb_window_iterate_attempt = () => {
+        // Doing the external function call is indeed a bit slower.
+        //  Worth considering overall picture, as well as then finding ways to optimize some function / procedures as much as possible.
 
-            const pb_window = new Pixel_Buffer({
-                size: [3, 3],
-                window_to: pb_8bipp_patch,  // (source??)
-                pos_center: ta_pos
+        // // bytes_read_row_end_jump : ta_op_further_info[0]
+
+        // seems to slow down the function call more...
+        //  possibly only call it with 3 tas?
+
+
+        // See if it gets faster if / when it's used more.
+        //  Stay aware of de-optimization with more function calls.
+        //   Consider more inlining on critical functions.
+        //    Consider making 'deeply inlined' versions and / or a system to compile them.
+
+
+
+        ta_math.copy_rect_8bipp(xy, ta_iteration_bounds, ta, ta_res, ta_byte_indexes, bytes_read_row_end_jump);
+        performance.mark('B');
+        //console.log('avg', avg);
+        //console.log('px_count', px_count);
+        performance.measure('A to B', 'A', 'B');
+        //console.log('pb_copy_res', pb_copy_res);
+        //console.log('pb_copy_res.size', pb_copy_res.size);
+
+        // Saving of data would be better done between different example calls.
+
+        (async() => {
+            console.log('saving extracted part of 8bipp patch, using fast byte iteration loop (custom code here)');
+            // Soon worth doing some experiments with C++.
+            //  Probably worth getting optimized convolutions working in JS first though
+            await fnlfs.ensure_directory_exists('./output/byte_iteration_info/');
+
+            await gfx.save_pixel_buffer('./output/byte_iteration_info/extracted_part-8bipp_patch.png', pb_copy_res, {
+                format: 'png'
             });
-            pb_window.copy_from_source();
-    
-            console.log('pb_window.ta', pb_window.ta);
-    
-            // let's set up the convolution too...
-    
-            console.log('conv_s3_sharpen', conv_s3_sharpen);
-            console.log('conv_s3_sharpen.ta', conv_s3_sharpen.ta);
-    
-            // get the convolved value from pb_window.ta
-    
-            const pb_conv_res = new Pixel_Buffer({
-                size: pb_8bipp_patch.size,
-                bits_per_pixel: 8
-            })
-            const res_ta = pb_conv_res.ta;
-    
-            let byte_idx_write = 0;
-    
-    
-            // calc_from_8bipp_ta
-    
-            let pixel_conv_res = conv_s3_sharpen.calc_from_8bipp_ta(pb_window.ta);
-            console.log('pixel_conv_res', pixel_conv_res);
-            res_ta[byte_idx_write++] = pixel_conv_res;
-    
-    
-    
-            
-    
-    
-    
-    
-    
-            let has_pos;
-    
-            // function to process the convolution here?
-    
-            
-    
-    
-    
-            // moves to the next px in the source!!!
-            has_pos = !!pb_window.move_next_px();
-            // Seems likely that move_next_px or its usage here is the culprit.
-    
-    
-    
-            // a problem with move_next_px perhaps?
-            //  could be getting some kind of row skip value wrong.
-            //   maybe better (for the moment) to recalculate pixel index?
-    
-    
-    
-    
-    
-            //(() => {
-            while (has_pos !== false) {
-                //console.log('pb_window.pos', pb_window.pos);
-    
-                has_pos = !!pb_window.move_next_px();
-                pixel_conv_res = conv_s3_sharpen.calc_from_8bipp_ta(pb_window.ta);
-    
-                // Looks very wrong so far!
-    
-                //console.log('pixel_conv_res', pixel_conv_res);
-                res_ta[byte_idx_write++] = pixel_conv_res;
-    
-            }
-    
-            (async() => {
-                console.log('saving convolved 8bipp patch');
-                // Soon worth doing some experiments with C++.
-                //  Probably worth getting optimized convolutions working in JS first though.
-    
-                await fnlfs.ensure_directory_exists('./output/window_to/');
-    
-                await gfx.save_pixel_buffer('./output/window_to/convolve_sharpen-8bipp_patch.png', pb_conv_res, {
-                    format: 'png'
-                });
-    
-            })();
+
+        })();
 
 
-        }
 
 
 
         
 
-        // then save the 8bipp patch conv result....
 
-        //  soon (0.0.25? or leading up to it) will have result saving done externally from examples / automatically.
 
-        // example-testing module?
-
-        // etdd?
-
-        
 
 
         
 
-        //console.log('been through pos movements');
-        //})();
+        // byte_idx_source_pb_last_px
+        //  seems like it would make sense!
+        //   especially for overflow protection.
 
 
-        // And will save the convolved version.
-        //  Let's hope it's fast!
-        //   Then will look at optimizing different parts of it. See about profiling too.
+
+
+
+
+        // Then should be able to do different possible iterations based on the 
+
+
+        // Could also calculate the last read position?
+        //  Maybe it won't need that, would just use the y value.
+        //   But maybe it would be more efficient than y counting?
+        //    And we'd likely need pixel counting too?
+        //     Or comparison of the byte position with a known and precalculated and stored end of row position.
+        //      as a more temporary value / variable because it's only valid until the end of the row.
+
+
+
+
+
+        
+
+
+
+
+
+        // For copying / reading pixel by pixel
+        // For copying / reading row by row
+        //  Does not need the row_end_byte_jump
+
+
+
+
+
+        // Pure functions (apart from known writes), outside of the Pixel_Buffer class.
+        //  Used by Pixel_Buffer class.
+        // Will be more oriented / completely oriented on numbers and maths.
+        //  Maybe will allocate 0 variables at all...
+        // All iterators (iteration values) calculated / provided. 
+
+        // Benchmarks to see which techniques actually work.
+        //  Possibly, creation and use of arguments will work OK.
+        //   Can run tests for this.
+
+        // Tests for speed of different programming tecquniques...
+        //  Could have a function in the codebase selected from an array of functions with different techniques.
+        //  Could have system to choose the technique based on known perf criteria. Use in benchmarks too, for comparison.
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
 
 
 
@@ -572,7 +829,21 @@ const eg_byte_iteration_info = async() => {
 
 
     }
-    beginning_convolve_8bipp_patch();
+
+
+
+    
+    byte_iterate_8bipp_patch();
+    byte_iterate_24bipp_patch();
+
+
+    // Maybe make 'etdd' module.
+    //  Would dogfood itself.
+
+    // Give etdd the example functions, it handles running them, saving output, performing regression analysis on previous example runs.
+
+
+
 
 
 

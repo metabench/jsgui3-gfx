@@ -1,5 +1,15 @@
 
 // How done it is
+
+
+
+// Importance scale as well.
+//  Worth using this in the matrix.
+
+
+
+
+
 // Size of the task
 
 /*
@@ -159,7 +169,7 @@ const _roadmap = {
         
 
         ['window view into specific channel?'],
-        ['run convolution on 8bipp image?'],
+        ['run convolution on 8bipp image?', 'maybe', 'not yet'],
         ['Convolution Class', ],
         ['Bug fix move_next_px, need to use boundary ranges for proper movement of the window within a source', 4, [
 
@@ -270,6 +280,9 @@ const _roadmap = {
 
 
 
+    ],
+    '0.0.24': [
+        'Cursors'
     ]
 }
 
@@ -3195,6 +3208,17 @@ class Pixel_Buffer_Core {
     // Works quite quick... investigate optimizations further.
     copy_from_source() {
 
+        // Having this inline may well be best.
+        //  This does a row_copy algorithm.
+
+        // Worth trying and benchmarking a version that operates differently, using an external function that's based around the maths, takes tas as params.
+
+
+
+
+
+
+
         // Copy from a position within the source.
         //  a different type of bounds to the movement bounds of the window within the source.
 
@@ -3219,6 +3243,11 @@ class Pixel_Buffer_Core {
         //  Would help with inlining of simpler functions.
 
 
+        // Lets make an outline version of this...
+
+        // in ta-math.js
+
+
         const bipp = this.bipp;
 
         if (bipp === 1) {
@@ -3226,6 +3255,22 @@ class Pixel_Buffer_Core {
             throw 'NYI';
         } else if (bipp === 8 || bipp === 24 || bipp === 32) {
             const o_prep = this.copy_from_source_iteration_prep();
+
+            // Maybe its a syncronised 2 pb iteration, same size (width? ) as pb2.
+
+            // Worth working on more generalised copy function elsewhere?
+            //  And an example called copy_rect?
+            //   Copying rects between different tas.
+            //    Want the lower level functionality to be really fast here.
+            //    Easy to use higher level API too.
+
+            // pb.copy_rect_to(rect_bounds, pb_target);
+            // pb.copy_rect_from(rect_bounds, pb_source);
+
+
+
+
+
 
             //console.log('o_prep', o_prep);
 
@@ -3347,26 +3392,9 @@ class Pixel_Buffer_Core {
             }
 
             //console.log('ta.length', ta.length);
-
-
-
-
-            
-
-
-
         }
 
         // not quite sure why it's leaving blank space at the end of the dest ta.
-
-
-
-        
-
-
-
-
-
         // Local, source
         //  bipp, bypp
         //  tl pos, br pos
@@ -3374,13 +3402,6 @@ class Pixel_Buffer_Core {
         //   bytes_per_row
         //  tl byte pointer, br byte pointer
         //   tl byte pointer, tr byte pointer reads the 1st line.
-
-
-
-
-
-
-
 
     }
 
