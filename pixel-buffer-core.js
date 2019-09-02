@@ -2623,9 +2623,6 @@ class Pixel_Buffer_Core {
         // worth using mfp or similar?
 
 
-
-
-
     }
 
 
@@ -2636,6 +2633,10 @@ class Pixel_Buffer_Core {
     //  Possible 2 or 3 properties of each.
 
 
+
+    // May be better with parameters?
+    //  also, this would be useful within ta-math.
+    //   Operations would be fastest with direct ta access.
 
 
 
@@ -4732,6 +4733,8 @@ class Pixel_Buffer_Core {
 
     // bounds ltrb
     // pos and size?
+
+    // draw_rect? paint_rect?
 
     color_rect(bounds, color) {
         // ltrb

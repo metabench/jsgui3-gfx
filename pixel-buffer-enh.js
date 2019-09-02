@@ -1557,6 +1557,11 @@ class Pixel_Buffer_Enh extends Core {
     //  May be better to update with different version for different bipp.
 
     'flood_fill'(x, y, r, g, b, a) {
+
+
+        // TODO: Local let variables are quite performant, when they are numbers. Consider using them more. Would clarify code, may even improve perf.
+
+
         // stack of pixels to visit
         // map of pixels visited
         // Could optimize this with typed arrays

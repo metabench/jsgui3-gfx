@@ -203,7 +203,9 @@ Rapidly and efficiently doing convolutions will be very useful.
       Would also return the typed arrays, and explain their indexing
     Function that just returns the typed arrays.
   Have made a fast byte iteration and copy pb data function.
-    Will make more functions in the near future that apply to the pixel buffers' internal data.
+    Will make more functions in the near future that apply to the pixel buffers' internal data - done this in ta-math.js.
+
+
 
   Does seem like inlining various functions in various situations, not passing args to functions, gets the best speed.
   Variables both defined and accessed in the local block scope.
@@ -211,14 +213,50 @@ Rapidly and efficiently doing convolutions will be very useful.
 
 
 
+// Worth publishing now, pushing full convolution suppport to 0.0.24?
+//  Already have some API and math improvements.
+
+//  Getting a pixel (properly colored) based on float coords.
+//   
+
+
+0.0.? - Painting / drawing improvements.
+    Draw circle / antialiased circle
+    Antialiasing will again rely on improved coordinates space system.
+      Maybe virtual / float-based super-resolution.
+        Could do a multisample on each pixel? ie x8 multisample on each pixel covered / on the edge (partially covered)
+          Maybe 4 part multisample would be good enough.
+  read_subpixel(float ta)
+
+
+(heading towards)
+  Need to more properly do / support / optimize convolutions.
+    Maybe functional definition of conv values.
+
 0.0.23 final:
+  Convolutions on the patch images
+    Later, after resizing, will do more convolutions on these resized source images (eg view of Westminster Bridge, London)
+  
+  
+
+  (do work on resizing / virtual resolution pixels soon, before convolution???)
+    Seems like it would use a window of size 4, centered on a virtual point.
+      // 1x1 float precision windows centered on a pixel, or centered on an area which overlaps up to 4 pixels.
+      //  Could do some optimized things with these 4 pixel buffers.
+
+
+
+
   easy to use convolutions API.
   convolve.js example
     consider most optimized paths separately, seek to integrate but accept some API convenience performance lossless
       and later can optimize some fns using C++ on the server and test that.
 
   more flexible, (faster) copy between pbs
-  standard typed arrays for parameters, with restricted number of tas being passed to the functions.
+    ta_math.unaligned_copy_rect_8to32bipp
+    ta_math other useful lower level functions to support a powerful platform above it.
+
+  standard typed arrays for parameters, with restricted number of tas being passed to the functions. Some functions work fast being passed tas.
     try a single function object too, containing all the tas? is that faster?
   larger convolutions, benchmarks.
   multiple convolutions done (different params?) on larger single input image.
@@ -292,6 +330,12 @@ All get and set operations are done by coordinates, and it then remaps to the co
     /module_ver/node_ver/datetime_test_run/test_name
 
   Saving test / example results for comparison / regression testing will be a great help.
+
+  Benchmark:
+    iteration with local JS number variables vs using values in a typed array.
+    similar with length property... quicker not to have to look it up with a (numeric) index?
+
+
 
 0.0.26 ???
   1bipp convolutions / image processing

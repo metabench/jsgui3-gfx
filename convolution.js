@@ -54,6 +54,9 @@
 
 const lang = require('lang-mini');
 
+
+
+
 const {
     each,
     fp,
@@ -81,19 +84,11 @@ class Convolution {
             size[1] = spec.size[1];
         }
 
-
         // size property...
 
         ro(this, 'size', () => size);
         ro(this, 'num_px', () => size[0] * size[1]);
-
-        
-
-
-
-
     }
-
 }
 
 
@@ -102,14 +97,11 @@ class Convolution {
 class Float32Convolution extends Convolution {
     constructor(spec) {
         super(spec);
-
         const ta = new Float32Array(this.num_px);
-
         if (spec.value) {
             const tv = tf(spec.value);
             //console.log('tv', tv);
-
-            if (tv === 'a') {
+            if (tv === 'a' || spec.value instanceof Float32Array) {
                 if (spec.value.length === this.num_px) {
                     ta.set(spec.value);
                 } else {
@@ -214,6 +206,86 @@ class Float32Convolution extends Convolution {
 
     // unsafe versions of functions too?
     //  or more versions with different bounds safety checking options.?
+
+    // From 24 bipp - would provide 3 channels of results.
+
+    //  Maybe a function for single channel conv, multi_bypp (3 or 4 presumably)
+
+    // calc_single_channel_from_24bipp_ta(ta_24bipp, i_channel)
+    //  a different loop.
+
+    // a multi-channel conv would work faster though.
+    //  gets the split channels faster???
+
+    // Seems like some lower level functions for splitting channels etc, dealing with the ta maths, would be very useful.
+
+    // direct convolution of 3 channels on the 3 channel array?
+    //  lets get this done - but it makes it harder to write.
+
+
+    calc_from_24bipp_ta(ta_24bipp, ta_res_color = new Uint8ClampedArray(3)) {
+        // maybe 3 loops to do it separately makes the most sense logically.
+
+        // in terms of locality and reading through it, sequential and syncronised is best.
+
+        // so will have 3 accumulators.
+
+        const ta = this.ta;
+
+        //const accumulator = new Float32Array(3);
+
+        let acc_r = 0, acc_g = 0, acc_b = 0;
+
+        // Recycle an accumularoe?
+        //  Reference outside variable?
+        //   Wouldnt work multithreaded that way... that may be fine.
+
+
+
+        // a float accumulator instead?
+        //  more precise? better?
+
+        if (ta_24bipp.length === ta.length * 3) {
+            //let accumulator = 0;
+            const l = ta.length;
+
+            // use 3 accumulators...
+
+            let byi_read = 0;
+            //  Seems simple enough here :)
+            for (let c = 0; c < l; c++) {
+                //accumulator[0] += (ta[c] * ta_24bipp[byi_read++]);
+                //accumulator[1] += (ta[c] * ta_24bipp[byi_read++]);
+                //accumulator[2] += (ta[c] * ta_24bipp[byi_read++]);
+
+                acc_r += (ta[c] * ta_24bipp[byi_read++]);
+                acc_g += (ta[c] * ta_24bipp[byi_read++]);
+                acc_b += (ta[c] * ta_24bipp[byi_read++]);
+            }
+            //console.log('accumulator', accumulator);
+
+            ta_res_color[0] = acc_r;
+            ta_res_color[1] = acc_g;
+            ta_res_color[2] = acc_b;
+
+            // And clamp the result to between 0 and 255?
+
+            // Math.max(min, Math.min(max, val))
+
+            // Maybe no divide by l?
+            //let res = Math.max(0, Math.min(255, accumulator));
+            //let res = Math.max(0, Math.min(255, Math.round(accumulator / l)));
+            //console.log('res', res);
+            //return res;
+            //return Math.round(accumulator / l);
+            return ta_res_color;
+        } else {
+            throw 'calc_from_24bipp_ta be the conv ta length * 3. [ta_24bipp.length, ta.length] ' + JSON.stringify([ta_24bipp.length, ta.length]);
+        }
+    }
+
+
+
 
     calc_from_8bipp_ta(ta_8bipp) {
         // 
