@@ -73,10 +73,7 @@ const {ro, prop} = oext;
 
 // Size is read only, set at the beginning.
 class Convolution {
-
-
     constructor(spec) {
-
         const size = new Uint16Array(2);
 
         if (spec.size) {
@@ -88,8 +85,31 @@ class Convolution {
 
         ro(this, 'size', () => size);
         ro(this, 'num_px', () => size[0] * size[1]);
+
+        const xy_center = new Int16Array(2);
+
+        ro(this, 'xy_center', () => {
+            xy_center[0] = Math.floor(size[0] / 2);
+            xy_center[1] = Math.floor(size[1] / 2);
+            return xy_center;
+        })
     }
 }
+
+
+// May be worth using this ta in some lower level mathematical convolve operations...
+//  Maybe avoid needing this pb moving pixel window too.
+
+// Could see about speeding up the copying during the movement of the pb.
+
+
+// pb.get_convoled / pb.new_convolved makes sense.
+//  new_convolved is nice and clear that it creates a new pb as the result.
+
+
+
+
+
 
 
 // BooleanArray type? Bool1Array? May be worth making this.

@@ -307,8 +307,6 @@ All get and set operations are done by coordinates, and it then remaps to the co
 
 0.0.24? Improved convolutions?
 
-
-
 0.0.24 - Cursors??? No
   Further convolution examples / benchmarks...?
     (will also do some work on the server-side version)
@@ -320,6 +318,54 @@ All get and set operations are done by coordinates, and it then remaps to the co
 0.0.24 - Pixel remapping
   Used in part for convolutions
   May be worth making copy functions with explicit pixel remapping.
+  Will be useful for resizing input for better testing of convolutions.
+  Deal with a range of different image sizes.
+  Reading from a floating-point space that covers 1 pixel size - but specified with float coords.
+    The core of pixel remapping can be really simple.
+
+  Iteration through 2 coord spaces at once - but reading pixels as defined by floating point locations
+    Could do by the center of the pixel.
+    Maybe worth writing server-side code to speed up convolutions (through speeding up the copying algorithm)
+      Copy is pretty fast in JS already. Helps convolutions to work quickly.
+
+  fp-px-remap js file?
+    dealing with weighted proportions when looking at 4 pixels at once.
+      each pixel in the enlarged image can be made out of different weightings of 4 pixels from the original space at once.
+      extract the 4 pixels...
+        optimized method for reading these 4 pixels.
+
+  fast and accurate resizing of images seems important.
+    will involve various different calculations of coordinate spaces.
+     read_fpx(fxy)
+       give the poisition of the pixel to read with floating points.
+         after resizing, would be nice to do further work on resized images.
+           possibly integrate image resizing into the cms.
+    again, once this is made in JS, it can be optimized in C++.
+      see about compiling C++ to WASM too.
+        so the non-server version can make use of WASM acceleration.
+
+  external maths module to start with?
+  ta_read_4px_rect(pos, opt ta_res)
+
+
+    
+
+          
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
 
 
 

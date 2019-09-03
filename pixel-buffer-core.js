@@ -76,6 +76,12 @@ const _roadmap = {
             In this case, can't assume all positions are relative to the self pb, so need to be extra explicit in the variable names regarding what they relate to.
 
 
+        // Float cursors as well?
+        //  Prob not in this release.
+
+
+        // xy_cursor, xy_within_source?
+        //  
 
         Consider other pos type variables. Explicit names for what they do.
             pos_iteration_within_self
@@ -93,7 +99,8 @@ const _roadmap = {
             Maybe don't need to deal with centering as directly right now?
                 Seems useful for convolutions, centering the window of the px is a core part of the convolution logic. Worth having the platform support it as easily as possible.
 
-            
+        
+
 
         new_window
             implemented
@@ -114,6 +121,8 @@ const _roadmap = {
 
 
             get_conv_window?
+
+        new_convolved(convolution) - using this.
 
 
 
@@ -360,6 +369,13 @@ const {
 
 const Pixel_Pos_List = require('./pixel-pos-list');
 
+const oext = require('obext')();
+
+const {ro, prop} = oext;
+
+const ta_math = require('./ta-math');
+
+const {copy_rect_to_same_size_8bipp, copy_rect_to_same_size_24bipp, dest_aligned_copy_rect_1to4bypp} = ta_math;
 
 
 // All operations will be in place.
@@ -393,9 +409,7 @@ const Pixel_Pos_List = require('./pixel-pos-list');
 
 //const oext = require('obext')();
 
-const oext = require('obext')();
 
-const {ro, prop} = oext;
 //console.log('oext', oext);
 //throw 'stop';
 
@@ -1408,235 +1422,7 @@ class Pixel_Buffer_Core {
         //  No translations yet - need to successfully deal with out-of-bounds copy attempts (not copy those pixels)
 
         // Just correctly set the bounds postions for iterations of this within a source window.
-
-
-        const old_def_pos_central_and_associated = () => {
-            const pos_central_px = new Int16Array(2);
-
-            //  Use the size and pos to calculate this.
-
-
-            // Better not to calculate it each time....
-
-            const def_pos_center = {
-                // Using shorthand method names (ES2015 feature).
-                // This is equivalent to:
-                // get: function() { return bValue; },
-                // set: function(newValue) { bValue = newValue; },
-
-
-                // Refer to pos_center_within_this...
-                //  
-
-                get() {
-
-
-                    // setup the window_movement_bounds?
-
-                    console.log('get pb.pos_center');
-
-
-                    pos_central_px[0] = Math.ceil((size[0] - 1) / 2) + this.pos[0];
-                    pos_central_px[1] = Math.ceil((size[1] - 1) / 2) + this.pos[1];
-
-                    // need to work out the w / 2...
-
-                    console.log('pre return pos_central_px');
-
-
-                    return pos_central_px;
-                    // Get the value based on the pos as well as the size.
-                    //  Half the size, rounded down?
-                    //   (w - 1) / 2?
-
-                    // use a typed array that represents the value.
-
-                    // A single const typed array would make sense.
-
-
-
-
-                    // Having and returning a local typed array would make a lot of sense.
-                    //  
-
-                    console.log('getting pos_my_center_within_source');
-                    console.log('pos', pos);
-
-                    console.trace();
-                    throw 'stop';
-                    //return size;
-                },
-                /*
-                set(value) {
-
-                    
-                },*/
-                enumerable: true,
-                configurable: false
-            }
-
-
-
-            // pos_central_px may be a better, more specific name.
-
-
-
-            Object.defineProperty(this, 'pos_central_px', def_pos_center);
-            Object.defineProperty(this, 'pos_center', def_pos_center);
-
-
-            // Will imply what the acceptable range outside of the source is?
-            //  Make that explicit?
-
-
-            // Not so sure this is the right API...?
-
-            // Maybe have a self_to_source_offset?
-            // source_to_self_offset?
-
-            // offset_self_to_source.
-
-
-
-
-            // Seems like a bit of a dodgy api...?
-
-
-            //  offsets / translates between source and window.
-            //   
-
-
-
-            Object.defineProperty(this, 'pos_my_center_within_source', {
-                // Using shorthand method names (ES2015 feature).
-                // This is equivalent to:
-                // get: function() { return bValue; },
-                // set: function(newValue) { bValue = newValue; },
-
-
-                // Refer to pos_center_within_this...
-                //  
-
-
-
-                get() {
-                    // Get the value based on the pos as well as the size.
-                    //  Half the size, rounded down?
-                    //   (w - 1) / 2?
-
-
-                    // Having and returning a local typed array would make a lot of sense.
-
-                    //  
-
-                    //console.log('getting pos_my_center_within_source');
-
-                    //console.log('pos', pos);
-
-                    // need to use pos_central_px
-
-
-
-
-
-
-                    //console.trace();
-                    //throw 'stop';
-
-                    return pos;
-
-
-
-                    //return size; 
-                },
-                set(value) {
-
-
-                    // Maybe need more clarity about coordinate space mapping.
-                    //  Coords / pixels will need to be mapped to and from a variety of coordinate spaces.
-
-                    
-
-
-
-                    console.log('seting pos_my_center_within_source', value);
-                    // The pos_center value represents the central position in this image and it possibly corresponding with another position
-                    //  in another coordinate space.
-
-                    // More explicit definition of the acceptable pos range of a window within its source.
-
-
-
-                    //console.trace();
-                    //throw 'stop';
-
-                    // Were we given a Int16Array? Similar?
-                    //  set own pos ta values from the value.
-                    if (value instanceof Int16Array) {
-                        if (value.length === 2) {
-
-                            //console.log('set pos_center going ok...');
-                            // need pos_central_px
-                            //  position within this.
-                            //   then reverse that to get our pos offset....
-
-                            // set the pos....
-                            //  update the pos?
-
-                            // A typed array that listens to its own changes???
-
-                            const cpx = this.pos_central_px;
-                            //console.log('cpx', cpx);
-
-                            // fastest way to set / update own pos???
-                            //  could directly set the ta....
-
-                            pos[0] = -1 * cpx[0] + value[0];
-                            pos[1] = -1 * cpx[1] + value[1];
-                            
-
-
-
-
-
-                            // set a local variable....
-                            //  
-
-
-                            // Work out the pos of the central pixel within this coordinate space...
-
-                            // pos_center represents the central positon within another coordinate space... clarify naming?
-
-                            // pos_central_pixel_in_this...
-                            //  maybe should be a ta to store its value as well?
-                            //  
-
-
-
-
-                            //size[0] = value[0];
-                            //size[1] = value[1];
-
-                            // don't change the pos.
-                        }
-                    } else {
-                        console.trace();
-                        throw 'pos_my_center_within_source unsupported value type';
-                    }
-
-
-                    //pos = value; 
-                },
-                enumerable: true,
-                configurable: false
-            });
-
-
-
-
-
-
-        }
+        
         
 
 
@@ -2214,6 +2000,11 @@ class Pixel_Buffer_Core {
 
         this.each_pos_within_bounds = (callback) => {
 
+            // maybe xy iterators would be ok?
+            //  maybe consider after 0.0.23.
+
+
+
             //console.log('each_pos_within_bounds');
             // Still within the constructor (extra speed?)
             //  will use the pos_bounds here too.
@@ -2357,6 +2148,114 @@ class Pixel_Buffer_Core {
             return this.size[0] * this.bytes_per_pixel;
         });
         */
+    }
+
+    // xy_center_px property? read only. different to .pos which is for pos within other space / object.
+    //  may be worth making pb.xy_center_px
+    //   xy being a better abbreviation for the data structure and what it is. 2 characters long as well.
+
+
+    new_convolved(convolution) {
+        // same size, same bpp.
+        //  blank copy.
+
+        const res = new this.constructor({
+            size: this.size,
+            bits_per_pixel: this.bits_per_pixel
+        });
+
+        // find the center_pos within the convolution.
+        //  pos_center? coords_center? xy_center?
+
+        // pos_of_the_center vs pos_of_the_center_of_this_within_source
+
+        const xy_conv_center = convolution.xy_center;
+
+        //console.log('xy_conv_center', xy_conv_center);
+
+        // conve odge offsets from center...
+
+        // edge_distances_from_center_px_edge
+        //  
+
+
+        const edge_distances_from_center_px_edge = new Int16Array(4);
+        edge_distances_from_center_px_edge[0] = xy_conv_center[0] * -1;
+        edge_distances_from_center_px_edge[1] = xy_conv_center[1] * -1;
+        edge_distances_from_center_px_edge[2] = edge_distances_from_center_px_edge[0] + convolution.size[0] - 1;
+        edge_distances_from_center_px_edge[3] = edge_distances_from_center_px_edge[1] + convolution.size[1] - 1;
+
+        //console.log('edge_distances_from_center_px_edge', edge_distances_from_center_px_edge);
+
+
+
+        // work out the initial pos?
+
+        // bounds offsets of various sorts?
+        //  seems important with different convolution sizes.
+
+        //console.log('convolution.size', convolution.size);
+
+        //console.trace();
+        //throw 'stop';
+
+
+
+
+            
+        const pb_window = this.new_window({
+            size: convolution.size,
+            pos_bounds: [edge_distances_from_center_px_edge[0], edge_distances_from_center_px_edge[1], this.size[0] - edge_distances_from_center_px_edge[2], this.size[1] - edge_distances_from_center_px_edge[3]],
+            pos: [edge_distances_from_center_px_edge[0], edge_distances_from_center_px_edge[1]]
+        });
+
+        // Write the iteration code here?
+        //  already have copy_from_source
+        //  will have copy made when the window is created.
+
+        const pos_window = pb_window.pos;
+        const ta_window = pb_window.ta;
+
+        /*
+
+        const pb_conv_res = new Pixel_Buffer({
+            size: pb_8bipp_patch.size,
+            bits_per_pixel: 24
+        });
+        */
+
+        let i_write = 0;
+        const ta_conv_res = res.ta;
+        //performance.mark('I');
+
+        // and a temp color? a const color we get within that function?
+
+        //  could do ta_conv_res.set with the px value.
+        //   may be faster than the assignment statements?
+
+        // Maybe it doesnt work on already very bold images.
+        //  Seems no different from the source.
+        //   Unlike the greyscale, there is no further margin for color intensity.
+        //    (image is at full sharpness, all differences are of 255!!!)
+        //     could be a 3 bit image :)
+
+        // May be better to blur this color example patch. It works :).
+
+
+        // Could possibly speed up the pb copy.
+        //  See about doing that in C++. It's low level and could be used in many places. Gets used very often by convolutions.
+
+
+
+
+        pb_window.each_pos_within_bounds(() => {
+            //ta_conv_res[i_write++] = conv_s3_sharpen.calc_from_24bipp_ta(ta_window);
+            const rgb = convolution.calc_from_24bipp_ta(ta_window);
+            ta_conv_res[i_write++] = rgb[0];
+            ta_conv_res[i_write++] = rgb[1];
+            ta_conv_res[i_write++] = rgb[2];
+        });
+        return res;
     }
 
     new_window(options) {
@@ -2817,6 +2716,8 @@ class Pixel_Buffer_Core {
 
         // possibly setting up .window_to will create more values that are useful for this type of copying.
 
+        
+
 
 
         // bounds adjustment values too.
@@ -2974,7 +2875,31 @@ class Pixel_Buffer_Core {
 
 
     // ** reconsider function / rethink api.
+    //  won't need such complexity...
+    //   will use simpler (and more performant?) function in ta_math.
+    //    will be C++ accelerated before very long too.
+
+
+
+
+
     copy_from_source_iteration_prep() {
+
+
+        // ta_math overlap calculation functions would make more sense too.
+        //  give them the params rather than the pbs themselves. more versitile.
+
+
+        // bounds_source, bounds_target
+
+
+
+
+        // ta_math.overlapping_bounds()
+
+
+
+
 
         const valid_bounds_overlap = this.calc_source_target_valid_bounds_overlap();
         //console.log('valid_bounds_overlap', valid_bounds_overlap); // source coords system.
@@ -3209,15 +3134,123 @@ class Pixel_Buffer_Core {
     // Works quite quick... investigate optimizations further.
     copy_from_source() {
 
+        // It's faster now that it uses the dest aligned copy from ta_math.
+
+        const bipp = this.bipp;
         // Having this inline may well be best.
         //  This does a row_copy algorithm.
 
         // Worth trying and benchmarking a version that operates differently, using an external function that's based around the maths, takes tas as params.
+        const pb_source = this.source;
+        const ta_source = pb_source.ta;
+        const ta = this.ta;
+
+        // use a scratch ta for the bounds of the copy within the source.
+        //  attempted source bounds!
+        //const ta_source_bounds = this.ta_bounds_scratch;
+
+        //console.log('ta_source_bounds', ta_source_bounds);
+
+        //console.log('this.bounds_within_source', this.bounds_within_source);
+
+
+        const my_bounds = this.bounds_within_source;
+        const source_size_bounds = pb_source.size_bounds;
+        // size bounds = edges?
+
+        // Coord_Space_2D class?
+        //  for handling verious operations concerning coord and pixel remapping?
+
+        
+
+
+
+        //const bounds_overlap = ta_math.overlapping_bounds(my_bounds, source_size_bounds);
+        //console.log('bounds_overlap', bounds_overlap);
+
+        // then almost ready to do the lower level copy....
 
 
 
 
+        /*
+            const my_bounds = this.bounds_within_source;
+        // see to what extent these bounds are allowed within the source.
+        //  Possibly calc these things when a variety of properties are set.
+        //   Need manual property updates in some cases / manually running functions that use updated properties (or typed array items).
 
+        const source_size_bounds = source.size_bounds;
+        */
+
+
+        // that's the pos within the source. need to use own kind of self -> source offset property.
+
+
+        //console.log('this.pos', this.pos);
+
+        //ta_source_bounds[0] = this.pos[0];
+
+        //throw 'stop';
+
+
+
+
+        //const xy = source.ta_pos_iterator;
+
+        if (bipp === 1) {
+            console.trace();
+            throw 'NYI';
+        } else if (bipp === 8 || bipp === 24 || bipp === 32) {
+            //  position of the rect to copy?
+            //   xy iterator?
+
+            // the bounds within the source to copy from...
+            //  
+
+            // copy_rect_to_same_size_dest_bipp()???
+            //  also need to calculate the read row end jump.
+            //   maybe rewrite that or a different function would be better?
+            //   using xy local vars should probably be fine.
+
+            // and needing to know / use the byte indexes...
+            //  maybe would work out to be faster!
+
+            // a version with simpler parameter requirements seems like it would be a lot better from this perspective.
+            //  possibly loop iteration variables would wind up highly optimized by V8 etc.
+
+
+            // calc_row_end_jump(bytes_per_row, bytes_per_bounds_row)
+            //  simple enough subtraction to get that jump number.
+
+            // Also, const numbers may wind up better optimized than typed arrays???
+            //  ta_byte_indexes is unclear.
+
+            // Lets make some very clearly named - including param names - functions.
+
+            // use bounds_overlap as the bounds for the copy.
+
+            // const dest_aligned_copy_rect_1to4bypp = (ta_source, ta_dest, bypr_source, bytes_per_pixel, ta_source_bounds) => {
+            //  does some precalculation within the function itself.
+
+            // Need to calculate the bounds within the source to copy from.
+            //  own .pos_bounds property?
+            //   combination of own pos and size....
+            //   does pb have it or a similar property?
+
+            dest_aligned_copy_rect_1to4bypp(ta_source, ta, pb_source.bytes_per_row, this.bytes_per_pixel, ta_math.overlapping_bounds(my_bounds, source_size_bounds));
+            //copy_rect_to_same_size_8bipp(xy, bounds, ta, ta_res, ta_byte_indexes, bytes_read_row_end_jump)
+
+            // (xy, bounds, ta, ta_res, ta_byte_indexes, bytes_read_row_end_jump)
+
+
+        } /* else if (bipp === 24) {
+            dest_aligned_copy_rect_1to4bypp(ta_source, ta, pb_source.bytes_per_row, this.bytes_per_pixel, bounds_overlap);
+        } else if (bipp === 32) {
+            dest_aligned_copy_rect_1to4bypp(ta_source, ta, pb_source.bytes_per_row, this.bytes_per_pixel, bounds_overlap);
+        } */ else {
+            console.trace();
+            throw 'stop';
+        }
 
 
         // Copy from a position within the source.
@@ -3249,151 +3282,165 @@ class Pixel_Buffer_Core {
         // in ta-math.js
 
 
-        const bipp = this.bipp;
+        //const bipp = this.bipp;
 
-        if (bipp === 1) {
-            console.trace();
-            throw 'NYI';
-        } else if (bipp === 8 || bipp === 24 || bipp === 32) {
-            const o_prep = this.copy_from_source_iteration_prep();
+        // This version is indeed slower.
+        //  Uses a faster byte-index based copying. Also requires fewer tas given to it as params.
+        const old = () => {
 
-            // Maybe its a syncronised 2 pb iteration, same size (width? ) as pb2.
-
-            // Worth working on more generalised copy function elsewhere?
-            //  And an example called copy_rect?
-            //   Copying rects between different tas.
-            //    Want the lower level functionality to be really fast here.
-            //    Easy to use higher level API too.
-
-            // pb.copy_rect_to(rect_bounds, pb_target);
-            // pb.copy_rect_from(rect_bounds, pb_source);
-
-
-
-
-
-
-            //console.log('o_prep', o_prep);
-
-            const {ta_bounds_size, ta_info_source, ta_info_self} = o_prep;
-
-            // then lets do the iteration...
-
-            const xy = this.source.ta_pos_iterator;
-
-            const ta_source = this.source.ta;
-            const ta = this.ta;
-
-            // just iterate through the y dimension.
-            //  set up / use pointer refs for the byte indexes to read / copy from and to.
-
-            // maybe worth using ta.set(source.subset(a, b))
-            //  would get the lengths right.
-
-            // first row number..
-
-            // do source -> target xy conversion.
-            //  don't yet have the source -> target byte / bit index conversions.
-
-            
-            // vars for the current byte offsets?
-
-            //  use ta_info_source / self item 7?
-            //   would make sense, but maybe best to use local variables in some cases....
-
-
-            // source, self bypr
-
-            const bypr = this.bypr;
-            const source_bypr = this.source.bypr;
-
-
-            let i_byte_read = ta_info_source[2] + ta_info_source[3];
-
-            // and the read length as well....
-
-            // read length is the row length in bytes.
-
-            // write to position 
-
-            //  need to move the write position on??? on by the beginning of the write bounds (byte offset???)
-            //   looks about right....
-            let i_byte_write = ta_info_self[2] + ta_info_self[3];
-
-            //console.log('i_byte_read', i_byte_read);
-            //console.log('i_byte_write', i_byte_write);
-
-
-
-
-
-            // .ta_read_idxs
-            // .ta_write_idxs
-
-            // The indexes by which we read and write the data to copy.
-
-            const bytes_per_copy_row = ta_info_source[0];
-            //console.log('bytes_per_copy_row', bytes_per_copy_row);
-
-
-
-
-
-
-            // not so sure that the pointers are properly prepared and iterated...
-            //  
-
-            // The copy_row_then_skip algorithm.
-
-
-
-
-            for (xy[1] = 0; xy[1] < ta_bounds_size[1]; xy[1]++) {
-
-                // the source row.
+            if (bipp === 1) {
+                console.trace();
+                throw 'NYI';
+            } else if (bipp === 8 || bipp === 24 || bipp === 32) {
+    
+                // May be best to use a lower level maths function to do the actual copying.
+                //  They may get accelerated sooner too.
+                //   Accelerating those functions would speed up everything on top of it.
+    
+    
+    
+                // Does use a decent skip method anyway....
+    
+                //  dest is the same size as the bounds.
+                //  const copy_rect_8bipp = (xy, bounds, ta, ta_res, ta_byte_indexes, bytes_read_row_end_jump) => {
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+                const o_prep = this.copy_from_source_iteration_prep();
+    
+                // Maybe its a syncronised 2 pb iteration, same size (width? ) as pb2.
+    
+                // Worth working on more generalised copy function elsewhere?
+                //  And an example called copy_rect?
+                //   Copying rects between different tas.
+                //    Want the lower level functionality to be really fast here.
+                //    Easy to use higher level API too.
+    
+                // pb.copy_rect_to(rect_bounds, pb_target);
+                // pb.copy_rect_from(rect_bounds, pb_source);
+    
+    
+    
+    
+    
+    
+                //console.log('o_prep', o_prep);
+    
+                const {ta_bounds_size, ta_info_source, ta_info_self} = o_prep;
+    
+                // then lets do the iteration...
+    
+                const xy = this.source.ta_pos_iterator;
+    
+                const ta_source = this.source.ta;
+                const ta = this.ta;
+    
+                // just iterate through the y dimension.
+                //  set up / use pointer refs for the byte indexes to read / copy from and to.
+    
+                // maybe worth using ta.set(source.subset(a, b))
+                //  would get the lengths right.
+    
+                // first row number..
+    
+                // do source -> target xy conversion.
+                //  don't yet have the source -> target byte / bit index conversions.
+    
+                
+                // vars for the current byte offsets?
+    
+                //  use ta_info_source / self item 7?
+                //   would make sense, but maybe best to use local variables in some cases....
+    
+    
+                // source, self bypr
+    
+                const bypr = this.bypr;
+                const source_bypr = this.source.bypr;
+    
+    
+                let i_byte_read = ta_info_source[2] + ta_info_source[3];
+    
+                // and the read length as well....
+    
+                // read length is the row length in bytes.
+    
+                // write to position 
+    
+                //  need to move the write position on??? on by the beginning of the write bounds (byte offset???)
+                //   looks about right....
+                let i_byte_write = ta_info_self[2] + ta_info_self[3];
+    
+                //console.log('i_byte_read', i_byte_read);
+                //console.log('i_byte_write', i_byte_write);
+    
+                // .ta_read_idxs
+                // .ta_write_idxs
+    
+                // The indexes by which we read and write the data to copy.
+    
+                const bytes_per_copy_row = ta_info_source[0];
+                //console.log('bytes_per_copy_row', bytes_per_copy_row);
+    
+                // not so sure that the pointers are properly prepared and iterated...
                 //  
-                //console.log('xy[1]', xy[1]);
-
-
-                // lets get the subarray....
-                //  based on the read positions...
-                //const sa = ta_source.subarray(i_byte_read, i_byte_read + bytes_per_copy_row);
-                //ta.set(sa, i_byte_write);
-
-                ta.set(ta_source.subarray(i_byte_read, i_byte_read + bytes_per_copy_row), i_byte_write);
-                // reading looks like it's working OK...
-
-                //console.log('sa', sa);
-                //console.log('sa.length', sa.length);
-                
-                // then write it to the local ta....
-                
-
-
-
-
-                // advance i_byte_read and i_byte_write
-
-                // just advance by a whole row.
-                //  simple.
-
-                i_byte_read += source_bypr;
-                i_byte_write += bypr;
-
-                //console.log('* ta', ta);
-
-
-
-
-                //i_byte_read += ta_info_source[6] + bytes_per_copy_row;
-                // write byte next row offset needs to be fixed.
-                //  not quite sure why its being done incoorectly.
-
-                //i_byte_write += ta_info_self[6] + bytes_per_copy_row;
+    
+                // The copy_row_then_skip algorithm.
+                for (xy[1] = 0; xy[1] < ta_bounds_size[1]; xy[1]++) {
+    
+                    // the source row.
+                    //  
+                    //console.log('xy[1]', xy[1]);
+    
+    
+                    // lets get the subarray....
+                    //  based on the read positions...
+                    //const sa = ta_source.subarray(i_byte_read, i_byte_read + bytes_per_copy_row);
+                    //ta.set(sa, i_byte_write);
+    
+                    ta.set(ta_source.subarray(i_byte_read, i_byte_read + bytes_per_copy_row), i_byte_write);
+                    // reading looks like it's working OK...
+    
+                    //console.log('sa', sa);
+                    //console.log('sa.length', sa.length);
+                    
+                    // then write it to the local ta....
+                    
+    
+    
+    
+    
+                    // advance i_byte_read and i_byte_write
+    
+                    // just advance by a whole row.
+                    //  simple.
+    
+                    i_byte_read += source_bypr;
+                    i_byte_write += bypr;
+    
+                    //console.log('* ta', ta);
+    
+                    //i_byte_read += ta_info_source[6] + bytes_per_copy_row;
+                    // write byte next row offset needs to be fixed.
+                    //  not quite sure why its being done incoorectly.
+    
+                    //i_byte_write += ta_info_self[6] + bytes_per_copy_row;
+                }
+                //console.log('ta.length', ta.length);
             }
 
-            //console.log('ta.length', ta.length);
         }
+
+
+
+        
 
         // not quite sure why it's leaving blank space at the end of the dest ta.
         // Local, source

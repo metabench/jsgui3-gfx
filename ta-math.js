@@ -1,6 +1,12 @@
 // So far it appears to be faster to have the local variables and the iteration of them all inline.
 
 
+// This could also be a place for maths concerning floating-point-based sub-pixel mapping.
+//  Maybe will have algorithms that process many of these in sequence.
+
+
+
+
 // Could give all params as single ta? But that's trickier to code.
 
 
@@ -23,6 +29,76 @@
 // different ta_op_info for:
 //  2 bounds of same size
 //  Whether or not there are different bipps in the different ta spaces.
+
+
+// Yes, need to work a bit more on bounds overlap maths.
+
+const roadmap = {
+    '0.0.23': ['Calculation of bounds overlaps for better / more optimized convolutions',
+        'Further integrate this into the ta_math system? More and more will go into ta_math when the logic gets abstracted away from the pbs more towards maths.',
+        'Could even have ta_math apply convolutions with params given from the existing OO classes.'
+    ]
+}
+
+
+
+
+
+// calculate intersecting bounds on 2 given bounds (given as tas)
+
+const overlapping_bounds = (bounds_1, bounds_2, res_bounds = new Int16Array(4)) => {
+    // the area of intersection between both bounds.
+
+    //console.log('overlapping_bounds', overlapping_bounds);
+    //console.log('bounds_1', bounds_1);
+    //console.log('bounds_2', bounds_2);
+
+    //console.trace();
+
+
+    // Ensure the result is within the bounds of another...
+    //  Need to find the range at which they overlap, if any.
+
+    // A bit more than just ajusting one so it fits within the other?
+    //  Maybe not? Could be based on that. Then check that it's not negative?
+
+    // If bounds 1 were to fit within bounds 2, what would those new bounds be?
+
+    // the max value of the lower bounds (x and y)
+    // the min value of the higher bounds (x and y)
+
+    //  see if it's positive
+    //   otherwise return undefined? false?
+    //   false could work well.
+
+
+
+    // math.max and min? which would be faster?
+
+
+
+    res_bounds[0] = bounds_1[0] < bounds_2[0] ? bounds_2[0] : bounds_1[0];
+    res_bounds[1] = bounds_1[1] < bounds_2[1] ? bounds_2[1] : bounds_1[1];
+    res_bounds[2] = bounds_1[2] > bounds_2[2] ? bounds_2[2] : bounds_1[2];
+    res_bounds[3] = bounds_1[3] > bounds_2[3] ? bounds_2[3] : bounds_1[3];
+
+
+
+
+
+    //throw 'stop';
+
+
+
+
+    return res_bounds;
+}
+
+
+
+
+
+
 
 
 
@@ -69,6 +145,11 @@
 
 // Maybe make / make standard an Int32Array(16) or so
 //  Could contain other info...
+
+
+// Not using this kind of system for the moment. Going with variable names.
+//  Will help porting too.
+
 
 const idx_ta_vars = {
     0: ['xy', 0],
@@ -177,18 +258,20 @@ const copy_ta_byte_range = (ta_source, ta_dest, byte_idx_source_start, byte_idx_
 //  Different mathematical operations needed for different image operations specifics.
 
 
-
-
-
-
-
-
 // Should rename this to be more specific about it writing into the full ta space.
 //  dest is the same size as the bounds.
-const copy_rect_8bipp = (xy, bounds, ta, ta_res, ta_byte_indexes, bytes_read_row_end_jump) => {
+
+// copy to same bounds size.
+
+const copy_rect_to_same_size_8bipp = (xy, bounds, ta, ta_res, ta_byte_indexes, bytes_read_row_end_jump) => {
         // bytes_read_row_end_jump : ta_op_further_info[0]
     //const bytes_read_row_end_jump = ta_op_further_info[0];
     // Safety checking to begin with?
+
+    // May as well use local variables for loop...
+    
+
+
     for (xy[1] = bounds[1]; xy[1] < bounds[3]; xy[1]++) {
         for (xy[0] = bounds[0]; xy[0] < bounds[2]; xy[0]++) {
             ta_res[ta_byte_indexes[1]++] = ta[ta_byte_indexes[0]++];
@@ -199,7 +282,7 @@ const copy_rect_8bipp = (xy, bounds, ta, ta_res, ta_byte_indexes, bytes_read_row
 }
 
 
-const copy_rect_24bipp = (xy, bounds, ta, ta_res, ta_byte_indexes, bytes_read_row_end_jump) => {
+const copy_rect_to_same_size_24bipp = (xy, bounds, ta, ta_res, ta_byte_indexes, bytes_read_row_end_jump) => {
     
     // Safety checking to begin with?
     for (xy[1] = bounds[1]; xy[1] < bounds[3]; xy[1]++) {
@@ -260,6 +343,64 @@ const copy_rect_24bipp = (xy, bounds, ta, ta_res, ta_byte_indexes, bytes_read_ro
 // bypr_source
 
 
+// dest_pos is alway [0, 0]. For when the size of the copied area = the size of the dest.
+
+const dest_aligned_copy_rect_1to4bypp = (ta_source, ta_dest, bypr_source, bytes_per_pixel, ta_source_bounds) => {
+    let y;
+
+
+
+    // check ta_dest.length meets expectation?
+
+
+    //console.log('ta_source_bounds', ta_source_bounds);
+    //console.log('bytes_per_pixel', bytes_per_pixel);
+
+
+    // Uses copy ta byte range function underneith.
+
+    // need to calculate initial read and write byte idxs
+
+    // calculate the start index for both the source and the dest.
+
+    
+
+
+    const bounds_row_width = ta_source_bounds[2] - ta_source_bounds[0];
+    const bypr_dest = bounds_row_width * bytes_per_pixel;
+    //console.log('bounds_row_width', bounds_row_width);
+    const bytes_per_bounds_row = bytes_per_pixel * bounds_row_width;
+
+
+    const byi_read_start = (ta_source_bounds[0] * bytes_per_pixel) + (ta_source_bounds[1] * bypr_source);
+    //const byi_dest_start = (bytes_per_pixel) + (ta_dest_pos[1] * bypr_dest);
+    const byi_dest_start = 0;
+
+    let byi_read = byi_read_start, byi_write = byi_dest_start;
+    //const bytes_source_row_jump = bypr_source - bytes_per_bounds_row, bytes_dest_row_jump = bypr_dest - bytes_per_bounds_row;
+
+    //console.log('bytes_source_row_jump', bytes_source_row_jump);
+    //console.log('bytes_dest_row_jump', bytes_dest_row_jump);
+
+    //console.log('bytes_per_bounds_row', bytes_per_bounds_row);
+
+
+    for (y = ta_source_bounds[1]; y < ta_source_bounds[3]; y++) {
+        //console.log('byi_read, byi_write', [byi_read, byi_write]);
+        copy_ta_byte_range(ta_source, ta_dest, byi_read, byi_write, bytes_per_bounds_row);
+
+        byi_read += bypr_source;
+        byi_write += bypr_dest;
+
+        // use the sopy row function?
+        //  worth giving it a try.
+
+        // Can use the full row copy procedure.
+        //copy_ta_byte_range
+    }
+}
+
+
 // Worth writing and using some copy algorithms. Further work on supporting abstractions / data.
 
 const unaligned_copy_rect_1to4bypp = (ta_source, ta_dest, bypr_source, bypr_dest, bytes_per_pixel, ta_source_bounds, ta_dest_pos) => {
@@ -318,11 +459,20 @@ const unaligned_copy_rect_1to4bypp = (ta_source, ta_dest, bypr_source, bypr_dest
         // Can use the full row copy procedure.
 
         //copy_ta_byte_range
-
     }
-
-
 }
+
+// dest_aligned_copy_rect_1to4bypp
+//  the destination size is aligned with the ta_source_bounds
+//   could check that previously in a more generalised copy_rect function.
+
+
+
+
+
+
+
+
 
 
 
@@ -469,7 +619,8 @@ const fill_solid_rect_by_bounds = (ta_dest, bypr_dest, ta_bounds, bipp, color) =
     } else if (bipp === 24) {
         return fill_solid_rect_by_bounds_24bipp(ta_dest, bypr_dest, ta_bounds, color);
     } else if (bipp === 32) {
-
+        console.trace();
+        throw 'NYI';
     } else {
         console.trace();
         
@@ -491,10 +642,12 @@ const fill_solid_rect_by_bounds = (ta_dest, bypr_dest, ta_bounds, bipp, color) =
 
 
 module.exports = {
-    copy_rect_8bipp: copy_rect_8bipp,
-    copy_rect_24bipp: copy_rect_24bipp,
+    overlapping_bounds: overlapping_bounds,
+    copy_rect_to_same_size_8bipp: copy_rect_to_same_size_8bipp,
+    copy_rect_to_same_size_24bipp: copy_rect_to_same_size_24bipp,
     copy_ta_byte_range: copy_ta_byte_range,
     unaligned_copy_rect_1to4bypp: unaligned_copy_rect_1to4bypp,
     unaligned_copy_rect_1bypp_to_3bypp: unaligned_copy_rect_1bypp_to_3bypp,
+    dest_aligned_copy_rect_1to4bypp: dest_aligned_copy_rect_1to4bypp,
     fill_solid_rect_by_bounds: fill_solid_rect_by_bounds
 }

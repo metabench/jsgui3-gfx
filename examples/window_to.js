@@ -60,9 +60,6 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
             // Not the full convolve API here, but still does a convolution.
             //  Before long want accelerated C++ convolutions.
 
-
-
-
             // Use a 3x3 window for the moment.
             // 3x3 conv. Set the values (for the moment, will be a simple sharpen conv)
             
@@ -107,6 +104,19 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
             // Use a 3x3 window for the moment.
             // 3x3 conv. Set the values (for the moment, will be a simple sharpen conv)
             
+
+            // window centered on source pixel?
+            //  position binding? Was able to bypass this complexity for the moment.
+            //   possibly work on it to make a nicer API?
+            //    api just for the convolution function? maybe moving pixel windows centered on a pixel would be useful elsewhere.
+
+
+
+            // Various kinds of edge detection will be useful too.
+            
+
+
+
             
             const pb_window = pb_24bipp_patch.new_window({
                 size: [3, 3],
