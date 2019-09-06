@@ -1297,9 +1297,6 @@ class Pixel_Buffer_Core {
             configurable: false
         });
 
-    
-
-
         let pb_source;
         // use window_movement_bounds
         //  understand the positioning (restrictions?) of the movement of the window within the source.

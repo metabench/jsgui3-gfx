@@ -1327,10 +1327,6 @@ class Virtual_Float_Pixel {
 
                                     // 3 long, thin rows.
                                     //  easy / fast to put together, as we can use .fill and .set.
-
-
-
-
                                     
 
                                 } else {
