@@ -136,7 +136,7 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
         //console.log('vfpx.i_size', vfpx.i_size);
         //console.log('vfpx.i_any_coverage_bounds', vfpx.i_any_coverage_bounds);
 
-        console.log('weights', weights);
+        //console.log('weights', weights);
 
         for (xy[1] = i_any_coverage_bounds[1]; xy[1] < i_any_coverage_bounds[3]; xy[1]++) {
             for (xy[0] = i_any_coverage_bounds[0]; xy[0] < i_any_coverage_bounds[2]; xy[0]++) {
@@ -438,14 +438,14 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
 
         for (dest_xy[1] = 0; dest_xy[1] < dest_size[1]; dest_xy[1]++) {
             for (dest_xy[0] = 0; dest_xy[0] < dest_size[0]; dest_xy[0]++) {
-                console.log('');
-                console.log('dest_xy', dest_xy);
+                //console.log('');
+                //console.log('dest_xy', dest_xy);
                 const source_fpos = new Float32Array([dest_xy[0] * source_vfpixel_size[0], dest_xy[1] * source_vfpixel_size[1]]);
-                console.log('source_fpos', source_fpos);
+                //console.log('source_fpos', source_fpos);
                 const vfp = new Virtual_Float_Pixel(source_fpos, source_vfpixel_size);
-                console.log('vfp.bounds', vfp.bounds);
+                //console.log('vfp.bounds', vfp.bounds);
                 const merged_rbg = read_merged_vfpx(source_ta, pb.ta_colorspace, vfp);
-                console.log('merged_rbg', merged_rbg);
+                //console.log('merged_rbg', merged_rbg);
 
                 ta_dest[b_write++] = merged_rbg[0];
                 ta_dest[b_write++] = merged_rbg[1];
@@ -546,15 +546,11 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
             // any optimization for iterating over virtual pixel space?
             //  
 
-            console.log('resize_32x32_24bipp_pastel_to_16x16');
+            //console.log('resize_32x32_24bipp_pastel_to_16x16');
 
             const new_size = new Int16Array([16, 16]);
-
             const pb_res = new_resized_pb(pastel, new_size);
-
             return pb_res;
-
-
 
 
 
@@ -570,7 +566,6 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
             // any optimization for iterating over virtual pixel space?
             //  
 
-            console.log('resize_32x32_24bipp_pastel_to_12x12');
 
             const new_size = new Int16Array([12, 12]);
             const pb_res = new_resized_pb(pastel, new_size);
@@ -579,21 +574,23 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
 
         }],
         ['resize_32x32_24bipp_pastel_to_36x36', () => {
-            console.log('resize_32x32_24bipp_pastel_to_12x12');
             const new_size = new Int16Array([36, 36]);
             const pb_res = new_resized_pb(pastel, new_size);
             return pb_res;
         }],
         ['resize_32x32_24bipp_pastel_to_50x50', () => {
-            console.log('resize_32x32_24bipp_pastel_to_12x12');
+
+
             const new_size = new Int16Array([50, 50]);
+            performance.mark('A');
             const pb_res = new_resized_pb(pastel, new_size);
+            performance.mark('B');
+            performance.measure('A to B', 'A', 'B');
+
             return pb_res;
         }],
 
         false,
-    
-
 
         // Get the weightings matrix from the VFP...
 

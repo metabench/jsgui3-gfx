@@ -163,7 +163,7 @@ class Virtual_Float_Pixel {
 
 
 
-            console.log('vfpx update_tier2_locals');
+            //console.log('vfpx update_tier2_locals');
             // This will have the info needed to rapidly iterate over the pixels while calculating their weightings.
 
 
@@ -229,7 +229,7 @@ class Virtual_Float_Pixel {
 
             no_partial_edges = tai_any_coverage_bounds[0] === tai_total_coverage_bounds[0] && tai_any_coverage_bounds[1] === tai_total_coverage_bounds[1] && tai_any_coverage_bounds[2] === tai_total_coverage_bounds[2] && tai_any_coverage_bounds[3] === tai_total_coverage_bounds[3];
 
-            console.log('no_partial_edges', no_partial_edges);
+            //console.log('no_partial_edges', no_partial_edges);
 
             if (no_partial_edges) {
                 taf_ltrb_edge_proportions.fill(1);
@@ -961,7 +961,7 @@ class Virtual_Float_Pixel {
 
                         } else if (w === 2 && h === 1) {
                             res[0] = taf_ltrb_edge_proportions[0] / taf_size[0];
-                            res[1] = taf_ltrb_edge_proportions[1] / taf_size[0];
+                            res[1] = taf_ltrb_edge_proportions[2] / taf_size[0];
 
                         } else if (w === 2 && h === 2) {
 
@@ -1033,9 +1033,7 @@ class Virtual_Float_Pixel {
                             res[1] = 1 / taf_size[0]; // ?
                             res[2] = taf_ltrb_edge_proportions[2] / taf_size[0];
 
-
                             // 
-
 
                         } else if (w === 1 && h === 3) {
 
@@ -1100,7 +1098,7 @@ class Virtual_Float_Pixel {
 
                         } else {
 
-                            console.log('not one of the smallest special cases');
+                            //console.log('not one of the smallest special cases');
 
                             // Larger assignments... will need to loop.
                             
@@ -1114,7 +1112,7 @@ class Virtual_Float_Pixel {
                                 //   Sould be a fast way to produce the weights array quickly when it's requested.
 
 
-                                console.log('width >3, height >3');
+                                //console.log('width >3, height >3');
 
                                 // The full algo...
 
@@ -1180,7 +1178,7 @@ class Virtual_Float_Pixel {
                                     res[0] = taf_ltrb_edge_proportions[1] / taf_size[1];
                                     res[h - 1] = taf_ltrb_edge_proportions[3] / taf_size[1];
 
-                                    console.log('width 1, height >3');
+                                    //console.log('width 1, height >3');
 
                                     //console.log('taf_size', taf_size);
                                     //console.log('taf_ltrb_edge_proportions', taf_ltrb_edge_proportions);
@@ -1221,11 +1219,11 @@ class Virtual_Float_Pixel {
 
                                     // Use the left and right
 
-                                    console.log('width 2, height >3');
+                                    //console.log('width 2, height >3');
                                     
                                 } else if (w === 3) {
 
-                                    console.log('width 3, height >3');
+                                    //console.log('width 3, height >3');
 
                                     // width 3, height >3
 
@@ -1264,7 +1262,7 @@ class Virtual_Float_Pixel {
                                     
                                 } else if (h === 1) {
                                     // width >3, height 1
-                                    console.log('width >3, height 1');
+                                    //console.log('width >3, height 1');
                                     // weight calc will divide by width rather than area.
 
                                     const middle_weight = 1 / taf_size[0];
@@ -1278,7 +1276,7 @@ class Virtual_Float_Pixel {
 
                                 } else if (h === 2) {
                                     // width >3, height 2
-                                    console.log('width >3, height 2');
+                                    //console.log('width >3, height 2');
 
                                     // limited height - more optimizations possible / worthwhile to do with middle row preparation.
                                     //  maybe preparing all rows makes sense because .fill sets many at once.
@@ -1301,7 +1299,7 @@ class Virtual_Float_Pixel {
                                 } else if (h === 3) {
                                     // width >3, height 3
 
-                                    console.log('width >3, height 3');
+                                    //console.log('width >3, height 3');
 
 
                                     const top_row = new Float32Array(w);
