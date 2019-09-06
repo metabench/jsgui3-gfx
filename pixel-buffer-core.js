@@ -377,6 +377,8 @@ const ta_math = require('./ta-math');
 
 const {copy_rect_to_same_size_8bipp, copy_rect_to_same_size_24bipp, dest_aligned_copy_rect_1to4bypp} = ta_math;
 
+const Pixel_Buffer_Painter = require('./pixel-buffer-painter');
+
 
 // All operations will be in place.
 //  If it's at all possible.
@@ -1172,6 +1174,39 @@ class Pixel_Buffer_Core {
             enumerable: true,
             configurable: false
         });
+
+
+        // ta_colorspace
+
+        const ta_colorspace = new Int16Array(6);
+
+        Object.defineProperty(this, 'ta_colorspace', {
+            // Using shorthand method names (ES2015 feature).
+            // This is equivalent to:
+            // get: function() { return bValue; },
+            // set: function(newValue) { bValue = newValue; },
+            get() { 
+
+                // const [width, height, bypp, bypr, bipp, bipr] = ta_colorspace;
+
+                ta_colorspace[0] = size[0];
+                ta_colorspace[1] = size[1];
+
+
+                // 
+                ta_colorspace[2] = ta_bpp[0] % 8 === 0 ? ta_bpp[0] / 8 : 0;
+                ta_colorspace[3] = ta_colorspace[2] * ta_colorspace[0];
+                ta_colorspace[4] = ta_bpp[0];
+                ta_colorspace[5] = ta_colorspace[4] * ta_colorspace[0];
+
+
+                return ta_colorspace; 
+            },
+            enumerable: true,
+            configurable: false
+        });
+
+
 
 
 
@@ -2139,6 +2174,14 @@ class Pixel_Buffer_Core {
 
             return pos;
         }
+
+
+
+        this.paint = new Pixel_Buffer_Painter({
+            pb: this
+        })
+
+
         // move_next_pixel
 
         /*

@@ -75,16 +75,10 @@ const overlapping_bounds = (bounds_1, bounds_2, res_bounds = new Int16Array(4)) 
 
     // math.max and min? which would be faster?
 
-
-
     res_bounds[0] = bounds_1[0] < bounds_2[0] ? bounds_2[0] : bounds_1[0];
     res_bounds[1] = bounds_1[1] < bounds_2[1] ? bounds_2[1] : bounds_1[1];
     res_bounds[2] = bounds_1[2] > bounds_2[2] ? bounds_2[2] : bounds_1[2];
     res_bounds[3] = bounds_1[3] > bounds_2[3] ? bounds_2[3] : bounds_1[3];
-
-
-
-
 
     //throw 'stop';
 
@@ -97,6 +91,331 @@ const overlapping_bounds = (bounds_1, bounds_2, res_bounds = new Int16Array(4)) 
 
 
 
+// could have a ta of [bytes_per_pixel, bytes_per_row]
+
+// bytes per pixel may be better as a float, allowing for 1/8. Could try 3 bits per pixel - on or off, 3 color channels.
+// width, bytes per pixel (allow 0.125?), bits per pixel, 
+
+// pixels_per_row... source_width?
+// source size?
+
+// may indeed be worth passing on a ta_colorspace_description or similar... maybe a ta_colorspace or a Colorspace object.
+
+const _colorspace_fields = ['width', 'height', 'bits_per_pixel', 'bytes_per_pixel', 'bits_per_row', 'bytes_per_row']
+const __color_space_fields = ['size', 'ta_bpp', 'ta_bpr']
+const ___colorspace_fields = ['width', 'height', 'bytes_per_pixel', 'bytes_per_row', 'bits_per_pixel', 'bits_per_row']
+
+// could set the bytes_per to 0 (or -1) if it's in 1bipp mode.
+//  only use the bipp and bipr values in these cases.
+//  would allow the colorspace_fields to be Int16 or UInt16? 0 bypp and 0 bypr combined with bipp and bipr will indicate sub-bit pixel sizes.
+
+// Could even try 12 bit pixels! 16 possible values each for r, g, b.
+
+
+
+
+
+
+
+// Maybe keeping colorspace as a simple array would work best.
+//  Using consts to get the value from the colorspace... would that work well?
+// const [...] = _colorspace_fields
+
+
+
+const byi_from_cs_pos = (colorspace, pos) => {
+    const [width, height, bypp, bypr, bipp, bipr] = colorspace;
+    //console.log('bypp, bypr', [bypp, bypr]);
+
+    //console.log('pos', pos)
+    //console.trace();
+
+    return pos[0] * bypp + pos[1] * bypr;
+
+}
+
+
+// pb.color_space
+
+
+// Could read it as a subarray.
+//  Could then be writable too.
+
+// Optionally set the res into an existing ta.
+//  Benchmarks...
+
+const read_px = (ta_source, ta_colorspace, ta_pos) => {
+
+    // calculate byte index from pos and colorspace
+
+    const bipp = ta_colorspace[4];
+
+    //console.log('read_px bipp', bipp);
+
+    if (bipp === 1) {
+        // 1bipp
+        console.trace();
+        throw 'NYI';
+    } else if (bipp === 8) {
+        const byi = byi_from_cs_pos(ta_colorspace, ta_pos);
+        return ta_source[byi];
+    } else if (bipp === 24) {
+        const byi = byi_from_cs_pos(ta_colorspace, ta_pos);
+
+        //console.log('byi', byi);
+
+        //console.log('ta_source.subarray(byi, byi + 3)', ta_source.subarray(byi, byi + 3));
+
+        return ta_source.subarray(byi, byi + 3);
+    } else if (bipp === 32) {
+        const byi = byi_from_cs_pos(ta_colorspace, ta_pos);
+        return ta_source.subarray(byi, byi + 4);
+    }
+
+    
+
+}
+
+//const read_4_px_rect = (ta_source, source_width, bytes_per_pixel, bytes_per_row, pos) => {
+
+
+const read_2x1_rect = (ta_source, ta_colorspace, ta_pos) => {
+    // will just return the values of these 2 px in a single ta.
+
+
+    const [x, y] = ta_pos;
+    const [width, height, bypp, bypr, bipp, bipr] = ta_colorspace;
+
+    if (x < 0) {
+        throw 'x position must be between 0 and (width - 1)'
+    }
+    if (x > width - 1) {
+        throw 'x position must be between 0 and (width - 1)'
+    }
+    if (y < 0) {
+        throw 'y position must be between 0 and height'
+    }
+    if (y > height) {
+        throw 'y position must be between 0 and height'
+    }
+
+    let byi_read = (x * bypp) + (y * bypr);
+
+    if (bipp === 1) {
+        console.trace();
+        throw 'NYI';
+    } else if (bipp === 8) {
+        // different result sizes... maybe return a specific version of this.
+        // unsafe_read_4px_rect(different params?)
+        
+        // lets do the work here... not so much to do.
+        const res = new Uint8ClampedArray(2);
+        res[0] = ta_source[byi_read];
+        res[1] = ta_source[byi_read + 1];
+        //res[2] = ta_source[byi_read + bypr];
+        //res[3] = ta_source[byi_read + bypr + 1];
+
+        //res[0] = 
+
+
+        return res;
+
+    } else if (bipp === 24) {
+        const res = new Uint8ClampedArray(6);
+        //res[0] = 
+
+        // best to read 2 rows of pixels. 6 bytes per row of the copy space.
+        res.set(ta_source.subarray(byi_read, byi_read + 6), 0);
+        //byi_read += bypr;
+        //res.set(ta_source.subarray(byi_read, byi_read + 6), 6);
+
+
+
+        return res;
+        
+    } else if (bipp === 32) {
+        //console.trace();
+        //throw 'NYI';
+        const res = new Uint8ClampedArray(8);
+        //res[0] = 
+
+        res.set(ta_source.subarray(byi_read, byi_read + 8), 0);
+        //byi_read += bypr;
+        //res.set(ta_source.subarray(byi_read, byi_read + 8), 8);
+
+
+        return res;
+    }
+
+}
+
+
+const read_1x2_rect = (ta_source, ta_colorspace, ta_pos) => {
+    // will just return the values of these 2 px in a single ta.
+
+
+    const [x, y] = ta_pos;
+    const [width, height, bypp, bypr, bipp, bipr] = ta_colorspace;
+
+    if (x < 0) {
+        throw 'x position must be between 0 and (width - 1)'
+    }
+    if (x > width - 1) {
+        throw 'x position must be between 0 and (width - 1)'
+    }
+    if (y < 0) {
+        throw 'y position must be between 0 and height'
+    }
+    if (y > height) {
+        throw 'y position must be between 0 and height'
+    }
+
+    let byi_read = (x * bypp) + (y * bypr);
+
+    if (bipp === 1) {
+        console.trace();
+        throw 'NYI';
+    } else if (bipp === 8) {
+        // different result sizes... maybe return a specific version of this.
+        // unsafe_read_4px_rect(different params?)
+        
+        // lets do the work here... not so much to do.
+        const res = new Uint8ClampedArray(2);
+        res[0] = ta_source[byi_read];
+        res[1] = ta_source[byi_read + bypr];
+        //res[2] = ta_source[byi_read + bypr];
+        //res[3] = ta_source[byi_read + bypr + 1];
+
+        //res[0] = 
+
+
+        return res;
+
+    } else if (bipp === 24) {
+        const res = new Uint8ClampedArray(6);
+        //res[0] = 
+
+        // best to read 2 rows of pixels. 6 bytes per row of the copy space.
+        res.set(ta_source.subarray(byi_read, byi_read + 3), 0);
+        byi_read += bypr;
+
+        res.set(ta_source.subarray(byi_read, byi_read + 3), 3);
+        //byi_read += bypr;
+        //res.set(ta_source.subarray(byi_read, byi_read + 6), 6);
+
+
+
+        return res;
+        
+    } else if (bipp === 32) {
+        //console.trace();
+        //throw 'NYI';
+        const res = new Uint8ClampedArray(8);
+        //res[0] = 
+
+        res.set(ta_source.subarray(byi_read, byi_read + 4), 0);
+        byi_read += bypr;
+        res.set(ta_source.subarray(byi_read, byi_read + 4), 4);
+        //res.set(ta_source.subarray(byi_read, byi_read + 8), 8);
+
+
+        return res;
+    }
+
+}
+
+
+
+// Hopefully will be v fast!
+//  Consider C++ optimization too - but likely will be implemented and called in C++ because its very low level for some operations.
+const read_4px_rect = (ta_source, ta_colorspace, ta_pos) => {
+
+    const [x, y] = ta_pos;
+
+    const [width, height, bypp, bypr, bipp, bipr] = ta_colorspace;
+
+    //console.log('read_4_px_rect [width, height, bypp, bypr, bipp, bipr]', [width, height, bypp, bypr, bipp, bipr]);
+
+    // Worth using pixel index / necessary to do so.
+    //  Seems to come down to that at the lowest levels.
+
+
+
+
+
+    // can not read an out of bounds 4px block
+    //  should raise an error if it's attempted. it should not be attempted.
+
+    // check it's within bounds...
+    //  maybe better not to. see about speed increase when this is commented out.
+
+    if (x < 0) {
+        throw 'x position must be between 0 and (width - 1)'
+    }
+    if (x > width - 1) {
+        throw 'x position must be between 0 and (width - 1)'
+    }
+    if (y < 0) {
+        throw 'y position must be between 0 and (height - 1)'
+    }
+    if (y > height - 1) {
+        throw 'y position must be between 0 and (height - 1)'
+    }
+
+    let byi_read = (x * bypp) + (y * bypr);
+
+    if (bipp === 1) {
+        console.trace();
+        throw 'NYI';
+    } else if (bipp === 8) {
+        // different result sizes... maybe return a specific version of this.
+        // unsafe_read_4px_rect(different params?)
+        
+        // lets do the work here... not so much to do.
+        const res = new Uint8ClampedArray(4);
+        res[0] = ta_source[byi_read];
+        res[1] = ta_source[byi_read + 1];
+        res[2] = ta_source[byi_read + bypr];
+        res[3] = ta_source[byi_read + bypr + 1];
+
+        //res[0] = 
+
+
+        return res;
+
+    } else if (bipp === 24) {
+        const res = new Uint8ClampedArray(12);
+        //res[0] = 
+
+        // best to read 2 rows of pixels. 6 bytes per row of the copy space.
+        res.set(ta_source.subarray(byi_read, byi_read + 6), 0);
+        byi_read += bypr;
+        res.set(ta_source.subarray(byi_read, byi_read + 6), 6);
+
+
+
+        return res;
+        
+    } else if (bipp === 32) {
+        //console.trace();
+        //throw 'NYI';
+        const res = new Uint8ClampedArray(16);
+        //res[0] = 
+
+        res.set(ta_source.subarray(byi_read, byi_read + 8), 0);
+        byi_read += bypr;
+        res.set(ta_source.subarray(byi_read, byi_read + 8), 8);
+
+
+        return res;
+    }
+
+
+
+
+
+
+}
 
 
 
@@ -608,6 +927,22 @@ const fill_solid_rect_by_bounds_24bipp = (ta_dest, bypr_dest, ta_bounds, ta_rgb)
 }
 
 
+// A ta-math directory may be better.
+//  directories:
+//  read
+//  copy
+//  write / paint
+
+
+
+
+// paint_rect
+//  maybe have paint functions separate
+//  copy functions separate
+
+
+
+
 const fill_solid_rect_by_bounds = (ta_dest, bypr_dest, ta_bounds, bipp, color) => {
     // Polymorphism with color being a number or a typed array?
     
@@ -649,5 +984,10 @@ module.exports = {
     unaligned_copy_rect_1to4bypp: unaligned_copy_rect_1to4bypp,
     unaligned_copy_rect_1bypp_to_3bypp: unaligned_copy_rect_1bypp_to_3bypp,
     dest_aligned_copy_rect_1to4bypp: dest_aligned_copy_rect_1to4bypp,
-    fill_solid_rect_by_bounds: fill_solid_rect_by_bounds
+    fill_solid_rect_by_bounds: fill_solid_rect_by_bounds,
+    read_1x2_rect: read_1x2_rect,
+    read_2x1_rect: read_2x1_rect,
+    read_4px_rect: read_4px_rect,
+    read_px: read_px,
+    read_pixel: read_px
 }

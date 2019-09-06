@@ -58,27 +58,112 @@ const {Pixel_Buffer} = gfx;
 const Server_Pixel_Buffer = gfx_server.Pixel_Buffer;
 
 
-// seems to be working / fixed now :)
-const copy_from_server_pb = (server_pb) => {
-    const res_pb = new Pixel_Buffer({
-        size: server_pb.size,
-        bits_per_pixel: server_pb.bits_per_pixel
+
+// Would be nice to have examples boilerplate working, as well as module exports.
+
+
+// 32x32_24bipp_pastel
+
+
+const generate_32x32_24bipp_pastel = () => {
+    const res = new Pixel_Buffer({
+        size: [32, 32],
+        bits_per_pixel: 24
     });
-    //res_pb.buffer = res_pb.ta = server_pb.ta;
-    res_pb.ta.set(server_pb.ta);
-    return res_pb;
+
+    // res.draw_rect?     res.draw.rect?    res.paint.rect?  res.rect? 
+
+    // A Paint object that works on a PB could make a lot of sense.
+    //  Keep painting functionality out of the core directly.
+    //   Core is becoming more complex and advanced, need to prune and clarify the codebase though.
+
+    // pb.fill_solid_rect_by_bounds() with its arrangement of params makes it hard to use.
+    //  not sure about any perf improvement from doing params that way (not through the fn call) either.
+    //   already have very high perf funtions with param passing.
+
+
+    // pb_paint file and later directory makes sense.
+    //  Pixel_Buffer_Painter
+    //   will use pb and ta_math functionality to do the painting.
+
+
+    const pos = new Int16Array([0, 0]);
+    const size = new Int16Array([16, 16]);
+
+
+    // pb.paint(object)
+    //  so the painter could be a function / class combo?
+    //   maybe stop using class for this.
+
+    // pb.paint.object(object) isn't as good.
+
+    // a paint() function would be cool.
+    //  and the function itself would have attached functions, working like a class.
+    //  later change the painter implementation to move away from being a class and become a function, with .other_fn eg .rect
+
+    //  or .paint is a function that has copies of the function calls of the painter class. that makes sense too.
+
+    // thistle: (224, 187, 228)
+
+    const color = new Uint8ClampedArray([224, 187, 228]);
+
+
+
+
+
+    res.paint.rect(pos, size, color);
+
+    pos[0] = 16;
+    //pos[1] = 16;
+
+    // magic mint: (181, 234, 215) 
+
+    color[0] = 181;
+    color[1] = 234;
+    color[2] = 215;
+
+    res.paint.rect(pos, size, color);
+
+    pos[1] = 16;
+    pos[0] = 0;
+
+    // Cosmic Cobalt: (59, 50, 133)
+
+    color[0] = 59;
+    color[1] = 50;
+    color[2] = 133;
+
+    res.paint.rect(pos, size, color);
+
+    // Marigold: (238, 174, 33)
+    pos[0] = 16;
+
+    color[0] = 238;
+    color[1] = 174;
+    color[2] = 33;
+
+    res.paint.rect(pos, size, color);
+
+    pos[0] = 8;
+    pos[1] = 8;
+    color[0] = 255;
+    color[1] = 255;
+    color[2] = 255;
+
+    res.paint.rect(pos, size, color);
+
+
+
+
+
+
+
+    return res;
+
+
+
 }
 
-const copy_to_server_pb = (standard_pb) => {
-    const res_pb = new Server_Pixel_Buffer({
-        size: standard_pb.size,
-        bits_per_pixel: standard_pb.bits_per_pixel
-    });
-    // Setting the buffer... does not work...?
-    res_pb.ta.set(standard_pb.ta);
-    //res_pb.buffer = res_pb.ta = standard_pb.ta;
-    return res_pb;
-}
 
 const generate_color_square = () => {
 
@@ -626,7 +711,8 @@ const generate_tp1 = () => {
 
 module.exports = {
     patch_1: generate_tp1,
-    generate_color_square: generate_color_square
+    generate_color_square: generate_color_square,
+    generate_32x32_24bipp_pastel: generate_32x32_24bipp_pastel
 }
 
 if (require.main === module) {
@@ -651,11 +737,13 @@ if (require.main === module) {
 
         const color_square = generate_color_square();
 
+        const square_32_pastel = generate_32x32_24bipp_pastel();
+
         // Also lets generate the color square example.
 
         // then save it.
 
-        console.log('tp1', tp1);
+        //console.log('tp1', tp1);
 
         // looks OK so far....
 
@@ -675,6 +763,9 @@ if (require.main === module) {
 
         tp1.bypp = 1;
         await gfx.save_pixel_buffer('./output/create_eg_pbs/gs_patch1.png', tp1, {
+            format: 'png'
+        });
+        await gfx.save_pixel_buffer('./output/create_eg_pbs/square_32_pastel.png', square_32_pastel, {
             format: 'png'
         });
 
