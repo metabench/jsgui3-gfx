@@ -803,7 +803,7 @@ class Virtual_Float_Pixel {
                         // prefilled result typed arrays for this case?
                         //  would be a further optimization.
 
-                        const weight = num_any_coverage_px / area; // special case calculation here.
+                        const weight = 1 / area; // special case calculation here.
                         res.fill(weight);
                         return res;
 
@@ -998,9 +998,9 @@ class Virtual_Float_Pixel {
 
                             // res.set(taf_tl_tr_bl_br_corner_proportions);
 
-                            console.log('res', res);
-                            console.trace();
-                            throw 'stop';
+                            //console.log('res', res);
+                            //console.trace();
+                            //throw 'stop';
 
                             // seems OK in theory so far :)
 

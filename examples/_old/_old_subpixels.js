@@ -949,24 +949,15 @@ const _examples = [
                 
                 taf_source_xy[0] = ita_dest_xy[0] * dest_to_source_ratio[0];
                 //console.log('');
-
                 // and the float subpixel source xy
-
                 //console.log('ita_dest_xy', ita_dest_xy);
                 //console.log('taf_source_xy', taf_source_xy);
-
                 // then get the subpixel value.
-
                 // read_merged_subpixel(pastel.ta, pastel.ta_colorspace, fpos, fsize)]);
-
                 // read_merged_subpixel may need more work / fixing / debugging.
-
-
                 // do more work on read_merged_subpixel.
                 //  test in more cases.
                 //  handle 2x1 and 1x2.
-
-
                 const subpixel_val = read_merged_subpixel(source_ta, source.ta_colorspace, taf_source_xy, source_subpixel_size);
                 //console.log('sp_val', sp_val);
                 //console.log('subpixel_val', subpixel_val);
@@ -978,10 +969,8 @@ const _examples = [
                 // set_pixel needs work?
 
                 // direct ta_math set_pixel?
-                
                 //dest.set_pixel(ita_dest_xy, subpixel_val);
             }
-
         }
 
         return dest;

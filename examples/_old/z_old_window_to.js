@@ -37,17 +37,17 @@ console.log('post load gfx_server');
 
 // Copy the data over to and from a standard pixel buffer (non-server version)?
 
-const gfx = require('../gfx');
+const gfx = require('../../gfx');
 
 const {Pixel_Buffer} = gfx;
 
 const Server_Pixel_Buffer = gfx_server.Pixel_Buffer;
 
-const Convolution = require('../convolution');
+const Convolution = require('../../convolution');
 
 
 
-const create = require('./create_eg_pbs');
+const create = require('../create_eg_pbs');
 
 // Worth having different sub-examples.
 //  Would be nice to have the example runs each create their own directory with separate output files.

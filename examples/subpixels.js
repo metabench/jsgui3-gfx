@@ -81,7 +81,6 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
     //  create a merged pixel color from the colors extracted and the weightings.
     //  this is a step to facilitate image resizing using a smooth and fast algorithm.
 
-
     // may go into ta_math.
 
 
@@ -128,6 +127,8 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
         //console.log('colorspace: [width, height, bypp, bypr, bipp, bipr]', [width, height, bypp, bypr, bipp, bipr]);
         //console.log('vfpx.i_size', vfpx.i_size);
         //console.log('vfpx.i_any_coverage_bounds', vfpx.i_any_coverage_bounds);
+
+        console.log('weights', weights);
         
 
 
@@ -190,6 +191,7 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
     const read_merged_vfpx = (ta_source, colorspace, vfpx) => {
         // get the weights for that vfpx ... very useful to have them!
         //  need to know the any coverage row width
+        console.log('colorspace', colorspace);
         const [width, height, bypp, bypr, bipp, bipr] = colorspace;
 
         if (bipp === 1) {
@@ -314,6 +316,106 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
         }
     }
 
+    const new_resized_pb = (pb, size) => {
+        const source_ta = pb.ta;
+
+
+
+        const dest_size = new Int16Array(size);
+        const dest = new Pixel_Buffer({
+            size: dest_size,
+            bits_per_pixel: 24
+        });
+
+        // calculate scale, iterate through virtual float pixel space.
+
+        const source_size = pb.size;
+        const dest_to_source_ratio = new Float32Array([source_size[0] / dest_size[0], source_size[1] / dest_size[1]]);
+        //console.log('dest_to_source_ratio', dest_to_source_ratio);
+        const source_vfpixel_size = dest_to_source_ratio;
+        const ita_dest_xy = new Int32Array(2);
+        const taf_source_xy = new Float32Array(2);
+        const ta_dest = dest.ta;
+        let b_write = 0;
+
+
+
+        // looping through the dest int positions makes sense.
+
+        //let x = 0, y = 0;
+        let dest_xy = new Int16Array([0, 0]);
+
+        console.log('dest_size', dest_size);
+
+        // source and dest colorspaces?
+        //  would have source bipp bypr etc...
+
+        // iterating over the whole of the dest_xy
+
+        // direct writing to the dest.
+
+        // Seems like a problem with applying the 4x4 total coverage weightings.
+
+
+
+        for (dest_xy[1] = 0; dest_xy[1] < dest_size[1]; dest_xy[1]++) {
+            for (dest_xy[0] = 0; dest_xy[0] < dest_size[0]; dest_xy[0]++) {
+                console.log('');
+                console.log('dest_xy', dest_xy);
+                const source_fpos = new Float32Array([dest_xy[0] * source_vfpixel_size[0], dest_xy[1] * source_vfpixel_size[1]]);
+                console.log('source_fpos', source_fpos);
+                const vfp = new Virtual_Float_Pixel(source_fpos, source_vfpixel_size);
+                console.log('vfp.bounds', vfp.bounds);
+                const merged_rbg = read_merged_vfpx(source_ta, pb.ta_colorspace, vfp);
+                console.log('merged_rbg', merged_rbg);
+
+                ta_dest[b_write++] = merged_rbg[0];
+                ta_dest[b_write++] = merged_rbg[1];
+                ta_dest[b_write++] = merged_rbg[2];
+
+
+                // new vfpx each time for the moment. then will work on optimized adjustments / better integrating it with other functionality.
+                //  Virtual_Float_Rect?
+                //   For rectangularly expressed regions, and then VFPX can iterate inside it.
+                //   A tool for helping with iteration of VFPX, and treating a float window into an int coord space as an object that is readable by its transformed values.
+
+                // Integrating resize transformation with window_to?
+                //  With the pb itself handling copy / update iterations involving resizing as well as other processes / transformations.
+
+
+
+
+
+
+
+
+            }
+        }
+
+
+
+
+        // loop through the positions...
+        //  or maybe give Virtual_Float_Pixel access to the movement space (variables)?
+
+        // got to loop / iterate by the source_subpixel_size.
+        // a loop of the float pixel positions...
+
+
+
+
+
+
+
+
+
+        return dest;
+
+
+
+    }
+
+
     // Now want to create upscaled resized image.
     //  Or write a general image resizing function within ta_maths, that uses VFPX?
 
@@ -338,6 +440,52 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
     const examples = [
         // Ask the Pixel_Buffer which iteration algorithm to use?
         //  Want to present a simple API... will eventually have a resize_ta(ta_source, colorspace_source, dest_size), and won't use the Virtual_Pixel class their either.
+
+        // resize_32x32_to_16x16_24bipp_pastel
+        //  and resize it to other amounts.
+        //   eg 13x13
+
+        // then integrate resizing into codebase, and make an actual resize example.
+        //  release 0.0.24 will have good resize support within the API.
+        //   also lower level resizing functions on the ta / maths level.
+
+
+        // functions using more pure maths to do the resizing...
+        //  will optimize to C++ better / more easily.
+
+
+
+
+
+        // for the moment, it's worth implementing some example resizing code here.
+        ['resize_32x32_24bipp_pastel_to_16x16', () => {
+
+            // simpler type of resizing, should make use of all having total pixel coverage special case.
+
+            // will go over the 32x32 virtual pixel view...
+            //  maybe virtual pixel view is a useful abstraction here too...?
+
+            // any optimization for iterating over virtual pixel space?
+            //  
+
+            console.log('resize_32x32_24bipp_pastel_to_16x16');
+
+            const new_size = new Int16Array([16, 16]);
+
+            const pb_res = new_resized_pb(pastel, new_size);
+
+            return pb_res;
+
+
+
+
+
+
+        }],
+
+        false,
+    
+
 
         // Get the weightings matrix from the VFP...
 
