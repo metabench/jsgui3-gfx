@@ -283,9 +283,6 @@ Rapidly and efficiently doing convolutions will be very useful.
 // Each pixel in the res image would be an average of 4 pixels in the source image.
 
 
-
-
-
 0.0.24 Image resizing (pixel remapping?)
 
 // May be enabled by further work involving multiple view windows, and remapping of coordinate spaces.
@@ -372,6 +369,7 @@ All get and set operations are done by coordinates, and it then remaps to the co
 
 
 0.0.25 - Improvements with examples system
+  (somewhat improved in 0.0.24)
   Will be able to run all examples at once, save their output in a dir that's labelled / pathed by:
     /module_ver/node_ver/datetime_test_run/test_name
 
@@ -384,6 +382,7 @@ All get and set operations are done by coordinates, and it then remaps to the co
 
 
 0.0.26 ???
+  Yes, makes sense to generally improve examples / testing before doing this.
   1bipp convolutions / image processing
   1bipp window to 1bipp image
     efficient copying

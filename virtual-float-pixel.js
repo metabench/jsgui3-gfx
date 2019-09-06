@@ -767,14 +767,14 @@ class Virtual_Float_Pixel {
 
                 // size of weights matrix:
 
-                console.log('');
-                console.log('VFPX get weights');
+                //console.log('');
+                //console.log('VFPX get weights');
 
-                console.log('num_any_coverage_px', num_any_coverage_px);
+                //console.log('num_any_coverage_px', num_any_coverage_px);
 
 
                 // Algo is highly dependent on this value :)
-                console.log('tai_any_coverage_size', tai_any_coverage_size);
+                //console.log('tai_any_coverage_size', tai_any_coverage_size);
 
                 // make use of some edge / boundary info?
                 //  could directly make use of the pos?
@@ -783,7 +783,7 @@ class Virtual_Float_Pixel {
 
 
                 const [w, h] = tai_any_coverage_size;
-                console.log('[w, h]', [w, h]);
+                //console.log('[w, h]', [w, h]);
 
                 if (num_any_coverage_px === 1) {
                     // special simple case. may happen a lot with subpixel sampling especially with large upscaling.
@@ -839,7 +839,7 @@ class Virtual_Float_Pixel {
                         //  weights should always sum to 1?
 
 
-                        console.log('f_totally_covered_weight', f_totally_covered_weight);
+                        //console.log('f_totally_covered_weight', f_totally_covered_weight);
 
                         // // taf_ltrb_edge_proportions taf_tl_tr_bl_br_corner_proportions
 
@@ -916,8 +916,8 @@ class Virtual_Float_Pixel {
 
                         // Remember: f_combined_horizontal_proportion, f_combined_vertical_proportion
 
-                        console.log('taf_ltrb_edge_proportions', taf_ltrb_edge_proportions);
-                        console.log('taf_tl_tr_bl_br_corner_proportions', taf_tl_tr_bl_br_corner_proportions);
+                        //console.log('taf_ltrb_edge_proportions', taf_ltrb_edge_proportions);
+                        //console.log('taf_tl_tr_bl_br_corner_proportions', taf_tl_tr_bl_br_corner_proportions);
 
                         const res = get_taf_cached_weights(num_any_coverage_px);
 

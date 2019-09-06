@@ -103,7 +103,123 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
     // May be worth doing area calculations...
     //  Area within each of the 2 or 4 possible pixels.
 
-    // Could also read non-square subpixels.
+    // Can also read non-square subpixels.
+
+    // pixel reading and merging by weights function here...
+    //  should consider typed array map.
+
+    const read_merged_vfpx_24bipp = (ta_source, colorspace, vfpx) => {
+        const [width, height, bypp, bypr, bipp, bipr] = colorspace;
+        const {weights, i_any_coverage_bounds} = vfpx;
+        // 
+        const xy = new Int16Array(2);
+        let byi_read = 3 * i_any_coverage_bounds[0] + bypr * i_any_coverage_bounds[1];
+        let byi_weight = 0;
+
+        // 
+
+        const iw = i_any_coverage_bounds[2] - i_any_coverage_bounds[0];
+
+        const bytes_read_row_end_jump = bypr - iw * 3;
+        const acc_rgb = new Float32Array(3);
+
+        // Probably a problem at this merging stage.
+
+        //console.log('colorspace: [width, height, bypp, bypr, bipp, bipr]', [width, height, bypp, bypr, bipp, bipr]);
+        //console.log('vfpx.i_size', vfpx.i_size);
+        //console.log('vfpx.i_any_coverage_bounds', vfpx.i_any_coverage_bounds);
+        
+
+
+
+        for (xy[1] = i_any_coverage_bounds[1]; xy[1] < i_any_coverage_bounds[3]; xy[1]++) {
+            for (xy[0] = i_any_coverage_bounds[0]; xy[0] < i_any_coverage_bounds[2]; xy[0]++) {
+    
+                //const ui8_px_value = ta[byte_idx_pb_read];
+                //ui8_px_value = ta[byte_idx_pb_read];
+    
+                //console.log('byte_idx_pb_read')
+    
+                acc_rgb[0] += ta_source[byi_read++] * weights[byi_weight];
+                acc_rgb[1] += ta_source[byi_read++] * weights[byi_weight];
+                acc_rgb[2] += ta_source[byi_read++] * weights[byi_weight++];
+                //ta_res[ta_byte_indexes[1]++] = ta[byi_read[0]++];
+                //ta_res[ta_byte_indexes[1]++] = ta[byi_read[0]++];
+    
+                // But don't need to copy the px value in many cases.
+    
+                //  Maybe have / use lower level fuctions for copying between different pbs / tas.
+                //  Iterating spaces.
+                //   Iterating spaces defined by a function / equation?
+                //    Eg could functionally / mathematically define a circle and draw it.
+                
+                // got the xy iteration pos set correctly here :)
+    
+                // could copy px values?
+                //  reading and using them directly may work best....
+    
+                //byte_idx_pb_read += bytes_per_pixel;
+    
+            }
+            // then row jump increase.
+            byi_read += bytes_read_row_end_jump;
+        }
+
+        // then copy the weighted values into the result...
+
+        /*
+
+        console.log('acc_rgb', acc_rgb);
+
+        if (acc_rgb[0] === 0) {
+            console.trace();
+            throw 'stop';
+        }
+        */
+
+        const res = new Uint8ClampedArray(acc_rgb);
+
+        //console.log('read_merged_vfpx_24bipp res', res);
+
+        return res;
+
+
+    }
+
+
+    const read_merged_vfpx = (ta_source, colorspace, vfpx) => {
+        // get the weights for that vfpx ... very useful to have them!
+        //  need to know the any coverage row width
+        const [width, height, bypp, bypr, bipp, bipr] = colorspace;
+
+        if (bipp === 1) {
+            console.trace(); throw 'NYI';
+        } else if (bipp === 8) {
+            console.trace(); throw 'NYI';
+        } else if (bipp === 24) {
+            return read_merged_vfpx_24bipp(ta_source, colorspace, vfpx)
+        } else if (bipp === 32) {
+            console.trace(); throw 'NYI';
+        }
+
+        //const {weights, i_total_coverage_bounds} = vfpx;
+
+
+        // Worth having separate methods... different sized accumulator for different bipp.
+
+        // RGB accumulator...?
+
+        // depending on the number of bipp in the colorspace too.
+
+        
+
+
+
+    }
+
+
+
+
 
 
     const calc_ipx_coverage_areas = (vfp) => {
@@ -152,6 +268,28 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
         // i_any_coverage_width is definitely clearer what it means.
 
 
+        // pastel.resize resizes iteself.
+        //  would overwrite its own pb.
+
+
+
+        // pastel.new_resized([12, 12]);
+        //  would do the superpixel sampling.
+
+        // later on, resizing with inline / inloop weight calculations...
+        //  would use the weights immediately.
+        //  will be nice to test this against an already working method, and benchmark.
+
+        const merged_pastel_rbg = read_merged_vfpx(pastel.ta, pastel.ta_colorspace, vfp);
+
+        console.log('merged_pastel_rbg', merged_pastel_rbg);
+        
+
+
+
+
+
+
         // get the merged pixel value from pastel?
         //  pastel.get_merged_fpx(vfp);
         //   
@@ -170,15 +308,14 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
             no_partial_edges: vfp.no_partial_edges,
             f_ltrb_edge_proportions: vfp.f_ltrb_edge_proportions,
             f_tl_tr_bl_br_corner_proportions: vfp.f_tl_tr_bl_br_corner_proportions,
-            ipx_coverage_areas: calc_ipx_coverage_areas(vfp),
-            weights: vfp.weights
+            //ipx_coverage_areas: calc_ipx_coverage_areas(vfp),
+            weights: vfp.weights,
+            merged_pastel_rbg: merged_pastel_rbg
         }
     }
 
-
     // Now want to create upscaled resized image.
     //  Or write a general image resizing function within ta_maths, that uses VFPX?
-
 
     // read_merged_vfpx_from_ta_colorspace(ta_source, colorspace, vfpx);
     //  gets the weights
@@ -186,6 +323,16 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
     //  provides the result.
 
     // doing it more within the maths and array level will help general implementations, and these function can be used within classes such as pb too.
+
+
+    const normal_pos = [14.4, 6.2];
+
+
+    // Not so sure about making resizing examples here.
+    //  Could be time for a resize.js examples
+    //   Building code there and integrating it into lower levels.
+
+    
 
 
     const examples = [
@@ -200,62 +347,61 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
         }],
         //false, 
         ['vfpx_10p4c10p4_3p5x0p2', () => {
-            const vfp = new Virtual_Float_Pixel([10.4, 10.4], [3.5, 0.2]);
+            const vfp = new Virtual_Float_Pixel(normal_pos, [3.5, 0.2]);
             return eg_vfpx_info(vfp);
 
         }],
         ['vfpx_10p4c10p4_3p5x1p1', () => {
-            const vfp = new Virtual_Float_Pixel([10.4, 10.4], [3.5, 1.1]);
+            const vfp = new Virtual_Float_Pixel(normal_pos, [3.5, 1.1]);
             return eg_vfpx_info(vfp);
         }],
+        //false,
         ['vfpx_10p4c10p4_3p5x1p8', () => {
-            const vfp = new Virtual_Float_Pixel([10.4, 10.4], [3.5, 1.8]);
+            const vfp = new Virtual_Float_Pixel(normal_pos, [3.5, 1.8]);
             return eg_vfpx_info(vfp);
         }],
         ['vfpx_10p4c10p4_3p5x2p4', () => {
-            const vfp = new Virtual_Float_Pixel([10.4, 10.4], [3.5, 2.4]);
+            const vfp = new Virtual_Float_Pixel(normal_pos, [3.5, 2.4]);
             return eg_vfpx_info(vfp);
         }],
         ['vfpx_10p4c10p4_3p5x2p6', () => {
-            const vfp = new Virtual_Float_Pixel([10.4, 10.4], [3.5, 2.6]);
+            const vfp = new Virtual_Float_Pixel(normal_pos, [3.5, 2.6]);
             return eg_vfpx_info(vfp);
         }],
         ['vfpx_10p4c10p4_3p5x2p7', () => {
-            const vfp = new Virtual_Float_Pixel([10.4, 10.4], [3.5, 2.7]);
+            const vfp = new Virtual_Float_Pixel(normal_pos, [3.5, 2.7]);
             return eg_vfpx_info(vfp);
         }],
         // Now let's try taller virtual pixels...
         // 0.2, 0.8, 1.1, 1.8, 2.4, 2.6, 2.7
         ['vfpx_10p4c10p4_0p2x3p5', () => {
-            const vfp = new Virtual_Float_Pixel([10.4, 10.4], [0.2, 3.5]);
+            const vfp = new Virtual_Float_Pixel(normal_pos, [0.2, 3.5]);
             return eg_vfpx_info(vfp);
         }],
         ['vfpx_10p4c10p4_0p8x3p5', () => {
-            const vfp = new Virtual_Float_Pixel([10.4, 10.4], [0.8, 3.5]);
+            const vfp = new Virtual_Float_Pixel(normal_pos, [0.8, 3.5]);
             return eg_vfpx_info(vfp);
         }],
         ['vfpx_10p4c10p4_1p1x3p5', () => {
-            const vfp = new Virtual_Float_Pixel([10.4, 10.4], [1.1, 3.5]);
+            const vfp = new Virtual_Float_Pixel(normal_pos, [1.1, 3.5]);
             return eg_vfpx_info(vfp);
         }],
         ['vfpx_10p4c10p4_1p8x3p5', () => {
-            const vfp = new Virtual_Float_Pixel([10.4, 10.4], [1.8, 3.5]);
+            const vfp = new Virtual_Float_Pixel(normal_pos, [1.8, 3.5]);
             return eg_vfpx_info(vfp);
         }],
         ['vfpx_10p4c10p4_2p4x3p5', () => {
-            const vfp = new Virtual_Float_Pixel([10.4, 10.4], [2.4, 3.5]);
+            const vfp = new Virtual_Float_Pixel(normal_pos, [2.4, 3.5]);
             return eg_vfpx_info(vfp);
         }],
         ['vfpx_10p4c10p4_2p6x3p5', () => {
-            const vfp = new Virtual_Float_Pixel([10.4, 10.4], [2.6, 3.5]);
+            const vfp = new Virtual_Float_Pixel(normal_pos, [2.6, 3.5]);
             return eg_vfpx_info(vfp);
         }],
         ['vfpx_10p4c10p4_2p7x3p5', () => {
-            const vfp = new Virtual_Float_Pixel([10.4, 10.4], [2.7, 3.5]);
+            const vfp = new Virtual_Float_Pixel(normal_pos, [2.7, 3.5]);
             return eg_vfpx_info(vfp);
         }]
-        // Need to reimplement reading virtual pixels from some test images.
-        // 
     ]
     
 
