@@ -952,16 +952,16 @@ class Virtual_Float_Pixel {
                             // taf_ltrb_edge_proportions
 
                             //const res = get_taf_cached_weights(2);
-                            res[0] = taf_ltrb_edge_proportions[1] / f_size[1];
-                            res[1] = taf_ltrb_edge_proportions[3] / f_size[1];
+                            res[0] = taf_ltrb_edge_proportions[1] / taf_size[1];
+                            res[1] = taf_ltrb_edge_proportions[3] / taf_size[1];
 
 
 
                             
 
                         } else if (w === 2 && h === 1) {
-                            res[0] = taf_ltrb_edge_proportions[0] / f_size[0];
-                            res[1] = taf_ltrb_edge_proportions[1] / f_size[0];
+                            res[0] = taf_ltrb_edge_proportions[0] / taf_size[0];
+                            res[1] = taf_ltrb_edge_proportions[1] / taf_size[0];
 
                         } else if (w === 2 && h === 2) {
 

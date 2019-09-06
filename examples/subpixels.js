@@ -1,4 +1,14 @@
 
+/*
+    Roadmap - towards 0.0.24
+        Move tested and relevant algorithms to ta_math where appropriate.
+        More resizing examples - could use Erte Ale.
+        Perf Opt
+
+
+*/
+
+
 
 const eg_mod_name = 'subpixels';
 
@@ -114,14 +124,12 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
         const xy = new Int16Array(2);
         let byi_read = 3 * i_any_coverage_bounds[0] + bypr * i_any_coverage_bounds[1];
         let byi_weight = 0;
-
         // 
 
         const iw = i_any_coverage_bounds[2] - i_any_coverage_bounds[0];
 
         const bytes_read_row_end_jump = bypr - iw * 3;
         const acc_rgb = new Float32Array(3);
-
         // Probably a problem at this merging stage.
 
         //console.log('colorspace: [width, height, bypp, bypr, bipp, bipr]', [width, height, bypp, bypr, bipp, bipr]);
@@ -129,9 +137,6 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
         //console.log('vfpx.i_any_coverage_bounds', vfpx.i_any_coverage_bounds);
 
         console.log('weights', weights);
-        
-
-
 
         for (xy[1] = i_any_coverage_bounds[1]; xy[1] < i_any_coverage_bounds[3]; xy[1]++) {
             for (xy[0] = i_any_coverage_bounds[0]; xy[0] < i_any_coverage_bounds[2]; xy[0]++) {
@@ -191,7 +196,7 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
     const read_merged_vfpx = (ta_source, colorspace, vfpx) => {
         // get the weights for that vfpx ... very useful to have them!
         //  need to know the any coverage row width
-        console.log('colorspace', colorspace);
+        //console.log('colorspace', colorspace);
         const [width, height, bypp, bypr, bipp, bipr] = colorspace;
 
         if (bipp === 1) {
@@ -316,6 +321,86 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
         }
     }
 
+    // a function that is only mathematical, uses the tas, but not the pbs...
+
+    const resize_ta_colorspace = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
+
+        //const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
+
+        const bypp = source_colorspace[2];
+        const bipp = source_colorspace[4];
+        const dest_num_pixels = dest_size[0] * dest_size[1];
+        const dest_num_bytes = dest_num_pixels * bypp;
+
+        const source_size = source_colorspace.subarray(0, 2);
+
+
+        
+
+        if (opt_ta_dest) {
+            if (opt_ta_dest.length !== dest_num_bytes) {
+                console.trace();
+                throw 'opt_ta_dest.length error';
+            }
+        } else {
+            opt_ta_dest = new Uint8ClampedArray(dest_num_bytes);
+        }
+
+        const dest_to_source_ratio = new Float32Array([source_size[0] / dest_size[0], source_size[1] / dest_size[1]]);
+        console.log('dest_to_source_ratio', dest_to_source_ratio);
+        const source_vfpixel_size = dest_to_source_ratio;
+
+        let b_write = 0;
+        // looping through the dest int positions makes sense.
+        //let x = 0, y = 0;
+        const dest_xy = new Int16Array([0, 0]);
+
+
+        for (dest_xy[1] = 0; dest_xy[1] < dest_size[1]; dest_xy[1]++) {
+            for (dest_xy[0] = 0; dest_xy[0] < dest_size[0]; dest_xy[0]++) {
+                //console.log('');
+                //console.log('dest_xy', dest_xy);
+                const source_fpos = new Float32Array([dest_xy[0] * source_vfpixel_size[0], dest_xy[1] * source_vfpixel_size[1]]);
+                //console.log('source_fpos', source_fpos);
+                const vfp = new Virtual_Float_Pixel(source_fpos, source_vfpixel_size);
+                //console.log('vfp.bounds', vfp.bounds);
+                const merged_rbg = read_merged_vfpx(source_ta, pb.ta_colorspace, vfp);
+                //console.log('merged_rbg', merged_rbg);
+
+                opt_ta_dest[b_write++] = merged_rbg[0];
+                opt_ta_dest[b_write++] = merged_rbg[1];
+                opt_ta_dest[b_write++] = merged_rbg[2];
+
+
+                // new vfpx each time for the moment. then will work on optimized adjustments / better integrating it with other functionality.
+                //  Virtual_Float_Rect?
+                //   For rectangularly expressed regions, and then VFPX can iterate inside it.
+                //   A tool for helping with iteration of VFPX, and treating a float window into an int coord space as an object that is readable by its transformed values.
+
+                // Integrating resize transformation with window_to?
+                //  With the pb itself handling copy / update iterations involving resizing as well as other processes / transformations.
+
+
+
+
+
+
+
+
+            }
+        }
+
+
+        return opt_ta_dest;
+    }
+
+
+    // could get the new resized ta, then give it to a new pb.
+    //  the new pb would take that ta as its own.
+
+
+
+
     const new_resized_pb = (pb, size) => {
         const source_ta = pb.ta;
 
@@ -337,19 +422,12 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
         const taf_source_xy = new Float32Array(2);
         const ta_dest = dest.ta;
         let b_write = 0;
-
-
-
         // looping through the dest int positions makes sense.
-
         //let x = 0, y = 0;
         let dest_xy = new Int16Array([0, 0]);
-
         console.log('dest_size', dest_size);
-
         // source and dest colorspaces?
         //  would have source bipp bypr etc...
-
         // iterating over the whole of the dest_xy
 
         // direct writing to the dest.
@@ -481,6 +559,36 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
 
 
 
+        }],
+        ['resize_32x32_24bipp_pastel_to_12x12', () => {
+
+            // simpler type of resizing, should make use of all having total pixel coverage special case.
+
+            // will go over the 32x32 virtual pixel view...
+            //  maybe virtual pixel view is a useful abstraction here too...?
+
+            // any optimization for iterating over virtual pixel space?
+            //  
+
+            console.log('resize_32x32_24bipp_pastel_to_12x12');
+
+            const new_size = new Int16Array([12, 12]);
+            const pb_res = new_resized_pb(pastel, new_size);
+            return pb_res;
+
+
+        }],
+        ['resize_32x32_24bipp_pastel_to_36x36', () => {
+            console.log('resize_32x32_24bipp_pastel_to_12x12');
+            const new_size = new Int16Array([36, 36]);
+            const pb_res = new_resized_pb(pastel, new_size);
+            return pb_res;
+        }],
+        ['resize_32x32_24bipp_pastel_to_50x50', () => {
+            console.log('resize_32x32_24bipp_pastel_to_12x12');
+            const new_size = new Int16Array([50, 50]);
+            const pb_res = new_resized_pb(pastel, new_size);
+            return pb_res;
         }],
 
         false,
