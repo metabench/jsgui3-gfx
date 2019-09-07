@@ -320,7 +320,7 @@ const resize_ta_colorspace_24bipp_subpixels$dest_ipos_iterate = (ta_source, sour
     // And increment these by bytes_per_pixel whenever it moves to the next pixel.
     //  Careful about row ends...?
 
-    let prev_source_ix, prev_source_iy;
+    let prev_source_ix = 0, prev_source_iy = -1;
 
     // then the integer-only (floored) source bottom and source right.
 
@@ -337,19 +337,27 @@ const resize_ta_colorspace_24bipp_subpixels$dest_ipos_iterate = (ta_source, sour
     let proportion_top = 0, proportion_left = 0;
 
     let source_fx_left_of_crossover, source_fx_right_of_crossover, source_fy_above_crossover, source_fy_below_crossover;
-
-
     let byi_write = 0;
 
     // Change checking, to update tai_2x2_byte_indexes?
 
     for (dest_iy = 0, source_fy = 0; dest_iy < dest_iheight; dest_iy++, source_fy += dest_to_source_y_ratio, source_fy_bottom += dest_to_source_y_ratio) {
         //console.log('source_fy_bottom', source_fy_bottom);
+        //source_fx_right = dest_to_source_y_ratio;
+
+
+
+        //console.log('dest_iy', dest_iy);
+        //console.log('byi_write', byi_write);
+
+
+        // Any need to see if the y position has advanced / changed?
+        //  Any read position to update?
+
+
 
 
         // worth calculating crossover proportions - as if it extends below by 0.000001 px then it's a rounding error.
-
-
 
 
         // May falsely detect it crossing down because of accuracy loss.
@@ -359,6 +367,18 @@ const resize_ta_colorspace_24bipp_subpixels$dest_ipos_iterate = (ta_source, sour
 
         source_fy_above_crossover = (source_iy + 1) - source_fy;
         source_fy_below_crossover = source_fy_bottom - (source_iy + 1);
+
+        if (source_iy > prev_source_iy) {
+            byi_read_tl += bytes_per_pixel;
+            byi_read_tr += bytes_per_pixel;
+            byi_read_bl += bytes_per_pixel;
+            byi_read_br += bytes_per_pixel;
+        } else {
+            byi_read_tl -= source_bypr;
+            byi_read_tr -= source_bypr;
+            byi_read_bl -= source_bypr;
+            byi_read_br -= source_bypr;
+        }
 
         //console.log('');
         //console.log('source_fy_above_crossover', source_fy_above_crossover);
@@ -399,28 +419,32 @@ const resize_ta_colorspace_24bipp_subpixels$dest_ipos_iterate = (ta_source, sour
             //proportion_top = 1 - (source_fy - source_iy);
             //console.log('proportion_top', proportion_top);
 
-            for (dest_ix = 0, source_fx = 0; dest_ix < dest_iwidth; dest_ix++, source_fx += dest_to_source_x_ratio, source_fx_right += dest_to_source_x_ratio) {
+            for (dest_ix = 0, source_fx = 0, source_fx_right = dest_to_source_x_ratio; dest_ix < dest_iwidth; dest_ix++, source_fx += dest_to_source_x_ratio, source_fx_right += dest_to_source_x_ratio) {
                 source_ix = Math.floor(source_fx)
                 source_ix_right = Math.floor(source_fx_right);
-
                 source_fx_left_of_crossover = (source_ix + 1) - source_fx;
-                source_fx_right_of_crossover = source_fx_right - (source_iy + 1);
+                source_fx_right_of_crossover = source_fx_right - (source_ix + 1);
+                extends_right = source_fx_left_of_crossover >= 0.000001;
+
+
+                //extends_right = source_ix !== source_ix_right;
+
+                
 
 
                 // Calc the amount it extends right, then account for rounding errors.
-
-
-
 
 
                 //extends_right = source_iy !== source_iy_bottom;
 
 
                 // and check if it's enclosed in the same subpixel as b4?
+                //console.log('');
     
                 //console.log('source_ix', source_ix);
                 //console.log('prev_source_ix', prev_source_ix);
-                if (source_ix !== prev_source_ix) {
+                //throw 'stop';
+                if (source_ix > prev_source_ix) {
                     byi_read_tl += bytes_per_pixel;
                     byi_read_tr += bytes_per_pixel;
                     byi_read_bl += bytes_per_pixel;
@@ -442,9 +466,6 @@ const resize_ta_colorspace_24bipp_subpixels$dest_ipos_iterate = (ta_source, sour
     
                 //console.log('[byi_read_tl, byi_read_tr, byi_read_bl, byi_read_br]', [byi_read_tl, byi_read_tr, byi_read_bl, byi_read_br]);
     
-    
-    
-    
                 
     
                 prev_source_ix = source_ix;
@@ -454,42 +475,75 @@ const resize_ta_colorspace_24bipp_subpixels$dest_ipos_iterate = (ta_source, sour
         } else {
 
 
-            for (dest_ix = 0, source_fx = 0; dest_ix < dest_iwidth; dest_ix++, source_fx += dest_to_source_x_ratio, source_fx_right += dest_to_source_x_ratio) {
+            for (dest_ix = 0, source_fx = 0, source_fx_right = dest_to_source_x_ratio; dest_ix < dest_iwidth; dest_ix++, source_fx += dest_to_source_x_ratio, source_fx_right += dest_to_source_x_ratio) {
                 source_ix = Math.floor(source_fx)
                 source_ix_right = Math.floor(source_fx_right);
-                extends_right = source_iy !== source_iy_bottom;
+                source_fx_left_of_crossover = (source_ix + 1) - source_fx;
+                source_fx_right_of_crossover = source_fx_right - (source_ix + 1);
+                extends_right = source_fx_right_of_crossover >= 0.000001;
+                
+
+                //console.log('');
+    
+                //console.log('source_ix', source_ix);
+                //console.log('prev_source_ix', prev_source_ix);
+                //throw 'stop';
                 // and check if it's enclosed in the same subpixel as b4?
     
                 //console.log('source_ix', source_ix);
                 //console.log('prev_source_ix', prev_source_ix);
-                if (source_ix !== prev_source_ix) {
+
+
+                if (source_ix > prev_source_ix) {
+
                     byi_read_tl += bytes_per_pixel;
                     byi_read_tr += bytes_per_pixel;
                     byi_read_bl += bytes_per_pixel;
                     byi_read_br += bytes_per_pixel;
+
+
+                    /*
+
+                    if (source_iy !== prev_source_iy) {
+                        // it's already been reset?
+                    } else {
+                        
+                    }
+                    */
+
+
+
+                    //  includes going to a new row.
+                    //   ???
+                    //  need to change it / reset it when going back to the same source row on a new dest row.
+                    
                 }
 
                 if (extends_right) {
                     // 2x1
                     byi_write += 3;
                 } else {
+                    //console.log('byi_read_tl', byi_read_tl);
                     // 1x1 direct px copy
                     ta_dest[byi_write++] = ta_source[byi_read_tl];
                     ta_dest[byi_write++] = ta_source[byi_read_tl + 1];
                     ta_dest[byi_write++] = ta_source[byi_read_tl + 2];
-
                 }
                 //throw 'stop';
     
                 //console.log('[byi_read_tl, byi_read_tr, byi_read_bl, byi_read_br]', [byi_read_tl, byi_read_tr, byi_read_bl, byi_read_br]);
     
-    
-    
-    
                 
     
                 prev_source_ix = source_ix;
             }
+
+            // Send byi_read_tl etc back to the beginning of a new row, if y doesn't change.
+            //  So far, the read pos if not properly staying in sync.
+
+            
+
+
 
         }
 
