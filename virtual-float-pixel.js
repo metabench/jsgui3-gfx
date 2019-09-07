@@ -6,6 +6,9 @@ class Virtual_Float_Pixel {
     // .size
 
     constructor() {
+
+        // take existing arrays if in the spec?
+
         const a = arguments, l = a.length;
         //
         const taf_bounds = new Float32Array(4);
@@ -23,25 +26,22 @@ class Virtual_Float_Pixel {
         // size of what?
         //  any coverage? total coverage?
         //  int total coverage size could be very useful too.
-        const tai_total_coverage_size = new Int16Array(2);
+        //const tai_total_coverage_size = new Int16Array(2);
         // ??? ^ tai_any_coverage_size
         const tai_total_coverage_bounds = new Int16Array(4);
         let no_partial_edges = true; // no edges at all to start with....
 
         let num_any_coverage_px = 0;
-        let i_any_coverage_width = 0;
+        //let i_any_coverage_width = 0;
 
 
-        let f_combined_vertical_proportion = 0;
-        let f_combined_horizontal_proportion = 0;
+        //let f_combined_vertical_proportion = 0;
+        //let f_combined_horizontal_proportion = 0;
 
         // f_edge_widths?
 
         // f_left_edge_width etc... could have these are read-only properties.
         //  and if any edge widths are 0, it would be useful info.
-
-
-
 
 
 
@@ -214,7 +214,7 @@ class Virtual_Float_Pixel {
 
             num_any_coverage_px = tai_any_coverage_size[0] * tai_any_coverage_size[1];
 
-            i_any_coverage_width = tai_any_coverage_size[0];
+            //i_any_coverage_width = tai_any_coverage_size[0];
 
             // tai_partial_coverage_size?
             //  separate bounds (up to 8?) for the partial coverage areas?
@@ -235,8 +235,8 @@ class Virtual_Float_Pixel {
                 taf_ltrb_edge_proportions.fill(1);
                 taf_tl_tr_bl_br_corner_proportions.fill(1);
 
-                f_combined_horizontal_proportion = 1;
-                f_combined_vertical_proportion = 1;
+                //f_combined_horizontal_proportion = 1;
+                //f_combined_vertical_proportion = 1;
                 
             } else {
 
@@ -317,8 +317,8 @@ class Virtual_Float_Pixel {
 
                 //console.log('taf_ltrb_edge_proportions', taf_ltrb_edge_proportions);
 
-                f_combined_horizontal_proportion = taf_ltrb_edge_proportions[0] * taf_ltrb_edge_proportions[2];
-                f_combined_vertical_proportion = taf_ltrb_edge_proportions[1] * taf_ltrb_edge_proportions[3];
+                //f_combined_horizontal_proportion = taf_ltrb_edge_proportions[0] * taf_ltrb_edge_proportions[2];
+                //f_combined_vertical_proportion = taf_ltrb_edge_proportions[1] * taf_ltrb_edge_proportions[3];
 
                 // distance covered...
 
@@ -438,7 +438,7 @@ class Virtual_Float_Pixel {
                 const update_hor = value[0] !== taf_pos[0];
                 const update_ver = value[1] !== taf_pos[1];
 
-                taf_pos.set(value);
+                
 
                 if (update_hor) {
                     taf_bounds[0] = value[0];
@@ -454,7 +454,10 @@ class Virtual_Float_Pixel {
                     //taf_size[1] += delta_y;
                 }
 
-                if (update_hor || update_ver) update_tier2_locals();
+                if (update_hor || update_ver) {
+                    taf_pos.set(value);
+                    update_tier2_locals();
+                }
 
                 /*
 
@@ -516,8 +519,8 @@ class Virtual_Float_Pixel {
 
                 // and offset amounts, to add and subtract from bounds values...
 
-                const delta_w = value[0] - taf_size[0];
-                const delta_h = value[1] - taf_size[1];
+                //const delta_w = value[0] - taf_size[0];
+                //const delta_h = value[1] - taf_size[1];
 
                 //console.log('delta_w', delta_w);
                 //console.log('delta_h', delta_h);
@@ -525,21 +528,24 @@ class Virtual_Float_Pixel {
                 const update_hor = value[0] !== taf_size[0];
                 const update_ver = value[1] !== taf_size[1];
 
-                taf_size.set(value);
+                
 
                 //console.log('update_hor', update_hor);
                 //console.log('update_ver', update_ver);
 
                 if (update_hor) {
                     //taf_bounds[0] += delta_w;
-                    taf_bounds[2] += delta_w;
+                    taf_bounds[2] += value[0] - taf_size[0];
                 }
                 if (update_ver) {
                     //taf_bounds[1] += delta_h;
-                    taf_bounds[3] += delta_h;
+                    taf_bounds[3] += value[1] - taf_size[1];
                 }
 
-                if (update_hor || update_ver) update_tier2_locals();
+                if (update_hor || update_ver) {
+                    taf_size.set(value);
+                    update_tier2_locals();
+                }
             },
             enumerable: true,
             configurable: false
@@ -661,6 +667,9 @@ class Virtual_Float_Pixel {
 
         // const get_ipx_coverage 
 
+
+        /*
+
         const get_ipx_coverage = this.get_ipx_coverage = (i_pos) => {
 
             console.log('VFPX get_ipx_coverage i_pos:', i_pos);
@@ -699,6 +708,8 @@ class Virtual_Float_Pixel {
 
         }
 
+        */
+
 
         // ipos_cursor?
         //  so could adjust / iterate a cursor, and then calculate / get the weight on each pixel in that cursor.
@@ -708,10 +719,13 @@ class Virtual_Float_Pixel {
 
 
         // weight = coverage / f_area
+
+        /*
         const get_ipx_weight = this.get_ipx_weight = (i_pos) => {
 
 
         }
+        */
 
         // get weights property?
         //  will return a float ta with the weights of all the pixels within the coverage area.
@@ -730,7 +744,8 @@ class Virtual_Float_Pixel {
         //  Maybe there is a limit of 9? something like that.
 
 
-        const map_cached_res_taf_weights_by_length = new Array(10);
+        //const map_cached_res_taf_weights_by_length = new Array(10);
+        const map_cached_res_taf_weights_by_length = {};
 
         // maybe an obj map makes more sense.
         //  as it would be a very sparse array.
@@ -741,6 +756,8 @@ class Virtual_Float_Pixel {
 
 
         const taf_1_weight = map_cached_res_taf_weights_by_length[1] = new Float32Array([1]);
+
+        // other special cases?
 
 
         const get_taf_cached_weights = length => {
@@ -754,9 +771,29 @@ class Virtual_Float_Pixel {
         // get_res_weight(length)
         
 
+        // To what extent can this be moved to ta_math?
 
+        // calc_vfpx_coverage_weights???
+        //  Maybe it's best placed here for the moment.
+        //   ???
+        //  Then it could be used by algos that don't use the VFPX class.
+        //   This code splitting could be a better route for long-term efficiency and optimization.
+
+
+
+
+        // Weights calculation would be better within ta_math where the pure maths parts can be separated.
+
+        
         Object.defineProperty(this, 'weights', {
             get() {
+
+
+                // Could / should this be done without declaring any new variables at all?
+                //  Should try optimizations and benchmark.
+
+
+
                 // Create a weights object here?
                 //  
 
@@ -785,6 +822,9 @@ class Virtual_Float_Pixel {
                 const [w, h] = tai_any_coverage_size;
                 //console.log('[w, h]', [w, h]);
 
+
+                // 
+
                 if (num_any_coverage_px === 1) {
                     // special simple case. may happen a lot with subpixel sampling especially with large upscaling.
                     //  weight is 1.
@@ -799,13 +839,13 @@ class Virtual_Float_Pixel {
                     if (no_partial_edges) {
                         // Not sure how often it will come up, worth optimizing for though.
 
-                        const res = get_taf_cached_weights(num_any_coverage_px);
-                        // prefilled result typed arrays for this case?
-                        //  would be a further optimization.
+                        //const res = get_taf_cached_weights(num_any_coverage_px);
+                        //res.fill(1 / area);
+                        //return res;
 
-                        const weight = 1 / area; // special case calculation here.
-                        res.fill(weight);
-                        return res;
+                        return get_taf_cached_weights(num_any_coverage_px).fill(1 / area);
+
+
 
 
                         // Use cached weights
@@ -823,7 +863,7 @@ class Virtual_Float_Pixel {
 
 
                         // 
-                        const f_totally_covered_weight = 1 / area;
+                        //const f_totally_covered_weight = 1 / area;
 
                         // Is this correct...? f_totally_covered_weight ... seems correct.
                         //  Seems / could be incorrect for subpixel strips.
@@ -918,9 +958,7 @@ class Virtual_Float_Pixel {
 
                         //console.log('taf_ltrb_edge_proportions', taf_ltrb_edge_proportions);
                         //console.log('taf_tl_tr_bl_br_corner_proportions', taf_tl_tr_bl_br_corner_proportions);
-
                         const res = get_taf_cached_weights(num_any_coverage_px);
-
 
                         // variable totally_covered_px_weight = 1 / area.
                         //  would make sense to use that....
@@ -932,7 +970,7 @@ class Virtual_Float_Pixel {
                         //  only 
 
 
-                        res.fill(0); // just in case while testing. Should probably remove later on, they'll all certainly be overwritten.
+                        //res.fill(0); // just in case while testing. Should probably remove later on, they'll all certainly be overwritten.
 
 
                         // Some are easy...
@@ -941,6 +979,9 @@ class Virtual_Float_Pixel {
 
                         // Algo advantage for height >3 - compose the middle rows separately.
                         //  
+
+
+                        // Call smaller weight read function?
 
 
 
@@ -954,9 +995,6 @@ class Virtual_Float_Pixel {
                             //const res = get_taf_cached_weights(2);
                             res[0] = taf_ltrb_edge_proportions[1] / taf_size[1];
                             res[1] = taf_ltrb_edge_proportions[3] / taf_size[1];
-
-
-
                             
 
                         } else if (w === 2 && h === 1) {
@@ -1119,29 +1157,32 @@ class Virtual_Float_Pixel {
                                 //  It makes a lot of sense to precalculate the v-middle rows.
                                 //   (rows with full vertical coverage)
 
-                                const v_top = new Float32Array(w);
-                                v_top.fill(taf_ltrb_edge_proportions[1] / area);
-                                v_top[0] = taf_tl_tr_bl_br_corner_proportions[0] / area;
-                                v_top[w - 1] = taf_tl_tr_bl_br_corner_proportions[1] / area;
+                                const row = new Float32Array(w);
 
-                                const v_middle = new Float32Array(w);
+                                //const v_top = new Float32Array(w);
+                                row.fill(taf_ltrb_edge_proportions[1] / area);
+                                row[0] = taf_tl_tr_bl_br_corner_proportions[0] / area;
+                                row[w - 1] = taf_tl_tr_bl_br_corner_proportions[1] / area;
+
+                                res.set(row, 0);
+
+                                //const v_middle = row;
                                 // left edge, the inner parts have coverage 1.
-                                v_middle.fill(1 / area);
-                                v_middle[0] = taf_ltrb_edge_proportions[0] / area;
-                                v_middle[w - 1] = taf_ltrb_edge_proportions[2] / area;
-
-                                const v_bottom = new Float32Array(w);
-                                v_bottom.fill(taf_ltrb_edge_proportions[3] / area);
-                                v_bottom[0] = taf_tl_tr_bl_br_corner_proportions[2] / area;
-                                v_bottom[w - 1] = taf_tl_tr_bl_br_corner_proportions[3] / area;
-
-                                res.set(v_top, 0);
+                                row.fill(1 / area);
+                                row[0] = taf_ltrb_edge_proportions[0] / area;
+                                row[w - 1] = taf_ltrb_edge_proportions[2] / area;
 
                                 const hm1 = h - 1;
                                 for (let y = 1; y < hm1; y++) {
-                                    res.set(v_middle, y * w);
+                                    res.set(row, y * w);
                                 }
-                                res.set(v_bottom, hm1 * w);
+
+                                //const v_bottom = row;
+                                row.fill(taf_ltrb_edge_proportions[3] / area);
+                                row[0] = taf_tl_tr_bl_br_corner_proportions[2] / area;
+                                row[w - 1] = taf_tl_tr_bl_br_corner_proportions[3] / area;
+                                
+                                res.set(row, hm1 * w);
 
                                 // Writing the middle row in multiple positions on the res makes sense.
                                 //  Avoiding having to actually do this xy double for loop :)
@@ -1317,15 +1358,12 @@ class Virtual_Float_Pixel {
                                     bottom_row[0] = taf_tl_tr_bl_br_corner_proportions[2] / area;
                                     bottom_row[w - 1] = taf_tl_tr_bl_br_corner_proportions[3] / area;
 
-
                                     res.set(top_row, 0);
                                     res.set(middle_row, w);
                                     res.set(bottom_row, w * 2);
 
-
                                     // 3 long, thin rows.
                                     //  easy / fast to put together, as we can use .fill and .set.
-                                    
 
                                 } else {
                                     console.trace();
@@ -1419,32 +1457,15 @@ class Virtual_Float_Pixel {
                         // special cases for 3x>3 and >3x3?
                         //  Could make sense as there is no loop for an inner part, at least when writing rows to the weights.
 
-
-
-
                         // getting an array of 8 corner and edge values could be of use too.
                         //  or 9 in total with 1 in the middle???
 
                         // or the edge and corner weight values, along with using the totally covered size.
                         //  quite a few steps to it but it's not all that complex when broken down / unpacked.
 
-
-
-
-
-
-
-
-
-
                         // the 4 pixel combination is likely to be used / called on a lot.
 
-
-
-
                         // Not the special case of having no partial edges.
-
-
                         // Lots of cases to cover... want to use the most optimal algorithm for each.
                         //  May call the more complex algorithms from outside this function???
                         //   Maybe not, for perf reasons.
@@ -1453,15 +1474,9 @@ class Virtual_Float_Pixel {
 
 
 
-
-
-
                         // width 1, height 2
                         //  special case.
                         //   will use less complex weight calculation.
-
-
-
 
 
                         /*
@@ -1489,30 +1504,12 @@ class Virtual_Float_Pixel {
                         }
                         */
 
-
-
-
                     }
-
-
-
-
-
-
-
-
-                    
-
 
                     // look into various cases...
                     //  like with each_ipx.
 
                     // 2x1, 1x2, etc...
-
-
-
-
-
 
 
 

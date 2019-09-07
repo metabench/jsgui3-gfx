@@ -5,6 +5,8 @@
         More resizing examples - could use Erte Ale.
         Perf Opt
 
+        Also worth moving relevant inner working of VFPX into ta_math. ???
+
 
 */
 
@@ -21,6 +23,9 @@ const create = require('./create_eg_pbs');
 const { PerformanceObserver, performance } = require('perf_hooks');
 
 const ta_math = require('../ta-math');
+
+const {resize_ta_colorspace} = ta_math;
+//  makes more sense there!
 
 // Then the examples will use a proper example runner structure. Won't be all that complex, will allow observation of examples.
 //  
@@ -48,12 +53,8 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
     //}
 
     // Some examples of creating a new image from subpixel reads...
-
-
     // iterate over a different pixel range
-
     // so, come up with a larger pixel space, eg 100x100 (same ar)
-    
 
     // maybe we need more than taf_pos.
     //  the pixels / subpixels could be of a sifferent size.
@@ -72,8 +73,6 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
 
     // seems like it's worth trying that reading / sampling method. Can compare results with other methods.
     //  this could be really fast and accurate.
-
-
 
     // Initialise sample objects...
 
@@ -117,117 +116,25 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
     // pixel reading and merging by weights function here...
     //  should consider typed array map.
 
-    const read_merged_vfpx_24bipp = (ta_source, colorspace, vfpx) => {
-        const [width, height, bypp, bypr, bipp, bipr] = colorspace;
-        const {weights, i_any_coverage_bounds} = vfpx;
-        // 
-        const xy = new Int16Array(2);
-        let byi_read = 3 * i_any_coverage_bounds[0] + bypr * i_any_coverage_bounds[1];
-        let byi_weight = 0;
-        // 
+    // Copy into pixel?
 
-        const iw = i_any_coverage_bounds[2] - i_any_coverage_bounds[0];
+    // Copy into destination ta at a specified index?
+    //  saves having to create a px res object, and copy that into place.
 
-        const bytes_read_row_end_jump = bypr - iw * 3;
-        const acc_rgb = new Float32Array(3);
-        // Probably a problem at this merging stage.
+    // read_merged_vfpx_24bipp_write?
+    //  for the moment at least.
+    //   will be given the ta and the byidx.
 
-        //console.log('colorspace: [width, height, bypp, bypr, bipp, bipr]', [width, height, bypp, bypr, bipp, bipr]);
-        //console.log('vfpx.i_size', vfpx.i_size);
-        //console.log('vfpx.i_any_coverage_bounds', vfpx.i_any_coverage_bounds);
+    // use a static accumulator?
 
-        //console.log('weights', weights);
-
-        for (xy[1] = i_any_coverage_bounds[1]; xy[1] < i_any_coverage_bounds[3]; xy[1]++) {
-            for (xy[0] = i_any_coverage_bounds[0]; xy[0] < i_any_coverage_bounds[2]; xy[0]++) {
     
-                //const ui8_px_value = ta[byte_idx_pb_read];
-                //ui8_px_value = ta[byte_idx_pb_read];
+
     
-                //console.log('byte_idx_pb_read')
-    
-                acc_rgb[0] += ta_source[byi_read++] * weights[byi_weight];
-                acc_rgb[1] += ta_source[byi_read++] * weights[byi_weight];
-                acc_rgb[2] += ta_source[byi_read++] * weights[byi_weight++];
-                //ta_res[ta_byte_indexes[1]++] = ta[byi_read[0]++];
-                //ta_res[ta_byte_indexes[1]++] = ta[byi_read[0]++];
-    
-                // But don't need to copy the px value in many cases.
-    
-                //  Maybe have / use lower level fuctions for copying between different pbs / tas.
-                //  Iterating spaces.
-                //   Iterating spaces defined by a function / equation?
-                //    Eg could functionally / mathematically define a circle and draw it.
-                
-                // got the xy iteration pos set correctly here :)
-    
-                // could copy px values?
-                //  reading and using them directly may work best....
-    
-                //byte_idx_pb_read += bytes_per_pixel;
-    
-            }
-            // then row jump increase.
-            byi_read += bytes_read_row_end_jump;
-        }
-
-        // then copy the weighted values into the result...
-
-        /*
-
-        console.log('acc_rgb', acc_rgb);
-
-        if (acc_rgb[0] === 0) {
-            console.trace();
-            throw 'stop';
-        }
-        */
-
-        const res = new Uint8ClampedArray(acc_rgb);
-
-        //console.log('read_merged_vfpx_24bipp res', res);
-
-        return res;
-
-
-    }
-
-
-    const read_merged_vfpx = (ta_source, colorspace, vfpx) => {
-        // get the weights for that vfpx ... very useful to have them!
-        //  need to know the any coverage row width
-        //console.log('colorspace', colorspace);
-        const [width, height, bypp, bypr, bipp, bipr] = colorspace;
-
-        if (bipp === 1) {
-            console.trace(); throw 'NYI';
-        } else if (bipp === 8) {
-            console.trace(); throw 'NYI';
-        } else if (bipp === 24) {
-            return read_merged_vfpx_24bipp(ta_source, colorspace, vfpx)
-        } else if (bipp === 32) {
-            console.trace(); throw 'NYI';
-        }
-
-        //const {weights, i_total_coverage_bounds} = vfpx;
-
-
-        // Worth having separate methods... different sized accumulator for different bipp.
-
-        // RGB accumulator...?
-
-        // depending on the number of bipp in the colorspace too.
-
-        
-
-
-
-    }
 
 
 
 
-
+    /*
 
     const calc_ipx_coverage_areas = (vfp) => {
         const arr_ipx = [
@@ -236,6 +143,7 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
         const res = arr_ipx.map(area => [area, vfp.get_ipx_coverage(area)]);
         return res;
     }
+    */
 
     const eg_vfpx_info = vfp => {
 
@@ -323,76 +231,7 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
 
     // a function that is only mathematical, uses the tas, but not the pbs...
 
-    const resize_ta_colorspace = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
-
-        //const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
-
-        const bypp = source_colorspace[2];
-        const bipp = source_colorspace[4];
-        const dest_num_pixels = dest_size[0] * dest_size[1];
-        const dest_num_bytes = dest_num_pixels * bypp;
-
-        const source_size = source_colorspace.subarray(0, 2);
-
-
-        
-
-        if (opt_ta_dest) {
-            if (opt_ta_dest.length !== dest_num_bytes) {
-                console.trace();
-                throw 'opt_ta_dest.length error';
-            }
-        } else {
-            opt_ta_dest = new Uint8ClampedArray(dest_num_bytes);
-        }
-
-        const dest_to_source_ratio = new Float32Array([source_size[0] / dest_size[0], source_size[1] / dest_size[1]]);
-        console.log('dest_to_source_ratio', dest_to_source_ratio);
-        const source_vfpixel_size = dest_to_source_ratio;
-
-        let b_write = 0;
-        // looping through the dest int positions makes sense.
-        //let x = 0, y = 0;
-        const dest_xy = new Int16Array([0, 0]);
-
-
-        for (dest_xy[1] = 0; dest_xy[1] < dest_size[1]; dest_xy[1]++) {
-            for (dest_xy[0] = 0; dest_xy[0] < dest_size[0]; dest_xy[0]++) {
-                //console.log('');
-                //console.log('dest_xy', dest_xy);
-                const source_fpos = new Float32Array([dest_xy[0] * source_vfpixel_size[0], dest_xy[1] * source_vfpixel_size[1]]);
-                //console.log('source_fpos', source_fpos);
-                const vfp = new Virtual_Float_Pixel(source_fpos, source_vfpixel_size);
-                //console.log('vfp.bounds', vfp.bounds);
-                const merged_rbg = read_merged_vfpx(source_ta, pb.ta_colorspace, vfp);
-                //console.log('merged_rbg', merged_rbg);
-
-                opt_ta_dest[b_write++] = merged_rbg[0];
-                opt_ta_dest[b_write++] = merged_rbg[1];
-                opt_ta_dest[b_write++] = merged_rbg[2];
-
-
-                // new vfpx each time for the moment. then will work on optimized adjustments / better integrating it with other functionality.
-                //  Virtual_Float_Rect?
-                //   For rectangularly expressed regions, and then VFPX can iterate inside it.
-                //   A tool for helping with iteration of VFPX, and treating a float window into an int coord space as an object that is readable by its transformed values.
-
-                // Integrating resize transformation with window_to?
-                //  With the pb itself handling copy / update iterations involving resizing as well as other processes / transformations.
-
-
-
-
-
-
-
-
-            }
-        }
-
-
-        return opt_ta_dest;
-    }
+    
 
 
     // could get the new resized ta, then give it to a new pb.
@@ -411,6 +250,19 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
             size: dest_size,
             bits_per_pixel: 24
         });
+
+        // slower this way!
+        //  by a bit.
+
+        resize_ta_colorspace(pb.ta, pb.ta_colorspace, dest_size, dest.ta);
+
+
+        return dest;
+
+
+
+        /*
+
 
         // calculate scale, iterate through virtual float pixel space.
 
@@ -433,6 +285,12 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
         // direct writing to the dest.
 
         // Seems like a problem with applying the 4x4 total coverage weightings.
+
+        // direct mathematical writing to the dest pb could be of use.
+        //  Using the math algo would help, and then more work can be done on the more purely math algo.
+
+
+
 
 
 
@@ -469,6 +327,8 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
 
             }
         }
+
+        */
 
 
 
@@ -556,6 +416,7 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
 
 
         }],
+        //false,
         ['resize_32x32_24bipp_pastel_to_12x12', () => {
 
             // simpler type of resizing, should make use of all having total pixel coverage special case.
@@ -586,6 +447,30 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
             const pb_res = new_resized_pb(pastel, new_size);
             performance.mark('B');
             performance.measure('A to B', 'A', 'B');
+
+            return pb_res;
+        }],
+        ['resize_32x32_24bipp_pastel_to_1000x1000', () => {
+
+
+            // Currently rather slow at this large size...
+            //  Mathematical function that creates no new variables during any of the loops.
+            //   Completely inline operations...?
+            //   Large algorithm?
+            //   Don't create the weight object, directly accumulate.
+            //    This is something that could be done now / sooner.
+            //    
+
+            
+            
+
+
+
+            const new_size = new Int16Array([1000, 1000]);
+            performance.mark('C');
+            const pb_res = new_resized_pb(pastel, new_size);
+            performance.mark('D');
+            performance.measure('C to D', 'C', 'D');
 
             return pb_res;
         }],
