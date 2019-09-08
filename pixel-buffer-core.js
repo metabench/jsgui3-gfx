@@ -357,7 +357,7 @@ const {ro, prop} = oext;
 
 const ta_math = require('./ta-math');
 
-const {copy_rect_to_same_size_8bipp, copy_rect_to_same_size_24bipp, dest_aligned_copy_rect_1to4bypp} = ta_math;
+const {resize_ta_colorspace, copy_rect_to_same_size_8bipp, copy_rect_to_same_size_24bipp, dest_aligned_copy_rect_1to4bypp} = ta_math;
 
 const Pixel_Buffer_Painter = require('./pixel-buffer-painter');
 
@@ -1505,6 +1505,17 @@ class Pixel_Buffer_Core {
             ta_conv_res[i_write++] = rgb[2];
         });
         return res;
+    }
+
+    new_resized(size) {
+        //const source_ta = this.ta;
+        //const dest_size = new Int16Array(size);
+        const dest = new this.constructor({
+            size: size,
+            bits_per_pixel: this.bipp
+        });
+        resize_ta_colorspace(this.ta, this.ta_colorspace, dest.size, dest.ta);
+        return dest;
     }
 
     new_window(options) {
@@ -3728,6 +3739,9 @@ if (require.main === module) {
     const lg = console.log;
 
     (async() => {
+
+        // Examples are now located elsewhere.
+
         const run_examples = async() => {
             lg('Begin run examples');
 
@@ -3794,66 +3808,5 @@ if (require.main === module) {
     })();
 
 
-    const __test1 = () => {
-
-
-        // Will make various examples in the examples directory, and use them as the basis for tests in the future.
-        //  Stabilise the version numbers in which example results are saved to use as tests.
-
-        // Want to do some work on 1 bit per pixel images.
-
-        // Make a few example functions that do some things.
-        //  Could run examples written and from here, then move them to the examples directory.
-
-
-        
-
-
-        
-
-
-
-
-
-        
-
-
-        let pb = new Pixel_Buffer_Core({
-            size: [1000, 1000],
-            bytes_per_pixel: 1
-        });
-        console.log('pb.size', pb.size);
-
-
-
-        // a moving pixels window with a set current pixel function.
-
-        // a moving pixels window boolean pixel list selector function.
-        //  it itself will create a pixel_pos list based on the inner / convolution-type function results.
-
-        // moving_pixels_pixel_selector
-        //  returns the moving pixels ppl window to a callback, adds that pixel to a ppl if the callback returns true.
-        //  and it puts the selected pixels into a pixel pos list.
-        
-
-        //pos, color, ppl
-        // and the ppls by offset?
-        // also interested in the indexes and index offsets.
-
-        // An array of pixel indexes would do the job.
-
-        // Moving Pixel Indexes
-
-
-        pb.moving_pixels_window(new Uint16Array([-2, -2, 2, 2]), (pos, ppl) => {
-            //console.log('pos', pos);
-            //console.log('ppl.length', ppl.length);
-
-            // are all the border pixels white?
-
-
-        });
-    }
-    //test1();
 
 }

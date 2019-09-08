@@ -557,9 +557,6 @@ const read_weight_merged_2x2 = (ta_source, colorspace, pos, taf_4weights) => {
 
 
     }
-
-    
-
 }
 
 
@@ -738,12 +735,6 @@ const read_merged_fpx = (ta_source, ta_colorspace, taf_pos) => {
         console.log('ta_4px', ta_4px);
 
         // Should be able to calculate the result component values all at once.
-
-        
-
-
-
-
 
         //if (ta_res) {
         //    if (ta_res.length !== )
