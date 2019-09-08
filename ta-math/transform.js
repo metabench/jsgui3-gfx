@@ -1021,6 +1021,123 @@ const each_source_dest_pixels_resized = (source_colorspace, dest_size, callback)
     });
 }
 
+const each_source_dest_pixels_resized_limited_further_info = (source_colorspace, dest_size, callback) => {
+    // This actually calculates the weights.
+
+    // dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read
+
+    const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
+    //const dest_colorspace = new Int32Array([dest_size[0], dest_size[1], bypp, bypp * dest_size[0], bipp, bipp * dest_size[0]]);
+    const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
+
+    const source_edge_distances = new Float32Array(4);
+    const source_corner_areas = new Float32Array(4);
+
+    // almost the weights... call them proportions_of_total
+
+    const edge_distances_proportions_of_total = new Float32Array(4);
+    const corner_areas_proportions_of_total = new Float32Array(4);
+
+    // source_fsize is the size of the pixel.
+
+    const fpx_area = dest_to_source_ratio[0] * dest_to_source_ratio[1];
+
+
+
+    each_source_dest_pixels_resized(source_colorspace, dest_size, (dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, byi_read) => {
+
+        // Nice speedup with this optimization, simpler code path for 1x1.
+
+        // 1x2 optimmization? 2x1, 2x2, 2x3, 3x2?
+
+
+        if (source_i_any_coverage_size[0] === 1 && source_i_any_coverage_size[1] === 1) {
+
+            //dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read
+            callback(dest_byi, source_i_any_coverage_size, undefined, undefined, byi_read);
+        } else if (source_i_any_coverage_size[0] === 1 && source_i_any_coverage_size[1] === 2) {
+            // 1x2 - won't need to provide as much info back.
+
+            // only the top and bottom proportions matter here.
+            source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
+            source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+
+            edge_distances_proportions_of_total[1] = source_edge_distances[1] / dest_to_source_ratio[1];
+            edge_distances_proportions_of_total[3] = source_edge_distances[3] / dest_to_source_ratio[1];
+
+            // dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read
+            callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, undefined, byi_read);
+            //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, undefined, edge_distances_proportions_of_total, undefined, byi_read);
+        } else if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 1) {
+            // 1x2 - won't need to provide as much info back.
+
+            // only the top and bottom proportions matter here.
+            source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
+            source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
+
+            edge_distances_proportions_of_total[0] = source_edge_distances[0] / dest_to_source_ratio[0];
+            edge_distances_proportions_of_total[2] = source_edge_distances[2] / dest_to_source_ratio[0];
+
+            callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, undefined, byi_read);
+            //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, undefined, edge_distances_proportions_of_total, undefined, byi_read);
+        } else if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 2) {
+            // 1x2 - won't need to provide as much info back.
+
+            // only the top and bottom proportions matter here.
+            source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
+            source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
+            source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
+            source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+            corner_areas_proportions_of_total[0] = source_edge_distances[0] * source_edge_distances[1] / fpx_area;
+            corner_areas_proportions_of_total[1] = source_edge_distances[2] * source_edge_distances[1] / fpx_area;
+            corner_areas_proportions_of_total[2] = source_edge_distances[0] * source_edge_distances[3] / fpx_area;
+            corner_areas_proportions_of_total[3] = source_edge_distances[2] * source_edge_distances[3] / fpx_area;
+            callback(dest_byi, source_i_any_coverage_size, undefined, corner_areas_proportions_of_total, byi_read);
+            //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, undefined, undefined, corner_areas_proportions_of_total, byi_read);
+        } else {
+            source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
+            source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
+            source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
+            source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+
+            console.log('source_edge_distances', source_edge_distances);
+            console.trace();
+            throw 'stop';
+    
+            edge_distances_proportions_of_total[0] = source_edge_distances[0] / dest_to_source_ratio[0];
+            edge_distances_proportions_of_total[1] = source_edge_distances[1] / dest_to_source_ratio[1];
+            edge_distances_proportions_of_total[2] = source_edge_distances[2] / dest_to_source_ratio[0];
+            edge_distances_proportions_of_total[3] = source_edge_distances[3] / dest_to_source_ratio[1];
+    
+            // Distances divided by the width or height.
+    
+            // then calculate the corner areas?
+            //  makes sense for 2x2 or greater...
+    
+            source_corner_areas[0] = source_edge_distances[0] * source_edge_distances[1];
+            source_corner_areas[1] = source_edge_distances[2] * source_edge_distances[1];
+            source_corner_areas[2] = source_edge_distances[0] * source_edge_distances[3];
+            source_corner_areas[3] = source_edge_distances[2] * source_edge_distances[3];
+    
+            corner_areas_proportions_of_total[0] = source_corner_areas[0] / fpx_area;
+            corner_areas_proportions_of_total[1] = source_corner_areas[1] / fpx_area;
+            corner_areas_proportions_of_total[2] = source_corner_areas[2] / fpx_area;
+            corner_areas_proportions_of_total[3] = source_corner_areas[3] / fpx_area;
+    
+            //console.log('corner_areas_proportions_of_total', corner_areas_proportions_of_total);
+    
+            // corner areas divided by the pixel area...
+    
+            //console.log('1) byi_read', byi_read);
+    
+            callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, source_corner_areas, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read);
+    
+        }
+
+
+    });
+}
+
 const each_source_dest_pixels_resized_further_info = (source_colorspace, dest_size, callback) => {
     // This actually calculates the weights.
 
@@ -1609,146 +1726,92 @@ const resize_ta_colorspace_24bipp_subpixels = (ta_source, source_colorspace, des
 
     // limited_further_info - won't return as much in the callback.
 
+    // each_source_dest_pixels_resized_further_info(source_colorspace, dest_size, (dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, source_corner_areas, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read)
 
 
+    // (dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read)
 
+    each_source_dest_pixels_resized_limited_further_info(source_colorspace, dest_size, (dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read) => {
+        //console.log('byi_read', byi_read);
+        if (source_i_any_coverage_size[0] === 1) {
+            if (source_i_any_coverage_size[1] === 1) {
+                opt_ta_dest[dest_byi] = ta_source[byi_read++];
+                opt_ta_dest[dest_byi + 1] = ta_source[byi_read++];
+                opt_ta_dest[dest_byi + 2] = ta_source[byi_read++];
+            } else if (source_i_any_coverage_size[1] === 2) {
+                byi_read_below = byi_read + bypr;
+                opt_ta_dest[dest_byi] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
+                opt_ta_dest[dest_byi + 1] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
+                opt_ta_dest[dest_byi + 2] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
+            } else {
+                console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+                console.trace();
+                throw 'NYI';
+            }
+        } else if (source_i_any_coverage_size[0] === 2) {
+            if (source_i_any_coverage_size[1] === 1) {
+                byi_read_right = byi_read + bypp;
+                opt_ta_dest[dest_byi] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
+                opt_ta_dest[dest_byi + 1] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
+                opt_ta_dest[dest_byi + 2] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
+            } else if (source_i_any_coverage_size[1] === 2) {
+                byi_read_right = byi_read + bypp;
+                byi_read_below = byi_read + bypr;
+                byi_read_below_right = byi_read_below + bypp;
+                opt_ta_dest[dest_byi] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
+                opt_ta_dest[dest_byi + 1] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
+                opt_ta_dest[dest_byi + 2] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
+            } else {
+                console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+                console.trace();
+                throw 'NYI';
+            }
+        } else {
+            console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+                console.trace();
+                throw 'NYI';
+        }
+    });
+
+
+    /*
     each_source_dest_pixels_resized_further_info(source_colorspace, dest_size, (dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, source_corner_areas, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read) => {
         //console.log('byi_read', byi_read);
         if (source_i_any_coverage_size[0] === 1) {
             if (source_i_any_coverage_size[1] === 1) {
-
-                // Indeed is faster with this inlined.
-
-                // read xy pixel value from ta & colorspace, write it to dest at dest_byi(++);
-                //copy_px_to_ta_dest_byi(ta_source, source_colorspace, source_ibounds, opt_ta_dest, dest_byi);
-                //byi_read = source_ibounds[0] * bypp + source_ibounds[1] * bypr;
                 opt_ta_dest[dest_byi] = ta_source[byi_read++];
                 opt_ta_dest[dest_byi + 1] = ta_source[byi_read++];
                 opt_ta_dest[dest_byi + 2] = ta_source[byi_read++];
-
             } else {
-                //source_xy_crossover[1] = source_ibounds[1] + 1;
-                // 1x2
-                // work out proportions of each...
-                // proportion above, proportion below.
-
-                // Direct calculation would be cool...
-
                 byi_read_below = byi_read + bypr;
-
-                //const extension_above = source_xy_crossover[1] - source_fbounds[1];
-                //const extension_below = source_fbounds[3] - source_xy_crossover[1];
-
-                /*
-
-                const weight_above = edge_distances_proportions_of_total[1];
-                const weight_below = edge_distances_proportions_of_total[3];
-                opt_ta_dest[dest_byi] = weight_above * ta_source[byi_read++] + weight_below * ta_source[byi_read_below++];
-                opt_ta_dest[dest_byi + 1] = weight_above * ta_source[byi_read++] + weight_below * ta_source[byi_read_below++];
-                opt_ta_dest[dest_byi + 2] = weight_above * ta_source[byi_read++] + weight_below * ta_source[byi_read_below++];
-
-                */
-
                 opt_ta_dest[dest_byi] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
                 opt_ta_dest[dest_byi + 1] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
                 opt_ta_dest[dest_byi + 2] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
-                
-
-
-                
-                //console.log('');
-
-                //console.log('extension_above', extension_above);
-                //console.log('extension_below', extension_below);
-                //console.log('weight_above', weight_above);
-                //console.log('weight_below', weight_below);
-
-                //console.log('source_edge_distances', source_edge_distances);
-
-                // could now try function that does the reading of both and writing to dest_byi
-
-                // then inline later?
-
-                // byi_read_top
-                //  that's byi_read
-
-                //byi_read = source_ibounds[0] * bypp + source_ibounds[1] * bypr;
-                
-                
-
             }
         } else {
             if (source_i_any_coverage_size[1] === 1) {
-                // 2x1
-                //source_xy_crossover[0] = source_ibounds[0] + 1;
-
-                /*
-                const extension_left = source_xy_crossover[0] - source_fbounds[0];
-                const extension_right = source_fbounds[2] - source_xy_crossover[0];
-                const weight_left = extension_left / dest_to_source_ratio[0];
-                const weight_right = extension_right / dest_to_source_ratio[0];
-                */
-
                 byi_read_right = byi_read + bypp;
-                //const weight_left = (source_edge_distances[0]) / dest_to_source_ratio[0];
-                //const weight_right = (source_edge_distances[2]) / dest_to_source_ratio[0];
-
-                //byi_read = source_ibounds[0] * bypp + source_ibounds[1] * bypr;
-                
-
                 opt_ta_dest[dest_byi] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
                 opt_ta_dest[dest_byi + 1] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
                 opt_ta_dest[dest_byi + 2] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
-
             } else {
-                //source_xy_crossover[0] = source_ibounds[0] + 1;
-                //source_xy_crossover[1] = source_ibounds[1] + 1;
-                // 2x2
-                //console.trace();
-                //throw 'stop';
-                //const extension_left = source_xy_crossover[0] - source_fbounds[0];
-                //const extension_right = source_fbounds[2] - source_xy_crossover[0];
-                //const extension_above = source_xy_crossover[1] - source_fbounds[1];
-                //const extension_below = source_fbounds[3] - source_xy_crossover[1];
-
-                // source_corner_areas
-
-                /*
-                
-                const weight_left = source_edge_distances[0] / dest_to_source_ratio[0];
-                const weight_right = source_edge_distances[2] / dest_to_source_ratio[0];
-                const weight_above = source_edge_distances[1] / dest_to_source_ratio[1];
-                const weight_below = source_edge_distances[3] / dest_to_source_ratio[1];
-
-                const weight_tl = weight_left * weight_above;
-                const weight_tr = weight_right * weight_above;
-                const weight_bl = weight_left * weight_below;
-                const weight_br = weight_right * weight_below;
-                */
-
-                //const weight_tl = source_corner_areas[0] / source_px_area;
-                //const weight_tr = source_corner_areas[1] / source_px_area;
-                //const weight_bl = source_corner_areas[2] / source_px_area;
-                //const weight_br = source_corner_areas[3] / source_px_area;
-
-                //console.log('[weight_tl, weight_tr, weight_bl, weight_br]', [weight_tl, weight_tr, weight_bl, weight_br]);
-                //byi_read = source_ibounds[0] * bypp + source_ibounds[1] * bypr;
                 byi_read_right = byi_read + bypp;
                 byi_read_below = byi_read + bypr;
                 byi_read_below_right = byi_read_below + bypp;
-
                 opt_ta_dest[dest_byi] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
                 opt_ta_dest[dest_byi + 1] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
                 opt_ta_dest[dest_byi + 2] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
             }
         }
     })
+    */
 }
 
 
 
 // This optimized version works much faster than before.
 //  Does not seem like the callback pattern creates much overhead.
+//  Clearer functions exist which use more loop abstraction.
 
 const _fast_resize_ta_colorspace_24bipp_subpixels = (ta_source, source_colorspace, dest_size, opt_ta_dest) => { 
 
@@ -1929,11 +1992,7 @@ const _fast_resize_ta_colorspace_24bipp_subpixels = (ta_source, source_colorspac
     })
 }
 
-
-
 const ______resize_ta_colorspace_24bipp_subpixels = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
-
-
     //
     const source_size = source_colorspace.subarray(0, 2);
     const dest_to_source_ratio = new Float32Array([source_size[0] / dest_size[0], source_size[1] / dest_size[1]]);
