@@ -1041,38 +1041,50 @@ const each_source_dest_pixels_resized_further_info = (source_colorspace, dest_si
 
 
     each_source_dest_pixels_resized(source_colorspace, dest_size, (dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, byi_read) => {
-        source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
-        source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
-        source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
-        source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
 
-        edge_distances_proportions_of_total[0] = source_edge_distances[0] / dest_to_source_ratio[0];
-        edge_distances_proportions_of_total[1] = source_edge_distances[1] / dest_to_source_ratio[1];
-        edge_distances_proportions_of_total[2] = source_edge_distances[2] / dest_to_source_ratio[0];
-        edge_distances_proportions_of_total[3] = source_edge_distances[3] / dest_to_source_ratio[1];
+        // Nice speedup with this optimization, simpler code path for 1x1.
 
-        // Distances divided by the width or height.
+        // 1x2 optimmization? 2x1, 2x2, 2x3, 3x2?
 
-        // then calculate the corner areas?
-        //  makes sense for 2x2 or greater...
 
-        source_corner_areas[0] = source_edge_distances[0] * source_edge_distances[1];
-        source_corner_areas[1] = source_edge_distances[2] * source_edge_distances[1];
-        source_corner_areas[2] = source_edge_distances[0] * source_edge_distances[3];
-        source_corner_areas[3] = source_edge_distances[2] * source_edge_distances[3];
+        if (source_i_any_coverage_size[0] === 1 && source_i_any_coverage_size[1] === 1) {
+            callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, undefined, undefined, undefined, undefined, byi_read);
+        } else {
+            source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
+            source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
+            source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
+            source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+    
+            edge_distances_proportions_of_total[0] = source_edge_distances[0] / dest_to_source_ratio[0];
+            edge_distances_proportions_of_total[1] = source_edge_distances[1] / dest_to_source_ratio[1];
+            edge_distances_proportions_of_total[2] = source_edge_distances[2] / dest_to_source_ratio[0];
+            edge_distances_proportions_of_total[3] = source_edge_distances[3] / dest_to_source_ratio[1];
+    
+            // Distances divided by the width or height.
+    
+            // then calculate the corner areas?
+            //  makes sense for 2x2 or greater...
+    
+            source_corner_areas[0] = source_edge_distances[0] * source_edge_distances[1];
+            source_corner_areas[1] = source_edge_distances[2] * source_edge_distances[1];
+            source_corner_areas[2] = source_edge_distances[0] * source_edge_distances[3];
+            source_corner_areas[3] = source_edge_distances[2] * source_edge_distances[3];
+    
+            corner_areas_proportions_of_total[0] = source_corner_areas[0] / fpx_area;
+            corner_areas_proportions_of_total[1] = source_corner_areas[1] / fpx_area;
+            corner_areas_proportions_of_total[2] = source_corner_areas[2] / fpx_area;
+            corner_areas_proportions_of_total[3] = source_corner_areas[3] / fpx_area;
+    
+            //console.log('corner_areas_proportions_of_total', corner_areas_proportions_of_total);
+    
+            // corner areas divided by the pixel area...
+    
+            //console.log('1) byi_read', byi_read);
+    
+            callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, source_corner_areas, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read);
+    
+        }
 
-        corner_areas_proportions_of_total[0] = source_corner_areas[0] / fpx_area;
-        corner_areas_proportions_of_total[1] = source_corner_areas[1] / fpx_area;
-        corner_areas_proportions_of_total[2] = source_corner_areas[2] / fpx_area;
-        corner_areas_proportions_of_total[3] = source_corner_areas[3] / fpx_area;
-
-        //console.log('corner_areas_proportions_of_total', corner_areas_proportions_of_total);
-
-        // corner areas divided by the pixel area...
-
-        //console.log('1) byi_read', byi_read);
-
-        callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, source_corner_areas, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read);
 
     });
 }
