@@ -1022,6 +1022,8 @@ const each_source_dest_pixels_resized = (source_colorspace, dest_size, callback)
 }
 
 const each_source_dest_pixels_resized_further_info = (source_colorspace, dest_size, callback) => {
+    // This actually calculates the weights.
+
     const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
     const dest_colorspace = new Int32Array([dest_size[0], dest_size[1], bypp, bypp * dest_size[0], bipp, bipp * dest_size[0]]);
     const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
@@ -1049,11 +1051,69 @@ const each_source_dest_pixels_resized_further_info = (source_colorspace, dest_si
 
         if (source_i_any_coverage_size[0] === 1 && source_i_any_coverage_size[1] === 1) {
             callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, undefined, undefined, undefined, undefined, byi_read);
+        } else if (source_i_any_coverage_size[0] === 1 && source_i_any_coverage_size[1] === 2) {
+            // 1x2 - won't need to provide as much info back.
+
+            // only the top and bottom proportions matter here.
+            source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
+            source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+
+            edge_distances_proportions_of_total[1] = source_edge_distances[1] / dest_to_source_ratio[1];
+            edge_distances_proportions_of_total[3] = source_edge_distances[3] / dest_to_source_ratio[1];
+
+            callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, undefined, edge_distances_proportions_of_total, undefined, byi_read);
+        } else if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 1) {
+            // 1x2 - won't need to provide as much info back.
+
+            // only the top and bottom proportions matter here.
+            source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
+            source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
+
+            edge_distances_proportions_of_total[0] = source_edge_distances[0] / dest_to_source_ratio[0];
+            edge_distances_proportions_of_total[2] = source_edge_distances[2] / dest_to_source_ratio[0];
+
+            callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, undefined, edge_distances_proportions_of_total, undefined, byi_read);
+        } else if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 2) {
+            // 1x2 - won't need to provide as much info back.
+
+            // only the top and bottom proportions matter here.
+            source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
+            source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
+            source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
+            source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+
+            /*
+
+            source_corner_areas[0] = source_edge_distances[0] * source_edge_distances[1];
+            source_corner_areas[1] = source_edge_distances[2] * source_edge_distances[1];
+            source_corner_areas[2] = source_edge_distances[0] * source_edge_distances[3];
+            source_corner_areas[3] = source_edge_distances[2] * source_edge_distances[3];
+    
+            corner_areas_proportions_of_total[0] = source_corner_areas[0] / fpx_area;
+            corner_areas_proportions_of_total[1] = source_corner_areas[1] / fpx_area;
+            corner_areas_proportions_of_total[2] = source_corner_areas[2] / fpx_area;
+            corner_areas_proportions_of_total[3] = source_corner_areas[3] / fpx_area;
+
+            */
+
+            corner_areas_proportions_of_total[0] = source_edge_distances[0] * source_edge_distances[1] / fpx_area;
+            corner_areas_proportions_of_total[1] = source_edge_distances[2] * source_edge_distances[1] / fpx_area;
+            corner_areas_proportions_of_total[2] = source_edge_distances[0] * source_edge_distances[3] / fpx_area;
+            corner_areas_proportions_of_total[3] = source_edge_distances[2] * source_edge_distances[3] / fpx_area;
+
+            //edge_distances_proportions_of_total[0] = source_edge_distances[0] / dest_to_source_ratio[0];
+            //edge_distances_proportions_of_total[2] = source_edge_distances[2] / dest_to_source_ratio[0];
+
+            callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, undefined, undefined, corner_areas_proportions_of_total, byi_read);
         } else {
             source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
             source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
             source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
             source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+
+            console.log('source_edge_distances', source_edge_distances);
+            console.trace();
+            throw 'stop';
     
             edge_distances_proportions_of_total[0] = source_edge_distances[0] / dest_to_source_ratio[0];
             edge_distances_proportions_of_total[1] = source_edge_distances[1] / dest_to_source_ratio[1];
@@ -1500,7 +1560,7 @@ const each_dest_pixel_mapped_source_pixels_weights_in_resized_colorspace = (sour
 }
 
 // A version not just for subpixels...
-
+//  Though I wrote this to be optimized for subpixels, with more work it can handle superpixel size.
 const resize_ta_colorspace_24bipp_subpixels = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
 
     // Simplified this function.
@@ -1546,6 +1606,11 @@ const resize_ta_colorspace_24bipp_subpixels = (ta_source, source_colorspace, des
     const source_xy_crossover = new Int16Array(2);
 
     // dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, source_corner_areas, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read
+
+    // limited_further_info - won't return as much in the callback.
+
+
+
 
     each_source_dest_pixels_resized_further_info(source_colorspace, dest_size, (dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, source_corner_areas, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read) => {
         //console.log('byi_read', byi_read);
