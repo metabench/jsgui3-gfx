@@ -243,6 +243,45 @@ for (dest_iy = 0, source_fy = 0; dest_iy < dest_iheight; dest_iy++, source_fy +=
 
 
 
+// Could see about making an optimized subpixels helper loop.
+//  But don't want to pass around too much data.
+
+
+// Iterating through the source pixels, working out which target pixels are made out of pixels starting with the source one.
+//  Some calculations of pixel space ranges within the loop here.
+
+
+
+
+/*
+    Constant
+        f px size
+
+
+    Multiple things to iterate / calculate / increment at once
+    Source
+        f px pos
+            its bounds?
+                bounds could be particularly useful.
+            i px covered in the source (any coverage?)
+            distance f px extended to the right of i px pos
+                distance f px extended to the right of i px pos / f px width
+            distance f px extended below i px pos
+                distance f px extended below i px pos / f px height
+    Dest
+        i px pos
+        write pos of single pixel
+
+
+*/
+
+
+
+
+
+
+
+// May need to retry the below algorithm :)
 
 const resize_ta_colorspace_24bipp_subpixels$dest_ipos_iterate = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
 
@@ -277,7 +316,12 @@ const resize_ta_colorspace_24bipp_subpixels$dest_ipos_iterate = (ta_source, sour
 
     const bytes_per_pixel = 3;
 
-    const tai_2x2_byte_indexes = new Int32Array(4);
+
+    // Direct copy would likely be faster?
+    //  Maintain byte indexes instead.
+
+
+    //const tai_2x2_byte_indexes = new Int32Array(4);
     //  will be fast enough to keep these updated / incremented.
 
     // Need to know when the source position changes.
@@ -426,11 +470,7 @@ const resize_ta_colorspace_24bipp_subpixels$dest_ipos_iterate = (ta_source, sour
                 source_fx_right_of_crossover = source_fx_right - (source_ix + 1);
                 extends_right = source_fx_left_of_crossover >= 0.000001;
 
-
                 //extends_right = source_ix !== source_ix_right;
-
-                
-
 
                 // Calc the amount it extends right, then account for rounding errors.
 
@@ -555,7 +595,7 @@ const resize_ta_colorspace_24bipp_subpixels$dest_ipos_iterate = (ta_source, sour
     }
 }
 
-const resize_ta_colorspace_24bipp_subpixels = resize_ta_colorspace_24bipp_subpixels$dest_ipos_iterate;
+//const resize_ta_colorspace_24bipp_subpixels = resize_ta_colorspace_24bipp_subpixels$dest_ipos_iterate;
 
 
 const _attempt1_resize_ta_colorspace_24bipp_subpixels = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
@@ -732,38 +772,347 @@ const _attempt1_resize_ta_colorspace_24bipp_subpixels = (ta_source, source_color
 }
 
 
-const resize_ta_colorspace_24bipp = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
-    // Could be harder to optimize in V++ because of VFPX usage.
-    //  Could implement that class in C++
-    //  Could make a non-oo more pure algo version.
+// Main algo below could maybe be optimized for extracting smaller subpixels?
+//  Moving the vfp pos and doing the read_merged_vfpx_write_24bipp take the time.
+//   Could look into optimizing both for better subpixel handling.
+//    Fast subpixel handling is important for upscaling an image.
+
+// Optimizing VFP could be very useful in general...
+//  Other fn call uses vfp anyway.
+//   vfp.pos = source_fpos is very time-consuming.
+//    it updates quite a lot within itself.
+//    worth optimizing that where possible.
+//     it automatically updates / sets quite a lot of its values.
 
 
-    // Will optimize it for expanding images.
-    //  Only need the smaller subpixed reads in this case.
+
+// Optimized subpixels version is def worth doing.
+
+// Could division remainders help for fast calcs?
+
+
+// A more efficient iteration function, that gives info on proportions / weights when dealing with subpixels.
+//  Calculating distance left, up, right, down from the crossover point.
+
+//  Crossover point? Crossover x value? Crossover y value?
+
+// Determining pixel crossover amounts, and using them, makes a lot of sense.
+
+// OK, so callback functions don't make it drastically slow.
+//  Better not to focus as much on inlining? Reuse loop code with specialised loop functions?
+//   Makes sense for clarity. Maybe difficulties porting?
+
+
+
+// Time for another attempt at it...
+//  Will use int x and y values for the reading / writing operations?
+//   Keep the yte index for the destination pixel.
+//   Use int x y for lookup from the source - quick to calculate the byte index from x and y anyway.
+
+
+// Seems most reliable to start with to go through the destination integer x y space.
+
+
+//  and would provide the byte index position in the callback too. (xy, byi)
+// each_pixel_in_colorspace(colorspace)
+
+
+const each_pixel_in_colorspace = (colorspace, callback) => {
+    const [width, height, bypp, bypr, bipp, bipr] = colorspace;
+    let byi = 0;
+    const xy = new Int16Array(2);
+    for (xy[1] = 0; xy[1] < height; xy[1]++) {
+        for (xy[0] = 0; xy[0] < width; xy[0]++) {
+            callback(xy, byi);
+
+            byi += bypp;
+        }
+    }
+}
+
+// Use above function to go through the transform dest colorspace.
+
+
+
+
+const __each_subpixel_within_colorspace = (subpixel_size, colorspace, callback) => {
+    const [width, height, bypp, bypr, bipp, bipr] = colorspace;
+    // This is indeed iterating through the source, based on the subpixel_size
+    //  Will not need to pay attention to a destination at present.
+
+    // and work by using subpixel bounds.
+    //  (ltrb ta for the moment)
+    const taf_subpixel_bounds = new Float32Array([0, 0, subpixel_size[0], subpixel_size[1]]);
+    // Then these bounds, but rounded / floored to integers?
+    const tai_subpixel_bounds = new Int16Array(4);
+
+    // Proportion within top, proportion within left...
+    // Distance each side of the crossover point.
+    //  Crossover point as null or undefined?
+
+    // i_size
+    //  when mapped to the original space.
+
+    const i_size = new Int16Array(2);
+    // Advance i_row var?
+    // Asvance i_column var?
+
+    let bytes_advance = 0;
+    // prev i pos...
+    const prev_ixy = new Int16Array(2);
+
+    // // Consider ends of rows...
+
+
+
+    
+
+    for (taf_subpixel_bounds[1] = 0; taf_subpixel_bounds[1] < height; taf_subpixel_bounds[1] += subpixel_size[1], taf_subpixel_bounds[3] += subpixel_size[1]) {
+        taf_subpixel_bounds[2] = subpixel_size[0];
+        tai_subpixel_bounds[1] = taf_subpixel_bounds[1];
+        tai_subpixel_bounds[3] = Math.ceil(taf_subpixel_bounds[3]);
+        i_size[1] = tai_subpixel_bounds[3] - tai_subpixel_bounds[1];
+
+        for (taf_subpixel_bounds[0] = 0; taf_subpixel_bounds[0] < width; taf_subpixel_bounds[0] += subpixel_size[0], taf_subpixel_bounds[2] += subpixel_size[0]) {
+            tai_subpixel_bounds[0] = taf_subpixel_bounds[0];
+            tai_subpixel_bounds[2] = Math.ceil(taf_subpixel_bounds[2]);
+            i_size[0] = tai_subpixel_bounds[2] - tai_subpixel_bounds[0];
+            
+            /*
+            if (tai_subpixel_bounds[0] !== prev_ixy[0] || tai_subpixel_bounds[1] !== prev_ixy[1]) {
+                bytes_advance = 3;
+            } else {
+                bytes_advance = 0;
+            }
+            */
+
+            // It may well need to 'advance' back to the beginning of the row, is negative changes in the read position.
+            //  that could be where I went wrong before.
+
+
+            bytes_advance = (tai_subpixel_bounds[0] - prev_ixy[0]) * bypp + (tai_subpixel_bounds[1] - prev_ixy[1]) * bypr;
+            callback(taf_subpixel_bounds, tai_subpixel_bounds, i_size, bytes_advance);
+            prev_ixy[0] = tai_subpixel_bounds[0];
+        }
+        //throw 'stop';
+        prev_ixy[1] = tai_subpixel_bounds[1];
+    }
+
+    
+
+
+
+    // function to get the crossover information...?
+    //  
+
+
+    // then a y and x for loops...
+
+
+
+
+}
+
+
+// Worth putting back that old algorithm I wrote that only handles upsacing, in _old_subpixels.js???
+
+
+
+// Could relying on byte indexes be an attempted optimization too far?
+//  Would be more reliable to call functions involving x, y, and have them recalculated.
+
+// Byte index logic at this level isn't working right now.
+//  Maybe we can calculate it very quickly anyway.
+
+const copy_px_to_ta_dest_byi = (ta_source, source_colorspace, source_xy, ta_dest, byi_dest) => {
+    const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
+
+    if (bipp === 24) {
+        let byi_read = source_xy[0] * bypp + source_xy[1] * bypr;
+        ta_dest[byi_dest] = ta_source[byi_read++];
+        ta_dest[byi_dest + 1] = ta_source[byi_read++];
+        ta_dest[byi_dest + 2] = ta_source[byi_read++];
+
+    } else {
+        console.trace();
+        throw 'NYI';
+    }
+
+}
+
+
+const resize_ta_colorspace_24bipp_subpixels = (ta_source, source_colorspace, dest_size, opt_ta_dest) => { 
+
+    const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
+    const dest_colorspace = new Int32Array([dest_size[0], dest_size[1], bypp, bypp * dest_size[0], bipp, bipp * dest_size[0]]);
+    const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
+
+    // floating point location in source
+
+
+    // Bounds calc could be more appropriate?
+    //  or keep using + dest_to_source_ratio
+
+
+    // the bounds are most important for the various calculations...
+
+
+    //const source_fxy = new Float32Array(2);
+    // Maybe source bounds will be more useful?
+    //const source_ixy = new Int16Array(2);
+
+    const source_fbounds = new Float32Array(4);
+    const source_ibounds = new Int16Array(4);
+
+    const source_i_any_coverage_size = new Int16Array(2);
+
+
+    each_pixel_in_colorspace(dest_colorspace, (dest_xy, dest_byi) => {
+        //console.log('[dest_xy, dest_byi]', [dest_xy, dest_byi]);
+
+        // Easy enough now...
+        source_fbounds[0] = dest_xy[0] * dest_to_source_ratio[0];
+        source_fbounds[1] = dest_xy[1] * dest_to_source_ratio[1];
+        source_fbounds[2] = source_fbounds[0] + dest_to_source_ratio[0];
+        source_fbounds[3] = source_fbounds[1] + dest_to_source_ratio[1];
+
+        // Scale down the pixel location...
+        source_ibounds[0] = source_fbounds[0];
+        source_ibounds[1] = source_fbounds[1];
+        source_ibounds[2] = Math.ceil(source_fbounds[2]);
+        source_ibounds[3] = Math.ceil(source_fbounds[3]);
+
+        // does it cover other pixels / proportions in those other pixels?
+
+        // Still reasonably fast - yet slowing down from before....
+        source_i_any_coverage_size[0] = source_ibounds[2] - source_ibounds[0];
+        source_i_any_coverage_size[1] = source_ibounds[3] - source_ibounds[1];
+
+        //opt_ta_dest[dest_byi] = 255;
+
+        // then depending on the size....
+
+        //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+
+        if (source_i_any_coverage_size[0] === 1) {
+            if (source_i_any_coverage_size[1] === 1) {
+                // read xy pixel value from ta & colorspace, write it to dest at dest_byi(++);
+                copy_px_to_ta_dest_byi(ta_source, source_colorspace, source_ibounds, opt_ta_dest, dest_byi);
+
+
+
+
+
+
+            } else {
+                
+            }
+        } else {
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+    })
+
+}
+
+
+
+const ______resize_ta_colorspace_24bipp_subpixels = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
+
+
+    //
     const source_size = source_colorspace.subarray(0, 2);
-
     const dest_to_source_ratio = new Float32Array([source_size[0] / dest_size[0], source_size[1] / dest_size[1]]);
-    //console.log('dest_to_source_ratio', dest_to_source_ratio);
+
+    // could compare to previous position to update the read position?
+
+    // Could detect changes in tai_subpixel_bounds?
+    //  But getting advance row or advance column info would def help.
+    //   Or even a source bytes advance?
+
+    // byi read
+
+    // and can advance byi write with every pixel.
+
+    let byi_read = 0, byi_write = 0;
+
+
+
+    each_subpixel_within_colorspace(dest_to_source_ratio, source_colorspace, (taf_subpixel_bounds, tai_subpixel_bounds, i_size, bytes_advance) => {
+        //console.log('');
+        //console.log('taf_subpixel_bounds, tai_subpixel_bounds, i_size', [taf_subpixel_bounds, tai_subpixel_bounds, i_size]);
+
+        //console.log('i_size', i_size);
+        // 
+        if (i_size[0] === 1) {
+            if (i_size[1] === 1) {
+                // direct copy px
+                opt_ta_dest[byi_write++] = ta_source[byi_read];
+                opt_ta_dest[byi_write++] = ta_source[byi_read + 1];
+                opt_ta_dest[byi_write++] = ta_source[byi_read + 2];
+                
+            } else {
+                // its 2
+                byi_write += 3;
+            }
+        } else {
+            // its 2
+            if (i_size[1] === 1) {
+                byi_write += 3;
+            } else {
+                // its 2
+
+                // 2x2 read and write.
+                byi_write += 3;
+            }
+        }
+       // console.log('byi_write', byi_write);
+        
+
+
+        //console.log('bytes_advance', bytes_advance);
+
+        byi_read += bytes_advance;
+
+
+
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+const resize_ta_colorspace_24bipp = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
+    const source_size = source_colorspace.subarray(0, 2);
+    const dest_to_source_ratio = new Float32Array([source_size[0] / dest_size[0], source_size[1] / dest_size[1]]);
     const source_vfpixel_size = dest_to_source_ratio;
-
     console.log('source_vfpixel_size', source_vfpixel_size);
-
     if (source_vfpixel_size[0] < 1 && source_vfpixel_size[1] < 1) {
         //console.trace();
         //throw 'stop - use subpixels sepecific algo';
         return resize_ta_colorspace_24bipp_subpixels(ta_source, source_colorspace, dest_size, opt_ta_dest);
     } else {
-
-        //const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
-        //const 3 = source_colorspace[2];
-        //const bipp = source_colorspace[4];
-
-        // Different versions for different bipp? yes!
-
         const dest_num_pixels = dest_size[0] * dest_size[1];
         const dest_num_bytes = dest_num_pixels * 3;
-        
-
         if (opt_ta_dest) {
             if (opt_ta_dest.length !== dest_num_bytes) {
                 console.trace();
@@ -772,161 +1121,22 @@ const resize_ta_colorspace_24bipp = (ta_source, source_colorspace, dest_size, op
         } else {
             opt_ta_dest = new Uint8ClampedArray(dest_num_bytes);
         }
-
-        
         let b_write = 0;
-        // looping through the dest int positions makes sense.
-        //let x = 0, y = 0;
-
-
-        // Pre-prediction of the possible weights sizes?
-        // Pre-allocation?
-
-        // Current slowness comes from complex way of doing subpixel reads.
-        //  Possibly some small read-weight-merge operations, for set number of sizes of pixels, can be rewritten.
-
-        // Rescaling to large images will use size 1, 2 and 4(square) any fpx cover sized areas.
-
-        //console.log('source_vfpixel_size', source_vfpixel_size);
-        //  if it's smaller than 1x1 we can run a shrink function.
-        //   in this case, it can only ever cover subpixel areas.
-        //    first do it in a way that isn't completely inline...
-
-        //  calling more efficient functions that don't allocate their own variables, and directly write to the output ta.
-        //   small subpixels completely enclosed won't require much at all.
-
-        // highly optimized function with inline shrinking...
-        /// incrementation of the x position...
-
-
-
-
-
         const dest_xy = new Int16Array([0, 0]);
         const source_fpos = new Float32Array(2);
-
-
-        // Probably only need the vfp when shrinking images.
-        //  Likely will separate out some code as well.
-
-
-        // depending on source_vfpixel_size...
-        ///   if it's subpixel...
-
-        
-
-        
-
-
-
-
-
-
         const vfp = new Virtual_Float_Pixel(source_fpos, source_vfpixel_size);
-        // a lot faster this way, updating the virtual px.
-
-        // just the 24bipp loop here...
-
-
-
-        // Would be nice if the functionality in the loop were changed / rewritted so it doesnt create any new variables.
-
-        // Pre-prepared weights array? Is that caching working well?
-
-        // Maybe have a mode for image enlarging that uses a different algo, not using Virtual_Float_Pixel.
-        //  VFP was made to enable image shrinking, but it's slow for enlargement (or big scale englargement)
-
-
-
-        // If it's reading in subpixel space we don't need the complexity of VFPX.
-        //  Worth looking at speeding up VFPX when operating in sibpixel space.
-        //   Could calculate them very quickly outside of the large algorithm.
-        //    Large algorithm could be made to only operate / run only on larger pixel spaces?
-        //     Splitting that algo could help a lot.
-        //     Getting it to run a _subpixel version.
-        //      Also, bypassing weights array generation makes a lot of sense when dealing with subpixels.
-        //       Direct read and write. More inlining. Fewer function calls. No new variable creation (easier to have more local vars in a larger function).
-
-
-
-
-
-
-
-
-
         for (dest_xy[1] = 0; dest_xy[1] < dest_size[1]; dest_xy[1]++) {
-            // could move the vfp to a new row here...?
-            //source_fpos[1] = dest_xy[1] * source_vfpixel_size[1];
-
             for (dest_xy[0] = 0; dest_xy[0] < dest_size[0]; dest_xy[0]++) {
-                //console.log('');
-                //console.log('dest_xy', dest_xy);
-                //const source_fpos = new Float32Array([dest_xy[0] * source_vfpixel_size[0], dest_xy[1] * source_vfpixel_size[1]]);
-
-
-                //source_fpos[0] = dest_xy[0] * source_vfpixel_size[0];
-                
                 vfp.pos = source_fpos;
-
-                //vfp.pos = new Float32Array([dest_xy[0] * source_vfpixel_size[0], dest_xy[1] * source_vfpixel_size[1]]);
-                //console.log('source_fpos', source_fpos);
-                //console.log('source_vfpixel_size', source_vfpixel_size);
-                //const vfp = new Virtual_Float_Pixel(source_fpos, source_vfpixel_size);
-
-                
-
-                //console.log('vfp.bounds', vfp.bounds);
-                //const merged_rbg = read_merged_vfpx(ta_source, source_colorspace, vfp);
-                //console.log('merged_rbg', merged_rbg);
-                //opt_ta_dest[b_write++] = merged_rbg[0];
-                //opt_ta_dest[b_write++] = merged_rbg[1];
-                //opt_ta_dest[b_write++] = merged_rbg[2];
-
-                //opt_ta_dest.set(read_merged_vfpx(ta_source, source_colorspace, vfp), b_write += 3);
-
-                // read_merged_vfpx_write that does a direct write...
-                //  
-
-
-                // read_merged_vfpx_write_24bipp in this case...
-
-                //  May be just a little faster this way.
-
-                // Speed up the algo here for smaller (subpixel) reads...
-
-                read_merged_vfpx_write_24bipp(ta_source, source_colorspace, vfp, opt_ta_dest, b_write);
-                //opt_ta_dest.set(read_merged_vfpx(ta_source, source_colorspace, vfp), b_write);
+                //read_merged_vfpx_write_24bipp(ta_source, source_colorspace, vfp, opt_ta_dest, b_write);
                 b_write += 3;
                 source_fpos[0] += source_vfpixel_size[0];
-                // new vfpx each time for the moment. then will work on optimized adjustments / better integrating it with other functionality.
-                //  Virtual_Float_Rect?
-                //   For rectangularly expressed regions, and then VFPX can iterate inside it.
-                //   A tool for helping with iteration of VFPX, and treating a float window into an int coord space as an object that is readable by its transformed values.
-
-                // Integrating resize transformation with window_to?
-                //  With the pb itself handling copy / update iterations involving resizing as well as other processes / transformations.
             }
             source_fpos[1] += source_vfpixel_size[1];
             source_fpos[0] = 0; //(fixed bug)
         }
         return opt_ta_dest;
-
-
-
     }
-
-
-
-
-
-
-
-
-
-
-
-    
 }
 
 

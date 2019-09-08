@@ -295,6 +295,18 @@ const _direct_unaligned_copy_rect_1bypp_to_3bypp = (ta_source, ta_dest, bypr_sou
 const unaligned_copy_rect_1bypp_to_3bypp = _direct_unaligned_copy_rect_1bypp_to_3bypp
 */
 
+// copy from ta_colorspace to ta_byi
+
+// Different reference methods
+//  Pixels by x,y and colorspace
+//  Byte index
+
+
+
+
+
+
+// copy_px_to_ta
 
 module.exports = {
     

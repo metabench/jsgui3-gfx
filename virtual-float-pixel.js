@@ -1,4 +1,5 @@
 
+// Possibly too slow - but funcionally at least a good proof of concept.
 
 class Virtual_Float_Pixel {
     // .bounds

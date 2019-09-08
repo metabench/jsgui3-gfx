@@ -393,6 +393,32 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
 
 
 
+        ['resize_32x32_24bipp_pastel_to_1000x1000', () => {
+
+
+            // Currently rather slow at this large size...
+            //  Mathematical function that creates no new variables during any of the loops.
+            //   Completely inline operations...?
+            //   Large algorithm?
+            //   Don't create the weight object, directly accumulate.
+            //    This is something that could be done now / sooner.
+            //    
+
+            
+            
+
+
+
+            const new_size = new Int16Array([1000, 1000]);
+            performance.mark('C');
+            const pb_res = new_resized_pb(pastel, new_size);
+            performance.mark('D');
+            performance.measure('C to D', 'C', 'D');
+
+            return pb_res;
+        }],
+
+        false,
 
 
         // for the moment, it's worth implementing some example resizing code here.
@@ -450,30 +476,7 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
 
             return pb_res;
         }],
-        ['resize_32x32_24bipp_pastel_to_1000x1000', () => {
-
-
-            // Currently rather slow at this large size...
-            //  Mathematical function that creates no new variables during any of the loops.
-            //   Completely inline operations...?
-            //   Large algorithm?
-            //   Don't create the weight object, directly accumulate.
-            //    This is something that could be done now / sooner.
-            //    
-
-            
-            
-
-
-
-            const new_size = new Int16Array([1000, 1000]);
-            performance.mark('C');
-            const pb_res = new_resized_pb(pastel, new_size);
-            performance.mark('D');
-            performance.measure('C to D', 'C', 'D');
-
-            return pb_res;
-        }],
+        
 
         false,
 
