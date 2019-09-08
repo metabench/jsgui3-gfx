@@ -242,115 +242,13 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
 
     const new_resized_pb = (pb, size) => {
         const source_ta = pb.ta;
-
-
-
         const dest_size = new Int16Array(size);
-        const dest = new Pixel_Buffer({
+        const dest = new pb.constructor({
             size: dest_size,
-            bits_per_pixel: 24
+            bits_per_pixel: pb.bipp
         });
-
-        // slower this way!
-        //  by a bit.
-
         resize_ta_colorspace(pb.ta, pb.ta_colorspace, dest_size, dest.ta);
-
-
         return dest;
-
-
-
-        /*
-
-
-        // calculate scale, iterate through virtual float pixel space.
-
-        const source_size = pb.size;
-        const dest_to_source_ratio = new Float32Array([source_size[0] / dest_size[0], source_size[1] / dest_size[1]]);
-        //console.log('dest_to_source_ratio', dest_to_source_ratio);
-        const source_vfpixel_size = dest_to_source_ratio;
-        const ita_dest_xy = new Int32Array(2);
-        const taf_source_xy = new Float32Array(2);
-        const ta_dest = dest.ta;
-        let b_write = 0;
-        // looping through the dest int positions makes sense.
-        //let x = 0, y = 0;
-        let dest_xy = new Int16Array([0, 0]);
-        console.log('dest_size', dest_size);
-        // source and dest colorspaces?
-        //  would have source bipp bypr etc...
-        // iterating over the whole of the dest_xy
-
-        // direct writing to the dest.
-
-        // Seems like a problem with applying the 4x4 total coverage weightings.
-
-        // direct mathematical writing to the dest pb could be of use.
-        //  Using the math algo would help, and then more work can be done on the more purely math algo.
-
-
-
-
-
-
-        for (dest_xy[1] = 0; dest_xy[1] < dest_size[1]; dest_xy[1]++) {
-            for (dest_xy[0] = 0; dest_xy[0] < dest_size[0]; dest_xy[0]++) {
-                //console.log('');
-                //console.log('dest_xy', dest_xy);
-                const source_fpos = new Float32Array([dest_xy[0] * source_vfpixel_size[0], dest_xy[1] * source_vfpixel_size[1]]);
-                //console.log('source_fpos', source_fpos);
-                const vfp = new Virtual_Float_Pixel(source_fpos, source_vfpixel_size);
-                //console.log('vfp.bounds', vfp.bounds);
-                const merged_rbg = read_merged_vfpx(source_ta, pb.ta_colorspace, vfp);
-                //console.log('merged_rbg', merged_rbg);
-
-                ta_dest[b_write++] = merged_rbg[0];
-                ta_dest[b_write++] = merged_rbg[1];
-                ta_dest[b_write++] = merged_rbg[2];
-
-
-                // new vfpx each time for the moment. then will work on optimized adjustments / better integrating it with other functionality.
-                //  Virtual_Float_Rect?
-                //   For rectangularly expressed regions, and then VFPX can iterate inside it.
-                //   A tool for helping with iteration of VFPX, and treating a float window into an int coord space as an object that is readable by its transformed values.
-
-                // Integrating resize transformation with window_to?
-                //  With the pb itself handling copy / update iterations involving resizing as well as other processes / transformations.
-
-
-
-
-
-
-
-
-            }
-        }
-
-        */
-
-
-
-
-        // loop through the positions...
-        //  or maybe give Virtual_Float_Pixel access to the movement space (variables)?
-
-        // got to loop / iterate by the source_subpixel_size.
-        // a loop of the float pixel positions...
-
-
-
-
-
-
-
-
-
-        return dest;
-
-
-
     }
 
 
@@ -393,30 +291,7 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
 
 
 
-        ['resize_32x32_24bipp_pastel_to_1000x1000', () => {
-
-
-            // Currently rather slow at this large size...
-            //  Mathematical function that creates no new variables during any of the loops.
-            //   Completely inline operations...?
-            //   Large algorithm?
-            //   Don't create the weight object, directly accumulate.
-            //    This is something that could be done now / sooner.
-            //    
-
-            
-            
-
-
-
-            const new_size = new Int16Array([1000, 1000]);
-            performance.mark('C');
-            const pb_res = new_resized_pb(pastel, new_size);
-            performance.mark('D');
-            performance.measure('C to D', 'C', 'D');
-
-            return pb_res;
-        }],
+        
 
         //false,
 
@@ -437,9 +312,6 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
             const new_size = new Int16Array([16, 16]);
             const pb_res = new_resized_pb(pastel, new_size);
             return pb_res;
-
-
-
 
         }],
         //false,
@@ -476,8 +348,31 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
 
             return pb_res;
         }],
-        
 
+        ['resize_32x32_24bipp_pastel_to_1000x1000', () => {
+
+
+            // Currently rather slow at this large size...
+            //  Mathematical function that creates no new variables during any of the loops.
+            //   Completely inline operations...?
+            //   Large algorithm?
+            //   Don't create the weight object, directly accumulate.
+            //    This is something that could be done now / sooner.
+            //    
+
+            
+            
+
+
+
+            const new_size = new Int16Array([1000, 1000]);
+            performance.mark('C');
+            const pb_res = new_resized_pb(pastel, new_size);
+            performance.mark('D');
+            performance.measure('C to D', 'C', 'D');
+
+            return pb_res;
+        }],
         false,
 
         // Get the weightings matrix from the VFP...
