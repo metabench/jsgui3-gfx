@@ -418,7 +418,7 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
             return pb_res;
         }],
 
-        false,
+        //false,
 
 
         // for the moment, it's worth implementing some example resizing code here.
