@@ -89,6 +89,29 @@ const run_examples = (gfx_server, erte_ale) => obs((next, complete, error) => {
         //  release 0.0.24 will have good resize support within the API.
         //   also lower level resizing functions on the ta / maths level.
 
+        ['resize_erte_ale_0p87', () => {
+            // simpler type of resizing, should make use of all having total pixel coverage special case.
+
+            // will go over the 32x32 virtual pixel view...
+            //  maybe virtual pixel view is a useful abstraction here too...?
+
+            // any optimization for iterating over virtual pixel space?
+            //  
+
+            //console.log('resize_32x32_24bipp_pastel_to_16x16');
+            let scale = 0.87;
+            let new_size = new Int16Array([Math.round(erte_ale.size[0] * scale), Math.round(erte_ale.size[1] * scale)]);
+
+            //const new_size = new Int16Array([16, 16]);
+            performance.mark('G');
+            const pb_res = erte_ale.new_resized(new_size);
+            performance.mark('H');
+            performance.measure('G to H', 'G', 'H');
+            return pb_res;
+        }],
+
+        
+
 
         // functions using more pure maths to do the resizing...
         //  will optimize to C++ better / more easily.
@@ -120,6 +143,8 @@ const run_examples = (gfx_server, erte_ale) => obs((next, complete, error) => {
 
         }],
 
+        //false,
+
         // Slower, but not so bad actually.
         //  An optimized algo that doesn't use the VFPX would be faster.
         //   May find that it's dealing with 3x3 squares at maximum.
@@ -129,26 +154,7 @@ const run_examples = (gfx_server, erte_ale) => obs((next, complete, error) => {
         // Could have optimized 50% downscaling, and 200% upscaling. Pixel halving / doubling - even weights but still need to calculate.
 
 
-        ['resize_erte_ale_0p87', () => {
-            // simpler type of resizing, should make use of all having total pixel coverage special case.
-
-            // will go over the 32x32 virtual pixel view...
-            //  maybe virtual pixel view is a useful abstraction here too...?
-
-            // any optimization for iterating over virtual pixel space?
-            //  
-
-            //console.log('resize_32x32_24bipp_pastel_to_16x16');
-            let scale = 0.87;
-            let new_size = new Int16Array([Math.round(erte_ale.size[0] * scale), Math.round(erte_ale.size[1] * scale)]);
-
-            //const new_size = new Int16Array([16, 16]);
-            performance.mark('G');
-            const pb_res = erte_ale.new_resized(new_size);
-            performance.mark('H');
-            performance.measure('G to H', 'G', 'H');
-            return pb_res;
-        }],
+        
 
         ['resize_erte_ale_0p1', () => {
             // simpler type of resizing, should make use of all having total pixel coverage special case.
