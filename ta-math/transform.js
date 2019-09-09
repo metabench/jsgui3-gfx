@@ -443,8 +443,9 @@ let copy_px_24bipp = (ta_source, byi_read, ta_dest, byi_write) => {
     ta_dest[byi_write + 2] = ta_source[byi_read++];
 }
 
+// C++ overhead could make these functions too slow.
 
-let read_1x2_weight_write_24bipp = (ta_source, byi_read, ta_dest, byi_write, weight_t, weight_b) => {
+let read_1x2_weight_write_24bipp = (ta_source, byi_read, bypr, ta_dest, byi_write, weight_t, weight_b) => {
     let byi_read_below = byi_read + bypr;
     ta_dest[byi_write] = weight_t * ta_source[byi_read++] + weight_b * ta_source[byi_read_below++];
     ta_dest[byi_write + 1] = weight_t * ta_source[byi_read++] + weight_b * ta_source[byi_read_below++];
@@ -452,168 +453,23 @@ let read_1x2_weight_write_24bipp = (ta_source, byi_read, ta_dest, byi_write, wei
 }
 
 let read_2x1_weight_write_24bipp = (ta_source, byi_read, ta_dest, byi_write, weight_l, weight_r) => {
-    let byi_read_right = byi_read + bypp;
+    let byi_read_right = byi_read + 3;
     ta_dest[byi_write] = weight_l * ta_source[byi_read++] + weight_r * ta_source[byi_read_right++];
     ta_dest[byi_write + 1] = weight_l * ta_source[byi_read++] + weight_r * ta_source[byi_read_right++];
     ta_dest[byi_write + 2] = weight_l * ta_source[byi_read++] + weight_r * ta_source[byi_read_right++];
 }
 
-let read_2x2_weight_write_24bipp = (ta_source, byi_read, ta_dest, byi_write, corner_weights_ltrb) => {
+let read_2x2_weight_write_24bipp = (ta_source, byi_read, bypr, ta_dest, byi_write, corner_weights_ltrb) => {
 
-    byi_read_right = byi_read + bypp;
+    byi_read_right = byi_read + 3;
     byi_read_below = byi_read + bypr;
-    byi_read_below_right = byi_read_below + bypp;
+    byi_read_below_right = byi_read_below + 3;
     ta_dest[byi_write] = corner_weights_ltrb[0] * ta_source[byi_read++] + corner_weights_ltrb[1] * ta_source[byi_read_right++] + corner_weights_ltrb[2] * ta_source[byi_read_below++] + corner_weights_ltrb[3] * ta_source[byi_read_below_right++];
     ta_dest[byi_write + 1] = corner_weights_ltrb[0] * ta_source[byi_read++] + corner_weights_ltrb[1] * ta_source[byi_read_right++] + corner_weights_ltrb[2] * ta_source[byi_read_below++] + corner_weights_ltrb[3] * ta_source[byi_read_below_right++];
     ta_dest[byi_write + 2] = corner_weights_ltrb[0] * ta_source[byi_read++] + corner_weights_ltrb[1] * ta_source[byi_read_right++] + corner_weights_ltrb[2] * ta_source[byi_read_below++] + corner_weights_ltrb[3] * ta_source[byi_read_below_right++];
 
 
 }
-
-let read_fpx_weight_write_24bipp = (dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read) => {
-
-    
-    if (source_i_any_coverage_size[0] === 1) {
-        if (source_i_any_coverage_size[1] === 1) {
-
-            // copy_px_24bipp
-            /*
-            opt_ta_dest[dest_byi] = ta_source[byi_read++];
-            opt_ta_dest[dest_byi + 1] = ta_source[byi_read++];
-            opt_ta_dest[dest_byi + 2] = ta_source[byi_read++];
-            */
-
-            copy_px_24bipp(ta_source, byi_read, opt_ta_dest, dest_byi);
-
-        } else if (source_i_any_coverage_size[1] === 2) {
-
-            // read_1x2_weight_write_24bipp
-            //  weight_l, weight_r params?
-            //   Could make sense here rather than giving the array.
-            //    Maybe splitting code will lead to better function optimization.
-
-            read_1x2_weight_write_24bipp(ta_source, byi_read, opt_ta_dest, dest_byi, edge_distances_proportions_of_total[1], edge_distances_proportions_of_total[3]);
-
-
-            /*
-            byi_read_below = byi_read + bypr;
-            opt_ta_dest[dest_byi] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
-            opt_ta_dest[dest_byi + 1] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
-            opt_ta_dest[dest_byi + 2] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
-            */
-        } else {
-            console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-            console.trace();
-            throw 'NYI';
-        }
-    } else if (source_i_any_coverage_size[0] === 2) {
-        if (source_i_any_coverage_size[1] === 1) {
-
-            /*
-
-
-            byi_read_right = byi_read + bypp;
-            opt_ta_dest[dest_byi] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
-            opt_ta_dest[dest_byi + 1] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
-            opt_ta_dest[dest_byi + 2] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
-
-            */
-            read_2x1_weight_write_24bipp(ta_source, byi_read, opt_ta_dest, dest_byi, edge_distances_proportions_of_total[0], edge_distances_proportions_of_total[2]);
-
-        } else if (source_i_any_coverage_size[1] === 2) {
-
-            /*
-
-            byi_read_right = byi_read + bypp;
-            byi_read_below = byi_read + bypr;
-            byi_read_below_right = byi_read_below + bypp;
-            opt_ta_dest[dest_byi] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
-            opt_ta_dest[dest_byi + 1] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
-            opt_ta_dest[dest_byi + 2] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
-            */
-
-            read_2x2_weight_write_24bipp(ta_source, byi_read, opt_ta_dest, dest_byi, corner_areas_proportions_of_total);
-        
-        } else {
-
-            // 2x3 case too...
-
-            read_2x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
-
-            //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-            //console.trace();
-            //throw 'NYI';
-        }
-    } else if (source_i_any_coverage_size[0] === 3) {
-
-        if (source_i_any_coverage_size[1] === 1) {
-
-            console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-            console.trace();
-            throw 'NYI';
-            
-
-        } else if (source_i_any_coverage_size[1] === 2) {
-            //console.log('3x2 case');
-
-            // Seems like making a separate optimized function makes sense...
-            //  Maybe separate functions like this will even run faster? Could make / try some others too.
-
-            // read_weight_write_3x2_24bipp(ta_source, source_bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, dest_byi);
-
-            // Specific read-merge-write merge function of specific size.
-            read_3x2_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
-
-        } else if (source_i_any_coverage_size[1] === 3) {
-            //console.log('3x3 case');
-
-            // Seems like making a separate optimized function makes sense...
-            //  Maybe separate functions like this will even run faster? Could make / try some others too.
-
-
-            //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-            //console.trace();
-            //throw 'NYI';
-            // read_weight_write_3x2_24bipp(ta_source, source_bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, dest_byi);
-
-            // Specific read-merge-write merge function of specific size.
-            read_3x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
-
-        } else {
-
-            // general case, not covered by the smaller and specific read-merge-write functions.
-
-            // source_i_any_coverage_size
-
-
-            // Could make more of a special case here.
-            //  This function now has a C++ accelerated version.
-
-
-            read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
-
-            //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-            //console.trace();
-
-            //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-            //console.trace();
-            //throw 'NYI';
-
-        }
-    } else {
-        //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-
-        // Would be good to be able to swap these functions for accelerated versions?
-        //  Have the functions stored as local (let) variables instead...
-
-        //  ta_math.override_fn('read_gt3x3_weight_write_24bipp', accelerated_read_gt3x3_weight_write_24bipp);
-
-        read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
-    }
-
-}
-
-
 
 
 // A version not just for subpixels...
@@ -682,6 +538,151 @@ const resize_ta_colorspace_24bipp = (ta_source, source_colorspace, dest_size, op
     //each_source_dest_pixels_resized_limited_further_info(source_colorspace, dest_size, read_fpx_weight_write_24bipp);
 
     each_source_dest_pixels_resized_limited_further_info(source_colorspace, dest_size, (dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read) => {
+
+
+
+        if (source_i_any_coverage_size[0] === 1) {
+            if (source_i_any_coverage_size[1] === 1) {
+    
+                // copy_px_24bipp
+                /*
+                opt_ta_dest[dest_byi] = ta_source[byi_read++];
+                opt_ta_dest[dest_byi + 1] = ta_source[byi_read++];
+                opt_ta_dest[dest_byi + 2] = ta_source[byi_read++];
+                */
+    
+                copy_px_24bipp(ta_source, byi_read, opt_ta_dest, dest_byi);
+    
+            } else if (source_i_any_coverage_size[1] === 2) {
+    
+                // read_1x2_weight_write_24bipp
+                //  weight_l, weight_r params?
+                //   Could make sense here rather than giving the array.
+                //    Maybe splitting code will lead to better function optimization.
+    
+                read_1x2_weight_write_24bipp(ta_source, byi_read, bypr, opt_ta_dest, dest_byi, edge_distances_proportions_of_total[1], edge_distances_proportions_of_total[3]);
+    
+    
+                /*
+                byi_read_below = byi_read + bypr;
+                opt_ta_dest[dest_byi] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
+                opt_ta_dest[dest_byi + 1] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
+                opt_ta_dest[dest_byi + 2] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
+                */
+            } else {
+                console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+                console.trace();
+                throw 'NYI';
+            }
+        } else if (source_i_any_coverage_size[0] === 2) {
+            if (source_i_any_coverage_size[1] === 1) {
+    
+                
+    
+    
+                //byi_read_right = byi_read + bypp;
+                //opt_ta_dest[dest_byi] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
+                //opt_ta_dest[dest_byi + 1] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
+                //opt_ta_dest[dest_byi + 2] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
+    
+                
+                read_2x1_weight_write_24bipp(ta_source, byi_read, opt_ta_dest, dest_byi, edge_distances_proportions_of_total[0], edge_distances_proportions_of_total[2]);
+    
+            } else if (source_i_any_coverage_size[1] === 2) {
+    
+                /*
+    
+                byi_read_right = byi_read + bypp;
+                byi_read_below = byi_read + bypr;
+                byi_read_below_right = byi_read_below + bypp;
+                opt_ta_dest[dest_byi] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
+                opt_ta_dest[dest_byi + 1] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
+                opt_ta_dest[dest_byi + 2] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
+                */
+    
+                read_2x2_weight_write_24bipp(ta_source, byi_read, bypr, opt_ta_dest, dest_byi, corner_areas_proportions_of_total);
+            
+            } else {
+    
+                // 2x3 case too...
+    
+                read_2x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
+    
+                //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+                //console.trace();
+                //throw 'NYI';
+            }
+        } else if (source_i_any_coverage_size[0] === 3) {
+    
+            if (source_i_any_coverage_size[1] === 1) {
+    
+                console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+                console.trace();
+                throw 'NYI';
+                
+    
+            } else if (source_i_any_coverage_size[1] === 2) {
+                //console.log('3x2 case');
+    
+                // Seems like making a separate optimized function makes sense...
+                //  Maybe separate functions like this will even run faster? Could make / try some others too.
+    
+                // read_weight_write_3x2_24bipp(ta_source, source_bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, dest_byi);
+    
+                // Specific read-merge-write merge function of specific size.
+                read_3x2_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
+    
+            } else if (source_i_any_coverage_size[1] === 3) {
+                //console.log('3x3 case');
+    
+                // Seems like making a separate optimized function makes sense...
+                //  Maybe separate functions like this will even run faster? Could make / try some others too.
+    
+    
+                //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+                //console.trace();
+                //throw 'NYI';
+                // read_weight_write_3x2_24bipp(ta_source, source_bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, dest_byi);
+    
+                // Specific read-merge-write merge function of specific size.
+                read_3x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
+    
+            } else {
+    
+                // general case, not covered by the smaller and specific read-merge-write functions.
+    
+                // source_i_any_coverage_size
+    
+    
+                // Could make more of a special case here.
+                //  This function now has a C++ accelerated version.
+    
+    
+                read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
+    
+                //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+                //console.trace();
+    
+                //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+                //console.trace();
+                //throw 'NYI';
+    
+            }
+        } else {
+            //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+    
+            // Would be good to be able to swap these functions for accelerated versions?
+            //  Have the functions stored as local (let) variables instead...
+    
+            //  ta_math.override_fn('read_gt3x3_weight_write_24bipp', accelerated_read_gt3x3_weight_write_24bipp);
+    
+            read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
+        }
+
+
+
+
+        /*
 
         if (source_i_any_coverage_size[0] === 1) {
             if (source_i_any_coverage_size[1] === 1) {
@@ -789,11 +790,164 @@ const resize_ta_colorspace_24bipp = (ta_source, source_colorspace, dest_size, op
     
             read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
         }
+
+        */
     
     
     });
 
 }
+
+
+
+let read_fpx_weight_write_24bipp = (dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read) => {
+
+
+
+    
+    if (source_i_any_coverage_size[0] === 1) {
+        if (source_i_any_coverage_size[1] === 1) {
+
+            // copy_px_24bipp
+            
+            opt_ta_dest[dest_byi] = ta_source[byi_read++];
+            opt_ta_dest[dest_byi + 1] = ta_source[byi_read++];
+            opt_ta_dest[dest_byi + 2] = ta_source[byi_read++];
+            
+
+            //copy_px_24bipp(ta_source, byi_read, opt_ta_dest, dest_byi);
+
+        } else if (source_i_any_coverage_size[1] === 2) {
+
+            // read_1x2_weight_write_24bipp
+            //  weight_l, weight_r params?
+            //   Could make sense here rather than giving the array.
+            //    Maybe splitting code will lead to better function optimization.
+
+            //read_1x2_weight_write_24bipp(ta_source, byi_read, bypr, opt_ta_dest, dest_byi, edge_distances_proportions_of_total[1], edge_distances_proportions_of_total[3]);
+
+
+            
+            byi_read_below = byi_read + bypr;
+            opt_ta_dest[dest_byi] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
+            opt_ta_dest[dest_byi + 1] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
+            opt_ta_dest[dest_byi + 2] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
+            
+        } else {
+            console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+            console.trace();
+            throw 'NYI';
+        }
+    } else if (source_i_any_coverage_size[0] === 2) {
+        if (source_i_any_coverage_size[1] === 1) {
+
+            
+
+
+            byi_read_right = byi_read + bypp;
+            opt_ta_dest[dest_byi] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
+            opt_ta_dest[dest_byi + 1] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
+            opt_ta_dest[dest_byi + 2] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
+
+            
+            //read_2x1_weight_write_24bipp(ta_source, byi_read, opt_ta_dest, dest_byi, edge_distances_proportions_of_total[0], edge_distances_proportions_of_total[2]);
+
+        } else if (source_i_any_coverage_size[1] === 2) {
+
+            
+
+            byi_read_right = byi_read + bypp;
+            byi_read_below = byi_read + bypr;
+            byi_read_below_right = byi_read_below + bypp;
+            opt_ta_dest[dest_byi] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
+            opt_ta_dest[dest_byi + 1] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
+            opt_ta_dest[dest_byi + 2] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
+            
+
+            //console.log('corner_areas_proportions_of_total', corner_areas_proportions_of_total);
+
+            //read_2x2_weight_write_24bipp(ta_source, byi_read, bypr, opt_ta_dest, dest_byi, corner_areas_proportions_of_total);
+        
+        } else {
+
+            // 2x3 case too...
+
+            read_2x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
+
+            //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+            //console.trace();
+            //throw 'NYI';
+        }
+    } else if (source_i_any_coverage_size[0] === 3) {
+
+        if (source_i_any_coverage_size[1] === 1) {
+
+            console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+            console.trace();
+            throw 'NYI';
+            
+
+        } else if (source_i_any_coverage_size[1] === 2) {
+            //console.log('3x2 case');
+
+            // Seems like making a separate optimized function makes sense...
+            //  Maybe separate functions like this will even run faster? Could make / try some others too.
+
+            // read_weight_write_3x2_24bipp(ta_source, source_bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, dest_byi);
+
+            // Specific read-merge-write merge function of specific size.
+            read_3x2_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
+
+        } else if (source_i_any_coverage_size[1] === 3) {
+            //console.log('3x3 case');
+
+            // Seems like making a separate optimized function makes sense...
+            //  Maybe separate functions like this will even run faster? Could make / try some others too.
+
+
+            //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+            //console.trace();
+            //throw 'NYI';
+            // read_weight_write_3x2_24bipp(ta_source, source_bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, dest_byi);
+
+            // Specific read-merge-write merge function of specific size.
+            read_3x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
+
+        } else {
+
+            // general case, not covered by the smaller and specific read-merge-write functions.
+
+            // source_i_any_coverage_size
+
+
+            // Could make more of a special case here.
+            //  This function now has a C++ accelerated version.
+
+
+            read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
+
+            //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+            //console.trace();
+
+            //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+            //console.trace();
+            //throw 'NYI';
+
+        }
+    } else {
+        //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+
+        // Would be good to be able to swap these functions for accelerated versions?
+        //  Have the functions stored as local (let) variables instead...
+
+        //  ta_math.override_fn('read_gt3x3_weight_write_24bipp', accelerated_read_gt3x3_weight_write_24bipp);
+
+        read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
+    }
+
+}
+
+
 
 const resize_ta_colorspace = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
 
