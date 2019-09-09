@@ -34,7 +34,9 @@ const each_pixel_in_colorspace = (colorspace, callback) => {
     }
 }
 
-const each_source_dest_pixels_resized = (source_colorspace, dest_size, callback) => {
+
+// Make an inline version?
+let each_source_dest_pixels_resized = (source_colorspace, dest_size, callback) => {
     // Includes both partial and any (total and partial) pixel coverage areas in the source.
 
     const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
@@ -101,7 +103,7 @@ const each_source_dest_pixels_resized_limited_further_info = (source_colorspace,
     //const dest_colorspace = new Int32Array([dest_size[0], dest_size[1], bypp, bypp * dest_size[0], bipp, bipp * dest_size[0]]);
     const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
     const source_edge_distances = new Float32Array(4);
-    const source_corner_areas = new Float32Array(4);
+    //const source_corner_areas = new Float32Array(4);
     const edge_distances_proportions_of_total = new Float32Array(4);
     const edge_segment_areas_proportion_of_total_area = new Float32Array(4);
     const corner_areas_proportions_of_total = new Float32Array(4);
@@ -190,6 +192,14 @@ const each_source_dest_pixels_resized_limited_further_info = (source_colorspace,
 
 
 
+// In JS, could make more optimized version for smaller pixels / subpixels.
+//  An inline loops, max js efficiency version...?
+
+
+
+
+
+
 
 
 const read_3x2_weight_write_24bipp = (ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, ta_dest, dest_byi) => {
@@ -270,6 +280,8 @@ const read_3x3_weight_write_24bipp = (ta_source, bypr, byi_read, edge_distances_
     let byi_ml = byi_tl + bypr, byi_mm = byi_ml + bypp, byi_mr = byi_mm + bypp;
     let byi_bl = byi_ml + bypr, byi_bm = byi_bl + bypp, byi_br = byi_bm + bypp;
 
+    // Doing it component by component.
+
     ta_dest[dest_byi] =     ta_source[byi_tl++] * corner_areas_proportions_of_total[0] + ta_source[byi_tm++] * edge_distances_proportions_of_total[1] + ta_source[byi_tr++] * corner_areas_proportions_of_total[1] +
                             ta_source[byi_ml++] * edge_distances_proportions_of_total[0] + ta_source[byi_mm++] * fpx_area_recip + ta_source[byi_mr++] * edge_distances_proportions_of_total[2] +
                             ta_source[byi_bl++] * corner_areas_proportions_of_total[2] + ta_source[byi_bm++] * edge_distances_proportions_of_total[3] + ta_source[byi_br++] * corner_areas_proportions_of_total[3]
@@ -328,14 +340,6 @@ const read_3x3_weight_write_24bipp = (ta_source, bypr, byi_read, edge_distances_
 
 
 
-
-
-
-
-
-
-
-
     // will do an xy loop.
 
     // could use local x and y variables.
@@ -350,6 +354,8 @@ const read_3x3_weight_write_24bipp = (ta_source, bypr, byi_read, edge_distances_
 
 */
 
+// give it a scratch rgb accumulator?
+
 let read_gt3x3_weight_write_24bipp = (ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, ta_dest, dest_byi) => {
     const byi_tl = byi_read;
     byi_read = byi_tl;
@@ -358,7 +364,7 @@ let read_gt3x3_weight_write_24bipp = (ta_source, bypr, byi_read, source_i_any_co
     //  Worth having an inner row loop too.
     let x = 0, y = 0;
 
-    const [w, h] = source_i_any_coverage_size;
+    //const [w, h] = source_i_any_coverage_size;
 
     r += ta_source[byi_read++] * corner_areas_proportions_of_total[0];
     g += ta_source[byi_read++] * corner_areas_proportions_of_total[0];
@@ -368,7 +374,7 @@ let read_gt3x3_weight_write_24bipp = (ta_source, bypr, byi_read, source_i_any_co
 
     //x = 1;
 
-    const end_hmiddle = w - 1, end_vmiddle = h - 1;
+    const end_hmiddle = source_i_any_coverage_size[0] - 1, end_vmiddle = source_i_any_coverage_size[1] - 1;
 
     for (x = 1; x < end_hmiddle; x++) {
         r += ta_source[byi_read++] * edge_distances_proportions_of_total[1];
@@ -461,19 +467,56 @@ let read_2x1_weight_write_24bipp = (ta_source, byi_read, ta_dest, byi_write, wei
 
 let read_2x2_weight_write_24bipp = (ta_source, byi_read, bypr, ta_dest, byi_write, corner_weights_ltrb) => {
 
-    byi_read_right = byi_read + 3;
-    byi_read_below = byi_read + bypr;
-    byi_read_below_right = byi_read_below + 3;
+    let byi_read_right = byi_read + 3;
+    let byi_read_below = byi_read + bypr;
+    let byi_read_below_right = byi_read_below + 3;
     ta_dest[byi_write] = corner_weights_ltrb[0] * ta_source[byi_read++] + corner_weights_ltrb[1] * ta_source[byi_read_right++] + corner_weights_ltrb[2] * ta_source[byi_read_below++] + corner_weights_ltrb[3] * ta_source[byi_read_below_right++];
     ta_dest[byi_write + 1] = corner_weights_ltrb[0] * ta_source[byi_read++] + corner_weights_ltrb[1] * ta_source[byi_read_right++] + corner_weights_ltrb[2] * ta_source[byi_read_below++] + corner_weights_ltrb[3] * ta_source[byi_read_below_right++];
     ta_dest[byi_write + 2] = corner_weights_ltrb[0] * ta_source[byi_read++] + corner_weights_ltrb[1] * ta_source[byi_read_right++] + corner_weights_ltrb[2] * ta_source[byi_read_below++] + corner_weights_ltrb[3] * ta_source[byi_read_below_right++];
-
-
 }
 
 
 // A version not just for subpixels...
 //  Though I wrote this to be optimized for subpixels, with more work it can handle superpixel size.
+//   Now I'm considering making a subpixel specific optimized version.
+// 
+// Also a version that will handle smaller upscales...
+//  with the covered pixel size no larger than 3x3.
+
+// A version with faster iteration would help - not using these layered callbacks.
+//  That version would be easier to port to C++ too.
+
+
+
+// the optimized loop for 1x1, 1x2, 2x1?
+//  This would be for image shrinking.
+
+// Then 2x2, 2x3, 3x2 for upscaling by not so large amounts.
+
+// Working out the potential full coverage areas for any pixel.
+//  [ceil(fw) + 1]. 1.1 width could have partial coverage over 3 pixels width.
+
+// Want a boilerplate / bare bones inline loop of the positions.
+//  Optimized versions depending on the size of the fpixel makes a lot of sense.
+//   And using a loop system without callbacks that prob will be faster, and then will be easier to port to C++.
+
+// Want to incorporate building wasm into the npm install / gyp? build.
+//  gyp for wasm?
+
+
+// The read and merge functions seem fairly optimal at the moment.
+//  If they didn't declare their own variables, but took a scratch / working typed array?
+
+
+
+
+
+
+
+
+
+
+
 const resize_ta_colorspace_24bipp = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
 
     // Simplified this function.
@@ -507,7 +550,7 @@ const resize_ta_colorspace_24bipp = (ta_source, source_colorspace, dest_size, op
     
 
     //let byi_read;
-    let byi_read_below, byi_read_right, byi_read_below_right;
+    //let byi_read_below, byi_read_right, byi_read_below_right;
 
 
     //let extension_above, extension_below, extension_left, extension_right;
@@ -537,9 +580,11 @@ const resize_ta_colorspace_24bipp = (ta_source, source_colorspace, dest_size, op
     // May need to fix each_source_dest_pixels_resized_limited_further_info if it doesnt properly process superpixels whose pos matches their fpos.
     //each_source_dest_pixels_resized_limited_further_info(source_colorspace, dest_size, read_fpx_weight_write_24bipp);
 
+    // Only need to get as in-depth with weightings on larger fpx sizes.
+
+
+
     each_source_dest_pixels_resized_limited_further_info(source_colorspace, dest_size, (dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read) => {
-
-
 
         if (source_i_any_coverage_size[0] === 1) {
             if (source_i_any_coverage_size[1] === 1) {
@@ -648,15 +693,10 @@ const resize_ta_colorspace_24bipp = (ta_source, source_colorspace, dest_size, op
                 read_3x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
     
             } else {
-    
                 // general case, not covered by the smaller and specific read-merge-write functions.
-    
                 // source_i_any_coverage_size
-    
-    
                 // Could make more of a special case here.
                 //  This function now has a C++ accelerated version.
-    
     
                 read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
     
@@ -678,126 +718,8 @@ const resize_ta_colorspace_24bipp = (ta_source, source_colorspace, dest_size, op
     
             read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
         }
-
-
-
-
-        /*
-
-        if (source_i_any_coverage_size[0] === 1) {
-            if (source_i_any_coverage_size[1] === 1) {
-                opt_ta_dest[dest_byi] = ta_source[byi_read++];
-                opt_ta_dest[dest_byi + 1] = ta_source[byi_read++];
-                opt_ta_dest[dest_byi + 2] = ta_source[byi_read++];
-            } else if (source_i_any_coverage_size[1] === 2) {
-                byi_read_below = byi_read + bypr;
-                opt_ta_dest[dest_byi] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
-                opt_ta_dest[dest_byi + 1] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
-                opt_ta_dest[dest_byi + 2] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
-            } else {
-                console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-                console.trace();
-                throw 'NYI';
-            }
-        } else if (source_i_any_coverage_size[0] === 2) {
-            if (source_i_any_coverage_size[1] === 1) {
-                byi_read_right = byi_read + bypp;
-                opt_ta_dest[dest_byi] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
-                opt_ta_dest[dest_byi + 1] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
-                opt_ta_dest[dest_byi + 2] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
-            } else if (source_i_any_coverage_size[1] === 2) {
-                byi_read_right = byi_read + bypp;
-                byi_read_below = byi_read + bypr;
-                byi_read_below_right = byi_read_below + bypp;
-                opt_ta_dest[dest_byi] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
-                opt_ta_dest[dest_byi + 1] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
-                opt_ta_dest[dest_byi + 2] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
-            } else {
-                // 2x3 case too...
-                read_2x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
-    
-                //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-                //console.trace();
-                //throw 'NYI';
-            }
-        } else if (source_i_any_coverage_size[0] === 3) {
-    
-            if (source_i_any_coverage_size[1] === 1) {
-    
-                console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-                console.trace();
-                throw 'NYI';
-                
-    
-            } else if (source_i_any_coverage_size[1] === 2) {
-                //console.log('3x2 case');
-    
-                // Seems like making a separate optimized function makes sense...
-                //  Maybe separate functions like this will even run faster? Could make / try some others too.
-    
-                // read_weight_write_3x2_24bipp(ta_source, source_bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, dest_byi);
-    
-                // Specific read-merge-write merge function of specific size.
-                read_3x2_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
-    
-            } else if (source_i_any_coverage_size[1] === 3) {
-                //console.log('3x3 case');
-    
-                // Seems like making a separate optimized function makes sense...
-                //  Maybe separate functions like this will even run faster? Could make / try some others too.
-    
-    
-                //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-                //console.trace();
-                //throw 'NYI';
-                // read_weight_write_3x2_24bipp(ta_source, source_bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, dest_byi);
-    
-                // Specific read-merge-write merge function of specific size.
-                read_3x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
-    
-            } else {
-    
-                // general case, not covered by the smaller and specific read-merge-write functions.
-    
-                // source_i_any_coverage_size
-    
-    
-                // Could make more of a special case here.
-                //  This function now has a C++ accelerated version.
-    
-    
-                read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
-    
-                //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-                //console.trace();
-    
-                //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-                //console.trace();
-                //throw 'NYI';
-                
-    
-            }
-    
-    
-            
-        } else {
-            //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-    
-            // Would be good to be able to swap these functions for accelerated versions?
-            //  Have the functions stored as local (let) variables instead...
-    
-            //  ta_math.override_fn('read_gt3x3_weight_write_24bipp', accelerated_read_gt3x3_weight_write_24bipp);
-    
-            read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
-        }
-
-        */
-    
-    
     });
-
 }
-
 
 
 let read_fpx_weight_write_24bipp = (dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read) => {
