@@ -1056,11 +1056,11 @@ resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, dest_size,
                 if (t_prop === 1) {
                     copy_px_24bipp(ta_source, byi_source, ta_dest, byi_write);
                 } else {
-                    
+                    read_1x2_weight_write_24bipp(ta_source, byi_source, source_bypr, ta_dest, byi_write, t_prop, 1 - t_prop);
                 }
             } else {
                 if (t_prop === 1) {
-
+                    read_2x1_weight_write_24bipp(ta_source, byi_source, ta_dest, byi_write, l_prop, 1 - l_prop);
                 } else {
                     
                 }
