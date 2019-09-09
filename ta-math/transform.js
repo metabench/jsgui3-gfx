@@ -29,35 +29,10 @@ const each_pixel_in_colorspace = (colorspace, callback) => {
     for (xy[1] = 0; xy[1] < height; xy[1]++) {
         for (xy[0] = 0; xy[0] < width; xy[0]++) {
             callback(xy, byi);
-
             byi += bypp;
         }
     }
 }
-
-// an iteration function would be more efficient than VFPX I think.
-
-// each_dest_source_pixel
-
-// each_dest_pixel_mapped_source_pixels_in_resized_colorspace
-
-
-
-// Could make one or more versions of this that add further info?
-
-// Get this function to actually calculate weights (up to 8 of them) here?
-
-
-// Could also make a simpler remapped colorspace function.
-
-
-
-
-
-// Longer version here with some weightings calculations.
-//  This function does extra... lets simplify it to
-
-// each_source_dest_pixels_resized
 
 const each_source_dest_pixels_resized = (source_colorspace, dest_size, callback) => {
     // Includes both partial and any (total and partial) pixel coverage areas in the source.
@@ -117,45 +92,18 @@ const each_source_dest_pixels_resized_limited_further_info = (source_colorspace,
 
     // dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read
 
-    const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
+    //const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
     //const dest_colorspace = new Int32Array([dest_size[0], dest_size[1], bypp, bypp * dest_size[0], bipp, bipp * dest_size[0]]);
     const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
-
     const source_edge_distances = new Float32Array(4);
     const source_corner_areas = new Float32Array(4);
-
-    // almost the weights... call them proportions_of_total
-
     const edge_distances_proportions_of_total = new Float32Array(4);
-
-    // edge_segment_areas_proportion_of_total_area
-    //  These are computed for some larger subpixels.
-
     const edge_segment_areas_proportion_of_total_area = new Float32Array(4);
-
     const corner_areas_proportions_of_total = new Float32Array(4);
-
-    // source_fsize is the size of the pixel.
-
     const fpx_area = dest_to_source_ratio[0] * dest_to_source_ratio[1];
 
-
-
     each_source_dest_pixels_resized(source_colorspace, dest_size, (dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, byi_read) => {
-
-        // Nice speedup with this optimization, simpler code path for 1x1.
-
-        // 1x2 optimmization? 2x1, 2x2, 2x3, 3x2?
-
-        //console.log('source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds', [source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds]);
-
-        //console.trace();
-        //throw 'stop';
-
-
         if (source_i_any_coverage_size[0] === 1 && source_i_any_coverage_size[1] === 1) {
-
-            //dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read
             callback(dest_byi, source_i_any_coverage_size, undefined, undefined, byi_read);
         } else if (source_i_any_coverage_size[0] === 1 && source_i_any_coverage_size[1] === 2) {
             // 1x2 - won't need to provide as much info back.
@@ -174,9 +122,6 @@ const each_source_dest_pixels_resized_limited_further_info = (source_colorspace,
             callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, undefined, byi_read);
             //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, undefined, edge_distances_proportions_of_total, undefined, byi_read);
         } else if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 1) {
-            // 1x2 - won't need to provide as much info back.
-
-            // only the top and bottom proportions matter here.
             source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
             source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
 
@@ -187,24 +132,7 @@ const each_source_dest_pixels_resized_limited_further_info = (source_colorspace,
             edge_distances_proportions_of_total[2] = source_edge_distances[2] / dest_to_source_ratio[0];
 
             callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, undefined, byi_read);
-            //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, undefined, edge_distances_proportions_of_total, undefined, byi_read);
         } else if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 2) {
-
-
-            // Return / use edge_segment_areas_proportion_of_total_area
-            //  Not sure that's right for every operation of the larger size...?
-            //   Longer and thinner?
-
-
-            // 2x2
-
-            // Any special handling if the top left is 100* covered?
-
-
-
-            // 
-
-            // only the top and bottom proportions matter here.
             source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
             source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
             source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
@@ -214,38 +142,15 @@ const each_source_dest_pixels_resized_limited_further_info = (source_colorspace,
             if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
             if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
             if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
-
-            // If any edge distance === 0, set it to 1?
-            //  Would need to do that in other places too, if it works.
-
-
-            // source_edge_distances needs to properly account for cases where the float pos aligns with the int pos.
 
             corner_areas_proportions_of_total[0] = source_edge_distances[0] * source_edge_distances[1] / fpx_area;
             corner_areas_proportions_of_total[1] = source_edge_distances[2] * source_edge_distances[1] / fpx_area;
             corner_areas_proportions_of_total[2] = source_edge_distances[0] * source_edge_distances[3] / fpx_area;
             corner_areas_proportions_of_total[3] = source_edge_distances[2] * source_edge_distances[3] / fpx_area;
 
-            //console.log('source_edge_distances', source_edge_distances);
-            //console.log('corner_areas_proportions_of_total', corner_areas_proportions_of_total);
-
-            //console.trace();
-            //throw 'stop';
-
             callback(dest_byi, source_i_any_coverage_size, undefined, corner_areas_proportions_of_total, byi_read);
             //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, undefined, undefined, corner_areas_proportions_of_total, byi_read);
         } else {
-            // 3x2 
-            // xxx
-            // xxx
-            
-            // 4 corners.
-            //  only top and bottom edges.
-
-            // Just calculate them all, get the weights, do the callback.
-
-
-
 
             source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
             source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
@@ -257,64 +162,18 @@ const each_source_dest_pixels_resized_limited_further_info = (source_colorspace,
             if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
             if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
 
-            //console.log('source_edge_distances', source_edge_distances);
-            //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-            //console.trace();
-            //throw 'stop';
-
-            // Want these as a proportion of the total area of the pixel.
-
-
-            /*
-
-    
-            edge_distances_proportions_of_total[0] = source_edge_distances[0] / dest_to_source_ratio[0];
-            edge_distances_proportions_of_total[1] = source_edge_distances[1] / dest_to_source_ratio[1];
-            edge_distances_proportions_of_total[2] = source_edge_distances[2] / dest_to_source_ratio[0];
-            edge_distances_proportions_of_total[3] = source_edge_distances[3] / dest_to_source_ratio[1];
-
-            */
-
             edge_distances_proportions_of_total[0] = source_edge_distances[0] / fpx_area;
             edge_distances_proportions_of_total[1] = source_edge_distances[1] / fpx_area;
             edge_distances_proportions_of_total[2] = source_edge_distances[2] / fpx_area;
             edge_distances_proportions_of_total[3] = source_edge_distances[3] / fpx_area;
-    
-            // Distances divided by the width or height.
-    
-            // then calculate the corner areas?
-            //  makes sense for 2x2 or greater...
-    
-
-            /*
-            source_corner_areas[0] = source_edge_distances[0] * source_edge_distances[1];
-            source_corner_areas[1] = source_edge_distances[2] * source_edge_distances[1];
-            source_corner_areas[2] = source_edge_distances[0] * source_edge_distances[3];
-            source_corner_areas[3] = source_edge_distances[2] * source_edge_distances[3];
-    
-            corner_areas_proportions_of_total[0] = source_corner_areas[0] / fpx_area;
-            corner_areas_proportions_of_total[1] = source_corner_areas[1] / fpx_area;
-            corner_areas_proportions_of_total[2] = source_corner_areas[2] / fpx_area;
-            corner_areas_proportions_of_total[3] = source_corner_areas[3] / fpx_area;
-            */
 
             edge_segment_areas_proportion_of_total_area[0] = source_edge_distances[0] * source_edge_distances[1] / fpx_area;
             edge_segment_areas_proportion_of_total_area[1] = source_edge_distances[2] * source_edge_distances[1] / fpx_area;
             edge_segment_areas_proportion_of_total_area[2] = source_edge_distances[0] * source_edge_distances[3] / fpx_area;
             edge_segment_areas_proportion_of_total_area[3] = source_edge_distances[2] * source_edge_distances[3] / fpx_area;
-    
-            //console.log('corner_areas_proportions_of_total', corner_areas_proportions_of_total);
-    
-            // corner areas divided by the pixel area...
-    
-            //console.log('1) byi_read', byi_read);
+
             callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, edge_segment_areas_proportion_of_total_area, byi_read);
-    
-            //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, source_corner_areas, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read);
-    
         }
-
-
     });
 }
 
@@ -344,9 +203,6 @@ const read_3x2_weight_write_24bipp = (ta_source, bypr, byi_read, edge_distances_
 
     let byi_tm = byi_tl + bypp, byi_tr = byi_tm + bypp;
     let byi_bl = byi_tm + bypr, byi_bm = byi_bl + bypp, byi_br = byi_bm + bypp;
-    
-
-
 
     // r component
     ta_dest[dest_byi] =     ta_source[byi_tl++] * corner_areas_proportions_of_total[0] + ta_source[byi_tm++] * edge_distances_proportions_of_total[1] + ta_source[byi_tr++] * corner_areas_proportions_of_total[1] +
@@ -358,7 +214,6 @@ const read_3x2_weight_write_24bipp = (ta_source, bypr, byi_read, edge_distances_
     ta_dest[dest_byi + 2] = ta_source[byi_tl++] * corner_areas_proportions_of_total[0] + ta_source[byi_tm++] * edge_distances_proportions_of_total[1] + ta_source[byi_tr++] * corner_areas_proportions_of_total[1] +
                             ta_source[byi_bl++] * corner_areas_proportions_of_total[2] + ta_source[byi_bm++] * edge_distances_proportions_of_total[3] + ta_source[byi_br++] * corner_areas_proportions_of_total[3];
                             
-
 
 }
 
@@ -543,7 +398,6 @@ const read_gt3x3_weight_write_24bipp = (ta_source, bypr, byi_read, source_i_any_
     b += ta_source[byi_read++] * corner_areas_proportions_of_total[2];
 
     // loop through the middle section of the top row.
-
     //x = 1;
 
     //const end_hmiddle = w - 1, end_vmiddle = h - 1;
@@ -559,9 +413,9 @@ const read_gt3x3_weight_write_24bipp = (ta_source, bypr, byi_read, source_i_any_
     b += ta_source[byi_read++] * corner_areas_proportions_of_total[3];
 
 
-    ta_dest[dest_byi] = r;
-    ta_dest[dest_byi + 1] = g;
-    ta_dest[dest_byi + 2] = b;
+    ta_dest[dest_byi] = Math.round(r);
+    ta_dest[dest_byi + 1] = Math.round(g);
+    ta_dest[dest_byi + 2] = Math.round(b);
 
     //console.log('[r, g, b]', [r, g, b]);
 
@@ -701,13 +555,10 @@ const resize_ta_colorspace_24bipp = (ta_source, source_colorspace, dest_size, op
                 // Seems like making a separate optimized function makes sense...
                 //  Maybe separate functions like this will even run faster? Could make / try some others too.
 
-
                 // read_weight_write_3x2_24bipp(ta_source, source_bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, dest_byi);
 
                 // Specific read-merge-write merge function of specific size.
                 read_3x2_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
-
-
 
             } else if (source_i_any_coverage_size[1] === 3) {
                 //console.log('3x3 case');
@@ -749,57 +600,10 @@ const resize_ta_colorspace_24bipp = (ta_source, source_colorspace, dest_size, op
             
         } else {
             //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-
             read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
-
-            // read_gt3x3_weight_write_24bipp = (ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, ta_dest, dest_byi) => {
-
-
-
-
-            //console.trace();
-            //throw 'NYI';
-            // Further special cases...
-            //  Then will get on with some C++ implementations.
-            //   Functions pointers can be used like callbacks.
-
-
-
-
-            // check for source_i_any_coverage_size[0] === 3
-            //  1 tall
-            //  2 tall
-            //  3 tall
-
-
-
-
-
-            // 3x1, 1x3
-
-            // 3x2, 2x3, 3x3 special cases...
-
-            // Then for any larger, do other weighting calc with accumulator.
-
-            // edge_distances_proportions_of_total, corner_areas_proportions_of_total
-            //  these are the weights. no need to make an array that's a grid of all the pixels' weights, like VFPX does.
-
-
-
-            
-
-
-
-            
         }
     });
-
-
 }
-
-
-
-
 
 const resize_ta_colorspace = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
 

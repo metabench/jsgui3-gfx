@@ -33,7 +33,7 @@ const {Pixel_Buffer} = require('../gfx');
 // Could make into separate module as it seems generally useful. It would also help progress towards jsgui4, which will use more external references (still to my ecosystem).
 const Virtual_Float_Pixel = require('../virtual-float-pixel');
 
-const run_examples = (gfx_server, erte_ale) => obs((next, complete, error) => {
+const run_examples = (gfx_server, erte_ale, westminster_bridge) => obs((next, complete, error) => {
     const pb_24bipp_color_square = create.generate_color_square();
     const pb_8bipp_patch = (() => {
         const res = create.patch_1();
@@ -89,6 +89,56 @@ const run_examples = (gfx_server, erte_ale) => obs((next, complete, error) => {
         //  release 0.0.24 will have good resize support within the API.
         //   also lower level resizing functions on the ta / maths level.
 
+
+        // Larger fn calls help warm-up / V8 optimizing things.
+
+        ['resize_westminster_bridge_0p95', () => {
+            // simpler type of resizing, should make use of all having total pixel coverage special case.
+
+            // will go over the 32x32 virtual pixel view...
+            //  maybe virtual pixel view is a useful abstraction here too...?
+
+            // any optimization for iterating over virtual pixel space?
+            //  
+
+            // Not so quick at 631ms... but that's still quite good for JS.
+
+            //console.log('resize_32x32_24bipp_pastel_to_16x16');
+            let scale = 0.95;
+            let new_size = new Int16Array([Math.round(westminster_bridge.size[0] * scale), Math.round(westminster_bridge.size[1] * scale)]);
+
+            //const new_size = new Int16Array([16, 16]);
+            performance.mark('I');
+            const pb_res = westminster_bridge.new_resized(new_size);
+            performance.mark('J');
+            performance.measure('I to J', 'I', 'J');
+            return pb_res;
+        }],
+        ['resize_westminster_bridge_1p05', () => {
+            // simpler type of resizing, should make use of all having total pixel coverage special case.
+
+            // will go over the 32x32 virtual pixel view...
+            //  maybe virtual pixel view is a useful abstraction here too...?
+
+            // any optimization for iterating over virtual pixel space?
+            //  
+
+            // Not so quick at 631ms... but that's still quite good for JS.
+
+            //console.log('resize_32x32_24bipp_pastel_to_16x16');
+            let scale = 1.05;
+            let new_size = new Int16Array([Math.round(westminster_bridge.size[0] * scale), Math.round(westminster_bridge.size[1] * scale)]);
+
+            //const new_size = new Int16Array([16, 16]);
+            performance.mark('K');
+            const pb_res = westminster_bridge.new_resized(new_size);
+            performance.mark('L');
+            performance.measure('K to L', 'K', 'L');
+            return pb_res;
+        }],
+
+        //false,
+
         ['resize_erte_ale_0p87', () => {
             // simpler type of resizing, should make use of all having total pixel coverage special case.
 
@@ -109,9 +159,6 @@ const run_examples = (gfx_server, erte_ale) => obs((next, complete, error) => {
             performance.measure('G to H', 'G', 'H');
             return pb_res;
         }],
-
-        
-
 
         // functions using more pure maths to do the resizing...
         //  will optimize to C++ better / more easily.
@@ -338,11 +385,13 @@ if (require.main === module) {
         const gfx_server = require('jsgui3-gfx-server')
 
         const erte_ale = await gfx_server.load_pixel_buffer('../source_images/Erte Ale Volcano.jpg');
+        const westminster_bridge = await gfx_server.load_pixel_buffer('../source_images/Ultimate-Travel-Guide-to-London.jpg');
+
     
         // load the Erte Ale image.
     
     
-        const obs_run_examples = run_examples(gfx_server, erte_ale);
+        const obs_run_examples = run_examples(gfx_server, erte_ale, westminster_bridge);
     
         obs_run_examples.on('next', e_example => {
     
