@@ -345,6 +345,12 @@ All get and set operations are done by coordinates, and it then remaps to the co
   ta_read_4px_rect(pos, opt ta_res)
 
 
+
+0.0.25 - Optimization and code clarity.
+  
+
+
+
     
 
           

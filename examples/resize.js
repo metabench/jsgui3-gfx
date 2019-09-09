@@ -304,7 +304,6 @@ const run_examples = (gfx_server, erte_ale, westminster_bridge) => obs((next, co
             return pb_res;
         }]
     ]
-    
 
     const l_examples = examples.length;
     let eg_name, fn_example, res_eg;

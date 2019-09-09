@@ -211,6 +211,20 @@ const {read_1x2_rect, read_2x1_rect, read_2x2_rect, read_px} = read;
 const {resize_ta_colorspace} = transform;
 
 
+
+const override = (submodule_name, fn_name, fn) => {
+
+    if (submodule_name === 'transform') {
+        transform.override(fn_name, fn);
+    }
+
+    //if (fn_name === 'read_gt3x3_weight_write_24bipp') {
+    //    read_gt3x3_weight_write_24bipp = fn;
+    //}
+
+}
+
+
 module.exports = {
     overlapping_bounds: overlapping_bounds,
     copy_rect_to_same_size_8bipp: copy_rect_to_same_size_8bipp,
@@ -226,5 +240,8 @@ module.exports = {
     read_px: read_px,
     read_pixel: read_px,
 
-    resize_ta_colorspace: resize_ta_colorspace
+    resize_ta_colorspace: resize_ta_colorspace,
+
+
+    override: override
 }
