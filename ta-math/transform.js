@@ -1078,7 +1078,7 @@ let resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, dest_s
     // we only really need to values to calculate all corner weightings as well.
     //  left edge proportion, top edge proportion. multiply the proportions, it should work...
 
-    for (i_dest_y = 0; i_dest_y < dest_size[0]; i_dest_y++) {
+    for (i_dest_y = 0; i_dest_y < dest_size[1]; i_dest_y++) {
 
         // Calc proportion l and proportion r.
         //  Maybe that's all we need.
@@ -1210,9 +1210,6 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
     //  Floating point fractions seem easiest here.
     //  and always just calculate the other proportion as 1-a?
 
-    
-
-
     // Calculations suh as 1-x may be faster than looking up from memory / array.
 
     const [f_px_w, f_px_h] = [source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]];
@@ -1272,6 +1269,7 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
         ta_source_x_byi_component[i_dest_x] = i_source_l * source_bypp;
 
 
+        /*
         if (f_source_r < i_source_lr_crossover || i_source_l === f_source_x) {
             ta_left_proportions[i_dest_x] = 1;
         } else {
@@ -1279,6 +1277,7 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
 
             ta_left_proportions[i_dest_x] = (i_source_lr_crossover - f_source_x) / f_px_w;
         }
+        */
         //ta_left_proportions[x] = 
     }
 
@@ -1286,7 +1285,7 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
     // we only really need to values to calculate all corner weightings as well.
     //  left edge proportion, top edge proportion. multiply the proportions, it should work...
 
-    for (i_dest_y = 0; i_dest_y < dest_size[0]; i_dest_y++) {
+    for (i_dest_y = 0; i_dest_y < dest_size[1]; i_dest_y++) {
 
         // Calc proportion l and proportion r.
         //  Maybe that's all we need.
@@ -1294,12 +1293,12 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
         f_source_y = i_dest_y * f_px_h;
         f_source_b = f_source_y + f_px_h;
         i_source_t = Math.floor(f_source_y);
-        i_source_tb_crossover = i_source_t + 1;
+        //i_source_tb_crossover = i_source_t + 1;
 
         ta_source_y[i_dest_y] = i_source_t;
         ta_source_y_byi_component[i_dest_y] = i_source_t * source_bypr;
 
-
+        /*
         if (f_source_b < i_source_tb_crossover || i_source_t === f_source_y) {
             ta_top_proportions[i_dest_y] = 1;
         } else {
@@ -1307,6 +1306,9 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
 
             ta_top_proportions[i_dest_y] = (i_source_tb_crossover - f_source_y) / f_px_h;
         }
+        */
+
+
         //ta_left_proportions[x] = 
     }
     // then do the normal nested loop yx iteration
@@ -1336,6 +1338,12 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
     // All 4 corner weight proportions may be best...
     const ta_ltrb_corner_props = new Float32Array(4);
 
+    // Want them as a proportion of the area of the pixel...
+
+
+    let fpx_area_recip = 1 / (f_px_w * f_px_h);
+
+
     
 
 
@@ -1359,6 +1367,10 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
             ta_ltrb_corner_props[1] = ta_ltrb_edge_props[2] * ta_ltrb_edge_props[1];
             ta_ltrb_corner_props[2] = ta_ltrb_edge_props[0] * ta_ltrb_edge_props[3];
             ta_ltrb_corner_props[3] = ta_ltrb_edge_props[2] * ta_ltrb_edge_props[3];
+
+            // Want the proportions of the toal width, height or area.
+            //  
+
 
             //ta_byi_reads[0] = ta_source_x_byi_component[i_dest_x] + ta_source_y_byi_component[i_dest_y];
             //  a typed array of the source byte indexes?
@@ -1422,7 +1434,6 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
 
                 }
             } else {
-
                 read_gt3x3_weight_write_24bipp();
             }
 
@@ -1839,6 +1850,12 @@ const resize_ta_colorspace_24bipp = (ta_source, source_colorspace, dest_size, op
 
     } else if (dest_to_source_ratio[0] > 1 && dest_to_source_ratio[1] > 1) {
         //return resize_ta_colorspace_24bipp$superpixel(ta_source, source_colorspace, dest_size, opt_ta_dest);
+
+
+        // Superpixel version will have specific code for superpixels, ie larger weighted areas.
+        //  Specific handlers for 2x2, 2x3, 3x2 - they are important, and used in many resized (ones not to a very large scale change)
+
+
         return resize_ta_colorspace_24bipp$general(ta_source, source_colorspace, dest_size, opt_ta_dest);
 
     } else {
