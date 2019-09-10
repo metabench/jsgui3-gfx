@@ -642,8 +642,7 @@ let read_2x2_weight_write_24bipp$ta4byis = (ta_source, ta4byis, ta_dest, byi_wri
 
 
 // Now it's got slower taking these 2 ints in the params.
-
-let read_2x2_weight_write_24bipp$2_weight_ints = (ta_source, byi_read, bypr, ta_dest, byi_write, ta_lt_props) => {
+let read_2x2_weight_write_24bipp$2_weight_ints = (ta_source, bypr, byi_read, ta_dest, byi_write, ta_lt_props) => {
 
     // Calculate them each time???
 
@@ -1148,7 +1147,7 @@ let resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, dest_s
                     copy_px_24bipp(ta_source, byi_source, ta_dest, byi_write);
                 } else {
                     //ta_byi_reads[2] = ta_byi_reads[0] + source_bypr;
-                    read_1x2_weight_write_24bipp(ta_source, byi_source, source_bypr, ta_dest, byi_write, ta_ltrb_edge_props[1], ta_ltrb_edge_props[3]);
+                    read_1x2_weight_write_24bipp(ta_source, source_bypr, byi_source, ta_dest, byi_write, ta_ltrb_edge_props[1], ta_ltrb_edge_props[3]);
                 }
             } else {
                 if (ta_ltrb_edge_props[1] === 1) {
@@ -1174,7 +1173,7 @@ let resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, dest_s
                     //read_2x2_weight_write_24bipp$2_weight_ints(ta_source, byi_source, source_bypr, ta_dest, byi_write, ta_tl_weight_props);
 
                     // Surprising that below function works faster in a different loop!
-                    read_2x2_weight_write_24bipp(ta_source, byi_source, source_bypr, ta_dest, byi_write, ta_ltrb_corner_props);
+                    read_2x2_weight_write_24bipp(ta_source, source_bypr, byi_source, ta_dest, byi_write, ta_ltrb_corner_props);
 
 
                     // Then inlining the read_2x2_weight_write_24bipp function could speed it up?
@@ -1216,10 +1215,10 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
 
 
     let f_source_x, f_source_r;
-    let i_source_l, i_source_lr_crossover;
+    let i_source_l, i_source_r;
 
     let f_source_y, f_source_b;
-    let i_source_t, i_source_tb_crossover;
+    let i_source_t, i_source_b;
 
     let i_dest_x, i_dest_y;
 
@@ -1227,6 +1226,11 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
     // Typed arrays of the corresponding source(tl) positions / byte offsets?
     //  Storing / caching calculated byte offsets for x and y source reads could speed things up...?
 
+    // segment weights... - as in proportions of the total area.
+    // proportions of the pixel width.
+
+    // Segment size
+    //  Segment proportions of the whole area.
 
 
     const ta_left_edge_segment_proportions = new Float32Array(dest_size[0]);
@@ -1244,6 +1248,7 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
     const ta_source_y_any_coverage_h = new Int16Array(dest_size[1]);
     
     const source_i_any_coverage_size = new Int16Array(2);
+    let fpx_area_recip = 1 / (f_px_w * f_px_h);
 
 
 
@@ -1263,10 +1268,15 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
         f_source_x = i_dest_x * f_px_w;
         f_source_r = f_source_x + f_px_w;
         i_source_l = Math.floor(f_source_x);
+        i_source_r = Math.ceil(f_source_r);
         //i_source_lr_crossover = i_source_l + 1;
 
         ta_source_x[i_dest_x] = i_source_l;
         ta_source_x_byi_component[i_dest_x] = i_source_l * source_bypp;
+        ta_source_x_any_coverage_w[i_dest_x] = i_source_r - i_source_l;
+
+        ta_left_edge_segment_proportions[i_dest_x] = (f_source_x - i_source_l) * fpx_area_recip;
+        ta_right_edge_segment_proportions[i_dest_x] = (i_source_r - f_source_r) * fpx_area_recip;
 
 
         /*
@@ -1281,6 +1291,9 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
         //ta_left_proportions[x] = 
     }
 
+    //console.trace();
+    //throw 'stop';
+
 
     // we only really need to values to calculate all corner weightings as well.
     //  left edge proportion, top edge proportion. multiply the proportions, it should work...
@@ -1293,11 +1306,15 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
         f_source_y = i_dest_y * f_px_h;
         f_source_b = f_source_y + f_px_h;
         i_source_t = Math.floor(f_source_y);
+        i_source_b = Math.ceil(f_source_b);
         //i_source_tb_crossover = i_source_t + 1;
 
         ta_source_y[i_dest_y] = i_source_t;
         ta_source_y_byi_component[i_dest_y] = i_source_t * source_bypr;
+        ta_source_y_any_coverage_h[i_dest_y] = i_source_b - i_source_t;
 
+        ta_top_edge_segment_proportions[i_dest_y] = (f_source_y - i_source_t) * fpx_area_recip;
+        ta_bottom_edge_segment_proportions[i_dest_y] = (i_source_b - f_source_b) * fpx_area_recip;
         /*
         if (f_source_b < i_source_tb_crossover || i_source_t === f_source_y) {
             ta_top_proportions[i_dest_y] = 1;
@@ -1341,7 +1358,7 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
     // Want them as a proportion of the area of the pixel...
 
 
-    let fpx_area_recip = 1 / (f_px_w * f_px_h);
+    
 
 
     
@@ -1351,15 +1368,19 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
 
     // Had bug, fixed...
     for (i_dest_y = 0; i_dest_y < dest_size[1]; i_dest_y++) {
-        ta_ltrb_edge_props[1] = ta_top_proportions[i_dest_y];
-        ta_ltrb_edge_props[3] = 1 - ta_top_proportions[i_dest_y];
+        ta_ltrb_edge_props[1] = ta_top_edge_segment_proportions[i_dest_y];
+        ta_ltrb_edge_props[3] = 1 - ta_bottom_edge_segment_proportions[i_dest_y];
+        source_i_any_coverage_size[1] = ta_source_y_any_coverage_h[i_dest_y];
+
+
         //ta_tl_weight_props[1] = t_prop;
         for (i_dest_x = 0; i_dest_x < dest_size[0]; i_dest_x++) {
+            source_i_any_coverage_size[0] = ta_source_x_any_coverage_w[i_dest_x];
 
             byi_source = ta_source_x_byi_component[i_dest_x] + ta_source_y_byi_component[i_dest_y];
 
-            ta_ltrb_edge_props[0] = ta_left_proportions[i_dest_x];
-            ta_ltrb_edge_props[2] = 1 - ta_left_proportions[i_dest_x];
+            ta_ltrb_edge_props[0] = ta_left_edge_segment_proportions[i_dest_x];
+            ta_ltrb_edge_props[2] = ta_right_edge_segment_proportions[i_dest_x];
 
             
 
@@ -1371,26 +1392,25 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
             // Want the proportions of the toal width, height or area.
             //  
 
-
             //ta_byi_reads[0] = ta_source_x_byi_component[i_dest_x] + ta_source_y_byi_component[i_dest_y];
             //  a typed array of the source byte indexes?
 
             // 2x2, 2x3, 3x2, 3x3, (>3x3, 3x>3???), general purpose.
 
-            
-
-
-
-
             if (ta_ltrb_edge_props[0] === 2) {
                 if (ta_ltrb_edge_props[1] === 2) {
-                    read_2x2_weight_write_24bipp(ta_source, byi_source, source_bypr, ta_dest, byi_write, ta_ltrb_corner_props);
+                    read_2x2_weight_write_24bipp(ta_source, source_bypr, byi_source, ta_dest, byi_write, ta_ltrb_corner_props);
 
 
                     //copy_px_24bipp(ta_source, byi_source, ta_dest, byi_write);
                 } else if (ta_ltrb_edge_props[1] === 3) {
                     //ta_byi_reads[2] = ta_byi_reads[0] + source_bypr;
-                    read_2x3_weight_write_24bipp(ta_source, byi_source, source_bypr, ta_dest, byi_write, ta_ltrb_edge_props[1], ta_ltrb_edge_props[3]);
+
+                    // better to give it the full array?
+
+                    // (ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_weights_ltrb, ta_dest, dest_byi)
+
+                    read_2x3_weight_write_24bipp(ta_source, source_bypr, byi_source, ta_dest, byi_write, ta_ltrb_edge_props[1], ta_ltrb_edge_props[3]);
                 } else {
                     // px i w covered > 3
 
@@ -1398,10 +1418,13 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
             } else if (ta_ltrb_edge_props[0] === 3) {
                 if (ta_ltrb_edge_props[1] === 2) {
                     //ta_byi_reads[1] = ta_byi_reads[0] + source_bypp;
-                    read_3x2_weight_write_24bipp(ta_source, byi_source, ta_dest, byi_write, ta_ltrb_edge_props[0], ta_ltrb_edge_props[2]);
+
+                    // (ta_source, byi_read, bypr, edge_distances_proportions_of_total, corner_weights_ltrb, ta_dest, dest_byi)
+
+                    read_3x2_weight_write_24bipp(ta_source, source_bypr, byi_source, ta_dest, byi_write, ta_ltrb_edge_props[0], ta_ltrb_edge_props[2]);
                 } else if (ta_ltrb_edge_props[1] === 3) {
 
-                    read_3x3_weight_write_24bipp(ta_source, byi_source, ta_dest, byi_write, ta_ltrb_edge_props[0], ta_ltrb_edge_props[2]);
+                    read_3x3_weight_write_24bipp(ta_source, source_bypr, byi_source, ta_dest, byi_write, ta_ltrb_edge_props[0], ta_ltrb_edge_props[2]);
 
                     //ta_tl_weight_props[0] = l_prop;
                     //ta_ltrb_corner_props[0] = l_prop * ;
@@ -1430,11 +1453,13 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
 
                     // (ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_weights_ltrb, fpx_area_recip, ta_dest, dest_byi)
 
-                    read_gt3x3_weight_write_24bipp();
+                    //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+
+                    read_gt3x3_weight_write_24bipp(ta_source, source_bypr, byi_source, source_i_any_coverage_size, ta_ltrb_edge_props, ta_ltrb_corner_props, fpx_area_recip, ta_dest, byi_write);
 
                 }
             } else {
-                read_gt3x3_weight_write_24bipp();
+                read_gt3x3_weight_write_24bipp(ta_source, source_bypr, byi_source, source_i_any_coverage_size, ta_ltrb_edge_props, ta_ltrb_corner_props, fpx_area_recip, ta_dest, byi_write);
             }
 
             byi_write += 3;
@@ -1834,12 +1859,6 @@ const resize_ta_colorspace_24bipp = (ta_source, source_colorspace, dest_size, op
     //  May also be better to use functions for single pixel , 2x1 etc read-merge-write operations.
     //   Would make this function significantly shorter overall, and act more as a function dispatcher.
 
-
-
-
-    
-
-
     //const dest_colorspace = new Int32Array([dest_size[0], dest_size[1], bypp, bypp * dest_size[0], bipp, bipp * dest_size[0]]);
     
     // floating point location in source
@@ -1851,12 +1870,18 @@ const resize_ta_colorspace_24bipp = (ta_source, source_colorspace, dest_size, op
     } else if (dest_to_source_ratio[0] > 1 && dest_to_source_ratio[1] > 1) {
         //return resize_ta_colorspace_24bipp$superpixel(ta_source, source_colorspace, dest_size, opt_ta_dest);
 
+        // Optimized superpixel version could then be ported to C++.
+        //  The superpixel version would need to do more weight and merging calculations.
+
+        
+
+
 
         // Superpixel version will have specific code for superpixels, ie larger weighted areas.
         //  Specific handlers for 2x2, 2x3, 3x2 - they are important, and used in many resized (ones not to a very large scale change)
 
 
-        return resize_ta_colorspace_24bipp$general(ta_source, source_colorspace, dest_size, opt_ta_dest);
+        return resize_ta_colorspace_24bipp$superpixel(ta_source, source_colorspace, dest_size, opt_ta_dest);
 
     } else {
         return resize_ta_colorspace_24bipp$general(ta_source, source_colorspace, dest_size, opt_ta_dest);
