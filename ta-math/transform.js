@@ -581,8 +581,9 @@ let read_2x1_weight_write_24bipp = (ta_source, byi_read, ta_dest, byi_write, wei
     ta_dest[byi_write + 2] = weight_l * ta_source[byi_read++] + weight_r * ta_source[byi_read_right++];
 }
 
-let read_2x2_weight_write_24bipp = (ta_source, byi_read, bypr, ta_dest, byi_write, corner_weights_ltrb) => {
+// Faster to give it a ta of the byi_write indexes?
 
+let read_2x2_weight_write_24bipp = (ta_source, byi_read, bypr, ta_dest, byi_write, corner_weights_ltrb) => {
     let byi_read_right = byi_read + 3;
     let byi_read_below = byi_read + bypr;
     let byi_read_below_right = byi_read_below + 3;
@@ -590,6 +591,37 @@ let read_2x2_weight_write_24bipp = (ta_source, byi_read, bypr, ta_dest, byi_writ
     ta_dest[byi_write + 1] = corner_weights_ltrb[0] * ta_source[byi_read++] + corner_weights_ltrb[1] * ta_source[byi_read_right++] + corner_weights_ltrb[2] * ta_source[byi_read_below++] + corner_weights_ltrb[3] * ta_source[byi_read_below_right++];
     ta_dest[byi_write + 2] = corner_weights_ltrb[0] * ta_source[byi_read++] + corner_weights_ltrb[1] * ta_source[byi_read_right++] + corner_weights_ltrb[2] * ta_source[byi_read_below++] + corner_weights_ltrb[3] * ta_source[byi_read_below_right++];
 }
+
+// Now it's got slower taking these 2 ints in the params.
+
+let read_2x2_weight_write_24bipp$2_weight_ints = (ta_source, byi_read, bypr, ta_dest, byi_write, ta_lt_props) => {
+
+    // Calculate them each time???
+
+    
+    //const [l_prop, t_prop] = ta_lt_props;
+
+    const tl = l_prop * t_prop;
+    const tr = (1 - l_prop) * t_prop;
+    const bl = l_prop * (1 - t_prop);
+    const br = (1 - l_prop) * (1 - t_prop);
+
+    let byi_read_right = byi_read + 3;
+    let byi_read_below = byi_read + bypr;
+    let byi_read_below_right = byi_read_below + 3;
+
+    /*
+    ta_dest[byi_write] = tl * ta_source[byi_read++] + tr * ta_source[byi_read_right++] + bl * ta_source[byi_read_below++] + br * ta_source[byi_read_below_right++];
+    ta_dest[byi_write + 1] = tl * ta_source[byi_read++] + tr * ta_source[byi_read_right++] + bl * ta_source[byi_read_below++] + br * ta_source[byi_read_below_right++];
+    ta_dest[byi_write + 2] = tl * ta_source[byi_read++] + tr * ta_source[byi_read_right++] + bl * ta_source[byi_read_below++] + br * ta_source[byi_read_below_right++];
+    */
+
+    
+    ta_dest[byi_write] = l_prop * t_prop * ta_source[byi_read++] + (1 - l_prop) * t_prop * ta_source[byi_read_right++] + l_prop * (1 - t_prop) * ta_source[byi_read_below++] + (1 - l_prop) * (1 - t_prop) * ta_source[byi_read_below_right++];
+    ta_dest[byi_write + 1] = l_prop * t_prop * ta_source[byi_read++] + (1 - l_prop) * t_prop * ta_source[byi_read_right++] + l_prop * (1 - t_prop) * ta_source[byi_read_below++] + (1 - l_prop) * (1 - t_prop) * ta_source[byi_read_below_right++];
+    ta_dest[byi_write + 2] = l_prop * t_prop * ta_source[byi_read++] + (1 - l_prop) * t_prop * ta_source[byi_read_right++] + l_prop * (1 - t_prop) * ta_source[byi_read_below++] + (1 - l_prop) * (1 - t_prop) * ta_source[byi_read_below_right++];
+}
+
 
 
 const read_3x2_weight_write_24bipp = (ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_weights_ltrb, ta_dest, dest_byi) => {
@@ -1038,7 +1070,13 @@ resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, dest_size,
     //   may be best to use copy-weight-write functions first.
     //    ones that take number params for weights, done simply?
 
-    let l_prop, t_prop;
+
+    // edge proportion typed array is probably better / faster.
+
+
+    //let l_prop, t_prop, r_prop, b_prop;
+
+    const ta_ltrb_edge_props = new Float32Array(4);
 
     // //const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
 
@@ -1047,22 +1085,46 @@ resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, dest_size,
     let byi_source;
     let byi_write = 0;
 
+    const ta_tl_weight_props = new Float32Array(2);
+
+    // All 4 corner weight proportions may be best...
+    const ta_ltrb_corner_props = new Float32Array(4);
+
+
     for (i_dest_y = 0; i_dest_y < dest_size[0]; i_dest_y++) {
-        t_prop = ta_top_proportions[i_dest_y];
+        ta_ltrb_edge_props[1] = ta_top_proportions[i_dest_y];
+        ta_ltrb_edge_props[3] = 1 - ta_top_proportions[i_dest_y];
+        //ta_tl_weight_props[1] = t_prop;
         for (i_dest_x = 0; i_dest_x < dest_size[0]; i_dest_x++) {
-            l_prop = ta_left_proportions[i_dest_x];
+            ta_ltrb_edge_props[0] = ta_left_proportions[i_dest_x];
+            ta_ltrb_edge_props[2] = 1 - ta_left_proportions[i_dest_x];
             byi_source = ta_source_x_byi_component[i_dest_x] + ta_source_y_byi_component[i_dest_y];
-            if (l_prop === 1) {
-                if (t_prop === 1) {
+            if (ta_ltrb_edge_props[0] === 1) {
+                if (ta_ltrb_edge_props[1] === 1) {
                     copy_px_24bipp(ta_source, byi_source, ta_dest, byi_write);
                 } else {
-                    read_1x2_weight_write_24bipp(ta_source, byi_source, source_bypr, ta_dest, byi_write, t_prop, 1 - t_prop);
+                    read_1x2_weight_write_24bipp(ta_source, byi_source, source_bypr, ta_dest, byi_write, ta_ltrb_edge_props[1], ta_ltrb_edge_props[3]);
                 }
             } else {
-                if (t_prop === 1) {
-                    read_2x1_weight_write_24bipp(ta_source, byi_source, ta_dest, byi_write, l_prop, 1 - l_prop);
+                if (ta_ltrb_edge_props[1] === 1) {
+                    read_2x1_weight_write_24bipp(ta_source, byi_source, ta_dest, byi_write, ta_ltrb_edge_props[0], ta_ltrb_edge_props[2]);
                 } else {
+                    //ta_tl_weight_props[0] = l_prop;
+                    //ta_ltrb_corner_props[0] = l_prop * ;
+
+                    ta_ltrb_corner_props[0] = ta_ltrb_edge_props[0] * ta_ltrb_edge_props[1];
+                    ta_ltrb_corner_props[1] = ta_ltrb_edge_props[2] * ta_ltrb_edge_props[1];
+                    ta_ltrb_corner_props[2] = ta_ltrb_edge_props[0] * ta_ltrb_edge_props[3];
+                    ta_ltrb_corner_props[3] = ta_ltrb_edge_props[2] * ta_ltrb_edge_props[1];
                     
+
+                    // need the typed array of corner weights?
+                    //  function was going much slower with the $2_weight_ints version.
+
+
+                    //read_2x2_weight_write_24bipp$2_weight_ints(ta_source, byi_source, source_bypr, ta_dest, byi_write, ta_tl_weight_props);
+
+                    read_2x2_weight_write_24bipp(ta_source, byi_source, source_bypr, ta_dest, byi_write, ta_ltrb_corner_props);
                 }
             }
 
