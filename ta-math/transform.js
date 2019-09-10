@@ -565,6 +565,27 @@ let copy_px_24bipp = (ta_source, byi_read, ta_dest, byi_write) => {
     ta_dest[byi_write + 2] = ta_source[byi_read++];
 }
 
+
+
+
+
+// Could make one that takes a 4 part weights.
+
+// Other versions could take 8 part weights.
+
+
+
+
+
+// versions that take a 4 part weights.
+
+
+
+// Also, can make it take the byis in a ta.
+//  
+
+// ta_byi_reads
+
 // C++ overhead could make these functions too slow.
 
 let read_1x2_weight_write_24bipp = (ta_source, byi_read, bypr, ta_dest, byi_write, weight_t, weight_b) => {
@@ -574,14 +595,29 @@ let read_1x2_weight_write_24bipp = (ta_source, byi_read, bypr, ta_dest, byi_writ
     ta_dest[byi_write + 2] = weight_t * ta_source[byi_read++] + weight_b * ta_source[byi_read_below++];
 }
 
+let read_1x2_weight_write_24bipp$ta4byis = (ta_source, ta4byis, ta_dest, byi_write, weight_t, weight_b) => {
+    //let byi_read_below = byi_read + bypr;
+    ta_dest[byi_write] = weight_t * ta_source[ta4byis[0]++] + weight_b * ta_source[ta4byis[2]++];
+    ta_dest[byi_write + 1] = weight_t * ta_source[ta4byis[0]++] + weight_b * ta_source[ta4byis[2]++];
+    ta_dest[byi_write + 2] = weight_t * ta_source[ta4byis[0]++] + weight_b * ta_source[ta4byis[2]++];
+}
+
+
 let read_2x1_weight_write_24bipp = (ta_source, byi_read, ta_dest, byi_write, weight_l, weight_r) => {
     let byi_read_right = byi_read + 3;
     ta_dest[byi_write] = weight_l * ta_source[byi_read++] + weight_r * ta_source[byi_read_right++];
     ta_dest[byi_write + 1] = weight_l * ta_source[byi_read++] + weight_r * ta_source[byi_read_right++];
     ta_dest[byi_write + 2] = weight_l * ta_source[byi_read++] + weight_r * ta_source[byi_read_right++];
 }
+let read_2x1_weight_write_24bipp$ta4byis = (ta_source, ta4byis, ta_dest, byi_write, weight_l, weight_r) => {
+    //let byi_read_right = byi_read + 3;
+    ta_dest[byi_write] = weight_l * ta_source[ta4byis[0]++] + weight_r * ta_source[ta4byis[1]++];
+    ta_dest[byi_write + 1] = weight_l * ta_source[ta4byis[0]++] + weight_r * ta_source[ta4byis[1]++];
+    ta_dest[byi_write + 2] = weight_l * ta_source[ta4byis[0]++] + weight_r * ta_source[ta4byis[1]++];
+}
 
 // Faster to give it a ta of the byi_write indexes?
+//  Seems not. 
 
 let read_2x2_weight_write_24bipp = (ta_source, byi_read, bypr, ta_dest, byi_write, corner_weights_ltrb) => {
     let byi_read_right = byi_read + 3;
@@ -591,6 +627,19 @@ let read_2x2_weight_write_24bipp = (ta_source, byi_read, bypr, ta_dest, byi_writ
     ta_dest[byi_write + 1] = corner_weights_ltrb[0] * ta_source[byi_read++] + corner_weights_ltrb[1] * ta_source[byi_read_right++] + corner_weights_ltrb[2] * ta_source[byi_read_below++] + corner_weights_ltrb[3] * ta_source[byi_read_below_right++];
     ta_dest[byi_write + 2] = corner_weights_ltrb[0] * ta_source[byi_read++] + corner_weights_ltrb[1] * ta_source[byi_read_right++] + corner_weights_ltrb[2] * ta_source[byi_read_below++] + corner_weights_ltrb[3] * ta_source[byi_read_below_right++];
 }
+
+// Does not actually work out to be faster.
+//  Not sure why. Maybe the values here do optimize well as local variables.
+
+let read_2x2_weight_write_24bipp$ta4byis = (ta_source, ta4byis, ta_dest, byi_write, corner_weights_ltrb) => {
+    //let byi_read_right = byi_read + 3;
+    //let byi_read_below = byi_read + bypr;
+    //let byi_read_below_right = byi_read_below + 3;
+    ta_dest[byi_write] = corner_weights_ltrb[0] * ta_source[ta4byis[0]++] + corner_weights_ltrb[1] * ta_source[ta4byis[1]++] + corner_weights_ltrb[2] * ta_source[ta4byis[2]++] + corner_weights_ltrb[3] * ta_source[ta4byis[3]++];
+    ta_dest[byi_write + 1] = corner_weights_ltrb[0] * ta_source[ta4byis[0]++] + corner_weights_ltrb[1] * ta_source[ta4byis[1]++] + corner_weights_ltrb[2] * ta_source[ta4byis[2]++] + corner_weights_ltrb[3] * ta_source[ta4byis[3]++];
+    ta_dest[byi_write + 2] = corner_weights_ltrb[0] * ta_source[ta4byis[0]++] + corner_weights_ltrb[1] * ta_source[ta4byis[1]++] + corner_weights_ltrb[2] * ta_source[ta4byis[2]++] + corner_weights_ltrb[3] * ta_source[ta4byis[3]++];
+}
+
 
 // Now it's got slower taking these 2 ints in the params.
 
@@ -751,9 +800,6 @@ const read_3x3_weight_write_24bipp = (ta_source, bypr, byi_read, edge_weights, c
     //  Should have area-divided values provided here.
 
 
-
-
-
     //  this is not giving the proper weightings for usage in this grid.
     //   these distances are a proportion of total distance.
     //    we need coverage of that pixel proportional to the area of the fpx.
@@ -796,7 +842,6 @@ let read_gt3x3_weight_write_24bipp = (ta_source, bypr, byi_read, source_i_any_co
     // loop through the middle section of the top row.
 
     //x = 1;
-
     
 
     for (x = 1; x < end_hmiddle; x++) {
@@ -942,8 +987,455 @@ let read_gt3x3_weight_write_24bipp = (ta_source, bypr, byi_read, source_i_any_co
 
 
 
+// Faster using some local variables and not only using tas and their positions.
+let resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, dest_size, ta_dest) => {
 
-resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, dest_size, ta_dest) => {
+    // Simplified this function.
+    //  Seems like a small perf cost with the extra function calls used.
+    //   Could optimize - not setting any weights when its 1x1, not doing the measurements.
+
+    // C++ versions of the functions that run in here would be of use.
+    //  May also be better to use functions for single pixel , 2x1 etc read-merge-write operations.
+    //   Would make this function significantly shorter overall, and act more as a function dispatcher.
+
+    //const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
+
+    const source_bypp = source_colorspace[2];
+    const source_bypr = source_colorspace[3];
+
+
+    //const dest_colorspace = new Int32Array([dest_size[0], dest_size[1], bypp, bypp * dest_size[0], bipp, bipp * dest_size[0]]);
+    //const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
+
+
+    // Could work well precalculating y values, then looking them up.
+    //  Meaning values that depend on y.
+
+    // Then only when it's corners do we need to do a calculation with them.
+
+    //  The proportions could even be in integer thousanths...?
+
+    // So the total area of 1 px would be 1000000
+    //  Floating point fractions seem easiest here.
+    //  and always just calculate the other proportion as 1-a?
+
+    
+
+
+    // Calculations suh as 1-x may be faster than looking up from memory / array.
+
+    const [f_px_w, f_px_h] = [source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]];
+
+
+    let f_source_x, f_source_r;
+    let i_source_l, i_source_lr_crossover;
+
+    let f_source_y, f_source_b;
+    let i_source_t, i_source_tb_crossover;
+
+    let i_dest_x, i_dest_y;
+
+
+    // Typed arrays of the corresponding source(tl) positions / byte offsets?
+    //  Storing / caching calculated byte offsets for x and y source reads could speed things up...?
+    const ta_left_proportions = new Float32Array(dest_size[0]);
+    const ta_top_proportions = new Float32Array(dest_size[1]);
+
+    const ta_source_x = new Int16Array(dest_size[0]);
+    const ta_source_y = new Int16Array(dest_size[1]);
+
+    const ta_source_x_byi_component = new Int32Array(dest_size[0]);
+    const ta_source_y_byi_component = new Int32Array(dest_size[1]);
+
+    
+
+
+    for (i_dest_x = 0; i_dest_x < dest_size[0]; i_dest_x++) {
+
+        // Calc proportion l and proportion r.
+        //  Maybe that's all we need.
+
+        f_source_x = i_dest_x * f_px_w;
+        f_source_r = f_source_x + f_px_w;
+        i_source_l = Math.floor(f_source_x);
+        i_source_lr_crossover = i_source_l + 1;
+
+        ta_source_x[i_dest_x] = i_source_l;
+        ta_source_x_byi_component[i_dest_x] = i_source_l * source_bypp;
+
+
+        if (f_source_r < i_source_lr_crossover || i_source_l === f_source_x) {
+            ta_left_proportions[i_dest_x] = 1;
+        } else {
+            //1 - (f_source_r - i_source_lr_crossover) / f_px_w;
+
+            ta_left_proportions[i_dest_x] = (i_source_lr_crossover - f_source_x) / f_px_w;
+        }
+        //ta_left_proportions[x] = 
+    }
+
+
+    // we only really need to values to calculate all corner weightings as well.
+    //  left edge proportion, top edge proportion. multiply the proportions, it should work...
+
+    for (i_dest_y = 0; i_dest_y < dest_size[0]; i_dest_y++) {
+
+        // Calc proportion l and proportion r.
+        //  Maybe that's all we need.
+
+        f_source_y = i_dest_y * f_px_h;
+        f_source_b = f_source_y + f_px_h;
+        i_source_t = Math.floor(f_source_y);
+        i_source_tb_crossover = i_source_t + 1;
+
+        ta_source_y[i_dest_y] = i_source_t;
+        ta_source_y_byi_component[i_dest_y] = i_source_t * source_bypr;
+
+
+        if (f_source_b < i_source_tb_crossover || i_source_t === f_source_y) {
+            ta_top_proportions[i_dest_y] = 1;
+        } else {
+            //1 - (f_source_r - i_source_lr_crossover) / f_px_w;
+
+            ta_top_proportions[i_dest_y] = (i_source_tb_crossover - f_source_y) / f_px_h;
+        }
+        //ta_left_proportions[x] = 
+    }
+    // then do the normal nested loop yx iteration
+    //  will look up values to calculate...
+
+    //  then will write inline directly?
+    //   may be best to use copy-weight-write functions first.
+    //    ones that take number params for weights, done simply?
+
+    // edge proportion typed array is probably better / faster.
+
+
+    //let l_prop, t_prop, r_prop, b_prop;
+
+    const ta_ltrb_edge_props = new Float32Array(4);
+
+    // //const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
+
+    // keep recalculating the source byte index?
+
+    let byi_source;
+    let byi_write = 0;
+
+    //const ta_tl_weight_props = new Float32Array(2);
+    //const ta_byi_reads = new Int32Array(4);
+
+    // All 4 corner weight proportions may be best...
+    const ta_ltrb_corner_props = new Float32Array(4);
+
+
+    // Had bug, fixed...
+    for (i_dest_y = 0; i_dest_y < dest_size[1]; i_dest_y++) {
+        ta_ltrb_edge_props[1] = ta_top_proportions[i_dest_y];
+        ta_ltrb_edge_props[3] = 1 - ta_top_proportions[i_dest_y];
+        //ta_tl_weight_props[1] = t_prop;
+        for (i_dest_x = 0; i_dest_x < dest_size[0]; i_dest_x++) {
+            ta_ltrb_edge_props[0] = ta_left_proportions[i_dest_x];
+            ta_ltrb_edge_props[2] = 1 - ta_left_proportions[i_dest_x];
+
+            byi_source = ta_source_x_byi_component[i_dest_x] + ta_source_y_byi_component[i_dest_y];
+
+            //ta_byi_reads[0] = ta_source_x_byi_component[i_dest_x] + ta_source_y_byi_component[i_dest_y];
+            //  a typed array of the source byte indexes?
+
+            if (ta_ltrb_edge_props[0] === 1) {
+                if (ta_ltrb_edge_props[1] === 1) {
+                    copy_px_24bipp(ta_source, byi_source, ta_dest, byi_write);
+                } else {
+                    //ta_byi_reads[2] = ta_byi_reads[0] + source_bypr;
+                    read_1x2_weight_write_24bipp(ta_source, byi_source, source_bypr, ta_dest, byi_write, ta_ltrb_edge_props[1], ta_ltrb_edge_props[3]);
+                }
+            } else {
+                if (ta_ltrb_edge_props[1] === 1) {
+                    //ta_byi_reads[1] = ta_byi_reads[0] + source_bypp;
+                    read_2x1_weight_write_24bipp(ta_source, byi_source, ta_dest, byi_write, ta_ltrb_edge_props[0], ta_ltrb_edge_props[2]);
+                } else {
+                    //ta_tl_weight_props[0] = l_prop;
+                    //ta_ltrb_corner_props[0] = l_prop * ;
+                    //ta_byi_reads[1] = ta_byi_reads[0] + source_bypp;
+                    //ta_byi_reads[2] = ta_byi_reads[0] + source_bypr;
+                    //ta_byi_reads[3] = ta_byi_reads[2] + source_bypp;
+
+                    ta_ltrb_corner_props[0] = ta_ltrb_edge_props[0] * ta_ltrb_edge_props[1];
+                    ta_ltrb_corner_props[1] = ta_ltrb_edge_props[2] * ta_ltrb_edge_props[1];
+                    ta_ltrb_corner_props[2] = ta_ltrb_edge_props[0] * ta_ltrb_edge_props[3];
+                    ta_ltrb_corner_props[3] = ta_ltrb_edge_props[2] * ta_ltrb_edge_props[3];
+                    
+
+                    // need the typed array of corner weights?
+                    //  function was going much slower with the $2_weight_ints version.
+
+
+                    //read_2x2_weight_write_24bipp$2_weight_ints(ta_source, byi_source, source_bypr, ta_dest, byi_write, ta_tl_weight_props);
+
+                    // Surprising that below function works faster in a different loop!
+                    read_2x2_weight_write_24bipp(ta_source, byi_source, source_bypr, ta_dest, byi_write, ta_ltrb_corner_props);
+
+
+                    // Then inlining the read_2x2_weight_write_24bipp function could speed it up?
+                }
+            }
+
+            byi_write += 3;
+        }
+    }
+}
+
+let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest_size, ta_dest) => {
+    // Non-callback iteration.
+
+    // All pixel sizes will be at least [2, 2].
+
+    const source_bypp = source_colorspace[2];
+    const source_bypr = source_colorspace[3];
+
+
+    //const dest_colorspace = new Int32Array([dest_size[0], dest_size[1], bypp, bypp * dest_size[0], bipp, bipp * dest_size[0]]);
+    //const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
+
+
+    // Could work well precalculating y values, then looking them up.
+    //  Meaning values that depend on y.
+
+    // Then only when it's corners do we need to do a calculation with them.
+
+    //  The proportions could even be in integer thousanths...?
+
+    // So the total area of 1 px would be 1000000
+    //  Floating point fractions seem easiest here.
+    //  and always just calculate the other proportion as 1-a?
+
+    
+
+
+    // Calculations suh as 1-x may be faster than looking up from memory / array.
+
+    const [f_px_w, f_px_h] = [source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]];
+
+
+    let f_source_x, f_source_r;
+    let i_source_l, i_source_lr_crossover;
+
+    let f_source_y, f_source_b;
+    let i_source_t, i_source_tb_crossover;
+
+    let i_dest_x, i_dest_y;
+
+
+    // Typed arrays of the corresponding source(tl) positions / byte offsets?
+    //  Storing / caching calculated byte offsets for x and y source reads could speed things up...?
+
+
+
+    const ta_left_edge_segment_proportions = new Float32Array(dest_size[0]);
+    const ta_top_edge_segment_proportions = new Float32Array(dest_size[1]);
+    const ta_right_edge_segment_proportions = new Float32Array(dest_size[0]);
+    const ta_bottom_edge_segment_proportions = new Float32Array(dest_size[1]);
+
+    const ta_source_x = new Int16Array(dest_size[0]);
+    const ta_source_y = new Int16Array(dest_size[1]);
+
+    const ta_source_x_byi_component = new Int32Array(dest_size[0]);
+    const ta_source_y_byi_component = new Int32Array(dest_size[1]);
+
+    const ta_source_x_any_coverage_w = new Int16Array(dest_size[0]);
+    const ta_source_y_any_coverage_h = new Int16Array(dest_size[1]);
+    
+    const source_i_any_coverage_size = new Int16Array(2);
+
+
+
+    
+    // Need different / more precalculations for coverage.
+    //  Also use the full coverage bounds too...?
+    //  Any coverage bounds...?
+
+    // It's the any coverage size which is most relevant!
+
+
+    for (i_dest_x = 0; i_dest_x < dest_size[0]; i_dest_x++) {
+
+        // Calc proportion l and proportion r.
+        //  Maybe that's all we need.
+
+        f_source_x = i_dest_x * f_px_w;
+        f_source_r = f_source_x + f_px_w;
+        i_source_l = Math.floor(f_source_x);
+        //i_source_lr_crossover = i_source_l + 1;
+
+        ta_source_x[i_dest_x] = i_source_l;
+        ta_source_x_byi_component[i_dest_x] = i_source_l * source_bypp;
+
+
+        if (f_source_r < i_source_lr_crossover || i_source_l === f_source_x) {
+            ta_left_proportions[i_dest_x] = 1;
+        } else {
+            //1 - (f_source_r - i_source_lr_crossover) / f_px_w;
+
+            ta_left_proportions[i_dest_x] = (i_source_lr_crossover - f_source_x) / f_px_w;
+        }
+        //ta_left_proportions[x] = 
+    }
+
+
+    // we only really need to values to calculate all corner weightings as well.
+    //  left edge proportion, top edge proportion. multiply the proportions, it should work...
+
+    for (i_dest_y = 0; i_dest_y < dest_size[0]; i_dest_y++) {
+
+        // Calc proportion l and proportion r.
+        //  Maybe that's all we need.
+
+        f_source_y = i_dest_y * f_px_h;
+        f_source_b = f_source_y + f_px_h;
+        i_source_t = Math.floor(f_source_y);
+        i_source_tb_crossover = i_source_t + 1;
+
+        ta_source_y[i_dest_y] = i_source_t;
+        ta_source_y_byi_component[i_dest_y] = i_source_t * source_bypr;
+
+
+        if (f_source_b < i_source_tb_crossover || i_source_t === f_source_y) {
+            ta_top_proportions[i_dest_y] = 1;
+        } else {
+            //1 - (f_source_r - i_source_lr_crossover) / f_px_w;
+
+            ta_top_proportions[i_dest_y] = (i_source_tb_crossover - f_source_y) / f_px_h;
+        }
+        //ta_left_proportions[x] = 
+    }
+    // then do the normal nested loop yx iteration
+    //  will look up values to calculate...
+
+    //  then will write inline directly?
+    //   may be best to use copy-weight-write functions first.
+    //    ones that take number params for weights, done simply?
+
+    // edge proportion typed array is probably better / faster.
+
+
+    //let l_prop, t_prop, r_prop, b_prop;
+
+    const ta_ltrb_edge_props = new Float32Array(4);
+
+    // //const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
+
+    // keep recalculating the source byte index?
+
+    let byi_source;
+    let byi_write = 0;
+
+    //const ta_tl_weight_props = new Float32Array(2);
+    //const ta_byi_reads = new Int32Array(4);
+
+    // All 4 corner weight proportions may be best...
+    const ta_ltrb_corner_props = new Float32Array(4);
+
+    
+
+
+
+
+    // Had bug, fixed...
+    for (i_dest_y = 0; i_dest_y < dest_size[1]; i_dest_y++) {
+        ta_ltrb_edge_props[1] = ta_top_proportions[i_dest_y];
+        ta_ltrb_edge_props[3] = 1 - ta_top_proportions[i_dest_y];
+        //ta_tl_weight_props[1] = t_prop;
+        for (i_dest_x = 0; i_dest_x < dest_size[0]; i_dest_x++) {
+
+            byi_source = ta_source_x_byi_component[i_dest_x] + ta_source_y_byi_component[i_dest_y];
+
+            ta_ltrb_edge_props[0] = ta_left_proportions[i_dest_x];
+            ta_ltrb_edge_props[2] = 1 - ta_left_proportions[i_dest_x];
+
+            
+
+            ta_ltrb_corner_props[0] = ta_ltrb_edge_props[0] * ta_ltrb_edge_props[1];
+            ta_ltrb_corner_props[1] = ta_ltrb_edge_props[2] * ta_ltrb_edge_props[1];
+            ta_ltrb_corner_props[2] = ta_ltrb_edge_props[0] * ta_ltrb_edge_props[3];
+            ta_ltrb_corner_props[3] = ta_ltrb_edge_props[2] * ta_ltrb_edge_props[3];
+
+            //ta_byi_reads[0] = ta_source_x_byi_component[i_dest_x] + ta_source_y_byi_component[i_dest_y];
+            //  a typed array of the source byte indexes?
+
+            // 2x2, 2x3, 3x2, 3x3, (>3x3, 3x>3???), general purpose.
+
+            
+
+
+
+
+            if (ta_ltrb_edge_props[0] === 2) {
+                if (ta_ltrb_edge_props[1] === 2) {
+                    read_2x2_weight_write_24bipp(ta_source, byi_source, source_bypr, ta_dest, byi_write, ta_ltrb_corner_props);
+
+
+                    //copy_px_24bipp(ta_source, byi_source, ta_dest, byi_write);
+                } else if (ta_ltrb_edge_props[1] === 3) {
+                    //ta_byi_reads[2] = ta_byi_reads[0] + source_bypr;
+                    read_2x3_weight_write_24bipp(ta_source, byi_source, source_bypr, ta_dest, byi_write, ta_ltrb_edge_props[1], ta_ltrb_edge_props[3]);
+                } else {
+                    // px i w covered > 3
+
+                }
+            } else if (ta_ltrb_edge_props[0] === 3) {
+                if (ta_ltrb_edge_props[1] === 2) {
+                    //ta_byi_reads[1] = ta_byi_reads[0] + source_bypp;
+                    read_3x2_weight_write_24bipp(ta_source, byi_source, ta_dest, byi_write, ta_ltrb_edge_props[0], ta_ltrb_edge_props[2]);
+                } else if (ta_ltrb_edge_props[1] === 3) {
+
+                    read_3x3_weight_write_24bipp(ta_source, byi_source, ta_dest, byi_write, ta_ltrb_edge_props[0], ta_ltrb_edge_props[2]);
+
+                    //ta_tl_weight_props[0] = l_prop;
+                    //ta_ltrb_corner_props[0] = l_prop * ;
+                    //ta_byi_reads[1] = ta_byi_reads[0] + source_bypp;
+                    //ta_byi_reads[2] = ta_byi_reads[0] + source_bypr;
+                    //ta_byi_reads[3] = ta_byi_reads[2] + source_bypp;
+
+                    
+                    
+
+                    // need the typed array of corner weights?
+                    //  function was going much slower with the $2_weight_ints version.
+
+
+                    //read_2x2_weight_write_24bipp$2_weight_ints(ta_source, byi_source, source_bypr, ta_dest, byi_write, ta_tl_weight_props);
+
+                    // Surprising that below function works faster in a different loop!
+                    
+
+
+                    // Then inlining the read_2x2_weight_write_24bipp function could speed it up?
+                } else {
+
+                    // general gt algo here.
+                    //  
+
+                    // (ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_weights_ltrb, fpx_area_recip, ta_dest, dest_byi)
+
+                    read_gt3x3_weight_write_24bipp();
+
+                }
+            } else {
+
+                read_gt3x3_weight_write_24bipp();
+            }
+
+            byi_write += 3;
+        }
+    }
+}
+
+
+
+// Inlining the copy / read-merge-write functions could speed it up...
+
+let resize_ta_colorspace_24bipp$subpixel$ta4byis = (ta_source, source_colorspace, dest_size, ta_dest) => {
 
     // Simplified this function.
     //  Seems like a small perf cost with the extra function calls used.
@@ -977,12 +1469,6 @@ resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, dest_size,
     //  Floating point fractions seem easiest here.
     //  and always just calculate the other proportion as 1-a?
 
-
-
-
-
-
-
     
 
 
@@ -1010,6 +1496,8 @@ resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, dest_size,
 
     const ta_source_x_byi_component = new Int32Array(dest_size[0]);
     const ta_source_y_byi_component = new Int32Array(dest_size[1]);
+
+    
 
 
     for (i_dest_x = 0; i_dest_x < dest_size[0]; i_dest_x++) {
@@ -1086,36 +1574,48 @@ resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, dest_size,
     let byi_write = 0;
 
     const ta_tl_weight_props = new Float32Array(2);
+    const ta_byi_reads = new Int32Array(4);
 
     // All 4 corner weight proportions may be best...
     const ta_ltrb_corner_props = new Float32Array(4);
 
 
-    for (i_dest_y = 0; i_dest_y < dest_size[0]; i_dest_y++) {
+    // Had bug, fixed...
+    for (i_dest_y = 0; i_dest_y < dest_size[1]; i_dest_y++) {
         ta_ltrb_edge_props[1] = ta_top_proportions[i_dest_y];
         ta_ltrb_edge_props[3] = 1 - ta_top_proportions[i_dest_y];
         //ta_tl_weight_props[1] = t_prop;
         for (i_dest_x = 0; i_dest_x < dest_size[0]; i_dest_x++) {
             ta_ltrb_edge_props[0] = ta_left_proportions[i_dest_x];
             ta_ltrb_edge_props[2] = 1 - ta_left_proportions[i_dest_x];
-            byi_source = ta_source_x_byi_component[i_dest_x] + ta_source_y_byi_component[i_dest_y];
+
+            //byi_source = ta_source_x_byi_component[i_dest_x] + ta_source_y_byi_component[i_dest_y];
+
+            ta_byi_reads[0] = ta_source_x_byi_component[i_dest_x] + ta_source_y_byi_component[i_dest_y];
+            //  a typed array of the source byte indexes?
+
             if (ta_ltrb_edge_props[0] === 1) {
                 if (ta_ltrb_edge_props[1] === 1) {
-                    copy_px_24bipp(ta_source, byi_source, ta_dest, byi_write);
+                    copy_px_24bipp(ta_source, ta_byi_reads[0], ta_dest, byi_write);
                 } else {
-                    read_1x2_weight_write_24bipp(ta_source, byi_source, source_bypr, ta_dest, byi_write, ta_ltrb_edge_props[1], ta_ltrb_edge_props[3]);
+                    ta_byi_reads[2] = ta_byi_reads[0] + source_bypr;
+                    read_1x2_weight_write_24bipp$ta4byis(ta_source, ta_byi_reads, ta_dest, byi_write, ta_ltrb_edge_props[1], ta_ltrb_edge_props[3]);
                 }
             } else {
                 if (ta_ltrb_edge_props[1] === 1) {
-                    read_2x1_weight_write_24bipp(ta_source, byi_source, ta_dest, byi_write, ta_ltrb_edge_props[0], ta_ltrb_edge_props[2]);
+                    ta_byi_reads[1] = ta_byi_reads[0] + source_bypp;
+                    read_2x1_weight_write_24bipp$ta4byis(ta_source, ta_byi_reads, ta_dest, byi_write, ta_ltrb_edge_props[0], ta_ltrb_edge_props[2]);
                 } else {
                     //ta_tl_weight_props[0] = l_prop;
                     //ta_ltrb_corner_props[0] = l_prop * ;
+                    ta_byi_reads[1] = ta_byi_reads[0] + source_bypp;
+                    ta_byi_reads[2] = ta_byi_reads[0] + source_bypr;
+                    ta_byi_reads[3] = ta_byi_reads[2] + source_bypp;
 
                     ta_ltrb_corner_props[0] = ta_ltrb_edge_props[0] * ta_ltrb_edge_props[1];
                     ta_ltrb_corner_props[1] = ta_ltrb_edge_props[2] * ta_ltrb_edge_props[1];
                     ta_ltrb_corner_props[2] = ta_ltrb_edge_props[0] * ta_ltrb_edge_props[3];
-                    ta_ltrb_corner_props[3] = ta_ltrb_edge_props[2] * ta_ltrb_edge_props[1];
+                    ta_ltrb_corner_props[3] = ta_ltrb_edge_props[2] * ta_ltrb_edge_props[3];
                     
 
                     // need the typed array of corner weights?
@@ -1124,14 +1624,15 @@ resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, dest_size,
 
                     //read_2x2_weight_write_24bipp$2_weight_ints(ta_source, byi_source, source_bypr, ta_dest, byi_write, ta_tl_weight_props);
 
-                    read_2x2_weight_write_24bipp(ta_source, byi_source, source_bypr, ta_dest, byi_write, ta_ltrb_corner_props);
+                    // Surprising that below function works faster in a different loop!
+                    read_2x2_weight_write_24bipp$ta4byis(ta_source, ta_byi_reads, ta_dest, byi_write, ta_ltrb_corner_props);
+
+
+                    // Then inlining the read_2x2_weight_write_24bipp function could speed it up?
                 }
             }
 
             byi_write += 3;
-
-
-
         }
     }
 
@@ -1161,8 +1662,156 @@ resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, dest_size,
 }
 
 
+
 // resize_ta_colorspace_24bipp$general
 
+
+const resize_ta_colorspace_24bipp$general = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
+
+    const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
+
+    // >1, >1 - can use a superpixels version.
+
+    // Could use a non-callback iteration?
+    //  Would be easier to port to C++.
+
+
+
+
+    const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
+    const fpx_area_recip = 1 / (dest_to_source_ratio[0] * dest_to_source_ratio[1]);
+    each_source_dest_pixels_resized_limited_further_info(source_colorspace, dest_size, (dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read) => {
+
+        if (source_i_any_coverage_size[0] === 1) {
+            if (source_i_any_coverage_size[1] === 1) {
+                // copy_px_24bipp
+                /*
+                opt_ta_dest[dest_byi] = ta_source[byi_read++];
+                opt_ta_dest[dest_byi + 1] = ta_source[byi_read++];
+                opt_ta_dest[dest_byi + 2] = ta_source[byi_read++];
+                */
+    
+                copy_px_24bipp(ta_source, byi_read, opt_ta_dest, dest_byi);
+            } else if (source_i_any_coverage_size[1] === 2) {
+    
+                // read_1x2_weight_write_24bipp
+                //  weight_l, weight_r params?
+                //   Could make sense here rather than giving the array.
+                //    Maybe splitting code will lead to better function optimization.
+    
+                read_1x2_weight_write_24bipp(ta_source, byi_read, bypr, opt_ta_dest, dest_byi, edge_distances_proportions_of_total[1], edge_distances_proportions_of_total[3]);
+                /*
+                byi_read_below = byi_read + bypr;
+                opt_ta_dest[dest_byi] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
+                opt_ta_dest[dest_byi + 1] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
+                opt_ta_dest[dest_byi + 2] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
+                */
+            } else {
+                console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+                console.trace();
+                throw 'NYI';
+            }
+        } else if (source_i_any_coverage_size[0] === 2) {
+            if (source_i_any_coverage_size[1] === 1) {
+    
+                
+    
+    
+                //byi_read_right = byi_read + bypp;
+                //opt_ta_dest[dest_byi] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
+                //opt_ta_dest[dest_byi + 1] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
+                //opt_ta_dest[dest_byi + 2] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
+    
+                
+                read_2x1_weight_write_24bipp(ta_source, byi_read, opt_ta_dest, dest_byi, edge_distances_proportions_of_total[0], edge_distances_proportions_of_total[2]);
+    
+            } else if (source_i_any_coverage_size[1] === 2) {
+    
+                /*
+    
+                byi_read_right = byi_read + bypp;
+                byi_read_below = byi_read + bypr;
+                byi_read_below_right = byi_read_below + bypp;
+                opt_ta_dest[dest_byi] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
+                opt_ta_dest[dest_byi + 1] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
+                opt_ta_dest[dest_byi + 2] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
+                */
+    
+                read_2x2_weight_write_24bipp(ta_source, byi_read, bypr, opt_ta_dest, dest_byi, corner_areas_proportions_of_total);
+            
+            } else {
+    
+                // 2x3 case too...
+    
+                read_2x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
+    
+                //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+                //console.trace();
+                //throw 'NYI';
+            }
+        } else if (source_i_any_coverage_size[0] === 3) {
+    
+            if (source_i_any_coverage_size[1] === 1) {
+    
+                console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+                console.trace();
+                throw 'NYI';
+                
+    
+            } else if (source_i_any_coverage_size[1] === 2) {
+                //console.log('3x2 case');
+    
+                // Seems like making a separate optimized function makes sense...
+                //  Maybe separate functions like this will even run faster? Could make / try some others too.
+    
+                // read_weight_write_3x2_24bipp(ta_source, source_bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, dest_byi);
+    
+                // Specific read-merge-write merge function of specific size.
+                read_3x2_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
+    
+            } else if (source_i_any_coverage_size[1] === 3) {
+                //console.log('3x3 case');
+    
+                // Seems like making a separate optimized function makes sense...
+                //  Maybe separate functions like this will even run faster? Could make / try some others too.
+    
+    
+                //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+                //console.trace();
+                //throw 'NYI';
+                // read_weight_write_3x2_24bipp(ta_source, source_bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, dest_byi);
+    
+                // Specific read-merge-write merge function of specific size.
+                read_3x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
+    
+            } else {
+                // general case, not covered by the smaller and specific read-merge-write functions.
+                // source_i_any_coverage_size
+                // Could make more of a special case here.
+                //  This function now has a C++ accelerated version.
+    
+                read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
+    
+                //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+                //console.trace();
+    
+                //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+                //console.trace();
+                //throw 'NYI';
+    
+            }
+        } else {
+            //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
+    
+            // Would be good to be able to swap these functions for accelerated versions?
+            //  Have the functions stored as local (let) variables instead...
+    
+            //  ta_math.override_fn('read_gt3x3_weight_write_24bipp', accelerated_read_gt3x3_weight_write_24bipp);
+    
+            read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
+        }
+    });
+}
 
 const resize_ta_colorspace_24bipp = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
 
@@ -1181,154 +1830,19 @@ const resize_ta_colorspace_24bipp = (ta_source, source_colorspace, dest_size, op
 
 
     //const dest_colorspace = new Int32Array([dest_size[0], dest_size[1], bypp, bypp * dest_size[0], bipp, bipp * dest_size[0]]);
-    const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
-    // floating point location in source
     
+    // floating point location in source
+    const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
 
     if (dest_to_source_ratio[0] < 1 && dest_to_source_ratio[1] < 1) {
         return resize_ta_colorspace_24bipp$subpixel(ta_source, source_colorspace, dest_size, opt_ta_dest);
 
+    } else if (dest_to_source_ratio[0] > 1 && dest_to_source_ratio[1] > 1) {
+        //return resize_ta_colorspace_24bipp$superpixel(ta_source, source_colorspace, dest_size, opt_ta_dest);
+        return resize_ta_colorspace_24bipp$general(ta_source, source_colorspace, dest_size, opt_ta_dest);
 
     } else {
-        const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
-        const fpx_area_recip = 1 / (dest_to_source_ratio[0] * dest_to_source_ratio[1]);
-        each_source_dest_pixels_resized_limited_further_info(source_colorspace, dest_size, (dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read) => {
-
-            if (source_i_any_coverage_size[0] === 1) {
-                if (source_i_any_coverage_size[1] === 1) {
-        
-                    // copy_px_24bipp
-                    /*
-                    opt_ta_dest[dest_byi] = ta_source[byi_read++];
-                    opt_ta_dest[dest_byi + 1] = ta_source[byi_read++];
-                    opt_ta_dest[dest_byi + 2] = ta_source[byi_read++];
-                    */
-        
-                    copy_px_24bipp(ta_source, byi_read, opt_ta_dest, dest_byi);
-        
-                } else if (source_i_any_coverage_size[1] === 2) {
-        
-                    // read_1x2_weight_write_24bipp
-                    //  weight_l, weight_r params?
-                    //   Could make sense here rather than giving the array.
-                    //    Maybe splitting code will lead to better function optimization.
-        
-                    read_1x2_weight_write_24bipp(ta_source, byi_read, bypr, opt_ta_dest, dest_byi, edge_distances_proportions_of_total[1], edge_distances_proportions_of_total[3]);
-        
-        
-                    /*
-                    byi_read_below = byi_read + bypr;
-                    opt_ta_dest[dest_byi] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
-                    opt_ta_dest[dest_byi + 1] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
-                    opt_ta_dest[dest_byi + 2] = edge_distances_proportions_of_total[1] * ta_source[byi_read++] + edge_distances_proportions_of_total[3] * ta_source[byi_read_below++];
-                    */
-                } else {
-                    console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-                    console.trace();
-                    throw 'NYI';
-                }
-            } else if (source_i_any_coverage_size[0] === 2) {
-                if (source_i_any_coverage_size[1] === 1) {
-        
-                    
-        
-        
-                    //byi_read_right = byi_read + bypp;
-                    //opt_ta_dest[dest_byi] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
-                    //opt_ta_dest[dest_byi + 1] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
-                    //opt_ta_dest[dest_byi + 2] = edge_distances_proportions_of_total[0] * ta_source[byi_read++] + edge_distances_proportions_of_total[2] * ta_source[byi_read_right++];
-        
-                    
-                    read_2x1_weight_write_24bipp(ta_source, byi_read, opt_ta_dest, dest_byi, edge_distances_proportions_of_total[0], edge_distances_proportions_of_total[2]);
-        
-                } else if (source_i_any_coverage_size[1] === 2) {
-        
-                    /*
-        
-                    byi_read_right = byi_read + bypp;
-                    byi_read_below = byi_read + bypr;
-                    byi_read_below_right = byi_read_below + bypp;
-                    opt_ta_dest[dest_byi] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
-                    opt_ta_dest[dest_byi + 1] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
-                    opt_ta_dest[dest_byi + 2] = corner_areas_proportions_of_total[0] * ta_source[byi_read++] + corner_areas_proportions_of_total[1] * ta_source[byi_read_right++] + corner_areas_proportions_of_total[2] * ta_source[byi_read_below++] + corner_areas_proportions_of_total[3] * ta_source[byi_read_below_right++];
-                    */
-        
-                    read_2x2_weight_write_24bipp(ta_source, byi_read, bypr, opt_ta_dest, dest_byi, corner_areas_proportions_of_total);
-                
-                } else {
-        
-                    // 2x3 case too...
-        
-                    read_2x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
-        
-                    //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-                    //console.trace();
-                    //throw 'NYI';
-                }
-            } else if (source_i_any_coverage_size[0] === 3) {
-        
-                if (source_i_any_coverage_size[1] === 1) {
-        
-                    console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-                    console.trace();
-                    throw 'NYI';
-                    
-        
-                } else if (source_i_any_coverage_size[1] === 2) {
-                    //console.log('3x2 case');
-        
-                    // Seems like making a separate optimized function makes sense...
-                    //  Maybe separate functions like this will even run faster? Could make / try some others too.
-        
-                    // read_weight_write_3x2_24bipp(ta_source, source_bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, dest_byi);
-        
-                    // Specific read-merge-write merge function of specific size.
-                    read_3x2_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
-        
-                } else if (source_i_any_coverage_size[1] === 3) {
-                    //console.log('3x3 case');
-        
-                    // Seems like making a separate optimized function makes sense...
-                    //  Maybe separate functions like this will even run faster? Could make / try some others too.
-        
-        
-                    //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-                    //console.trace();
-                    //throw 'NYI';
-                    // read_weight_write_3x2_24bipp(ta_source, source_bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, dest_byi);
-        
-                    // Specific read-merge-write merge function of specific size.
-                    read_3x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
-        
-                } else {
-                    // general case, not covered by the smaller and specific read-merge-write functions.
-                    // source_i_any_coverage_size
-                    // Could make more of a special case here.
-                    //  This function now has a C++ accelerated version.
-        
-                    read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
-        
-                    //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-                    //console.trace();
-        
-                    //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-                    //console.trace();
-                    //throw 'NYI';
-        
-                }
-            } else {
-                //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
-        
-                // Would be good to be able to swap these functions for accelerated versions?
-                //  Have the functions stored as local (let) variables instead...
-        
-                //  ta_math.override_fn('read_gt3x3_weight_write_24bipp', accelerated_read_gt3x3_weight_write_24bipp);
-        
-                read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
-            }
-        });
-
-
+        return resize_ta_colorspace_24bipp$general(ta_source, source_colorspace, dest_size, opt_ta_dest);
     }
 
     // Bounds calc could be more appropriate?
