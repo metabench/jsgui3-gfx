@@ -89,6 +89,8 @@ let each_source_dest_pixels_resized = (source_colorspace, dest_size, callback) =
     });
 }
 
+
+// Make this the precalc-x version?
 let each_source_dest_pixels_resized$inline = (source_colorspace, dest_size, callback) => {
     let [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
     const source_bypr = bypr;
@@ -100,21 +102,69 @@ let each_source_dest_pixels_resized$inline = (source_colorspace, dest_size, call
     const source_ibounds = new Int16Array(4);
     const source_i_any_coverage_size = new Int16Array(2);
     const source_total_coverage_ibounds = new Int16Array(4);
-    let byi_read;
-
-
+    let byi_read = 0;
 
     let dest_byi = 0;
     const dest_xy = new Int16Array(2);
     [width, height, bypp, bypr, bipp, bipr] = dest_colorspace;
+
+
+    // Could precalculate values for x.
+    //  Adding together byr components could be another optimization.
+
+    const _x_source_fbounds0 = new Float32Array(width);
+    const _x_source_fbounds2 = new Float32Array(width);
+
+    const _x_source_ibounds0 = new Int16Array(width);
+    const _x_source_ibounds2 = new Int16Array(width);
+    const _x_source_i_any_coverage_size = new Int16Array(width);
+    const _x_source_i_total_coverage_l = new Int16Array(width);
+    const _x_source_i_total_coverage_r = new Int16Array(width);
+
+    // And cache the total coverage bounds for x as well...
+
+    const _x_byi_read = new Int32Array(width);
+
+    for (dest_xy[0] = 0; dest_xy[0] < width; dest_xy[0]++) {
+        _x_source_fbounds0[dest_xy[0]] = dest_xy[0] * dest_to_source_ratio[0];
+        _x_source_fbounds2[dest_xy[0]] = _x_source_fbounds0[dest_xy[0]] + dest_to_source_ratio[0];
+
+        _x_source_ibounds0[dest_xy[0]] = _x_source_fbounds0[dest_xy[0]];
+        _x_source_ibounds2[dest_xy[0]] = Math.ceil(_x_source_fbounds2[dest_xy[0]]);
+
+        _x_source_i_any_coverage_size[dest_xy[0]] = _x_source_ibounds2[dest_xy[0]] - _x_source_ibounds0[dest_xy[0]];
+
+        _x_byi_read[dest_xy[0]] = _x_source_ibounds0[dest_xy[0]] * bypp;
+
+        _x_source_i_total_coverage_l[dest_xy[0]] = Math.ceil(_x_source_fbounds0[dest_xy[0]]);
+        _x_source_i_total_coverage_r[dest_xy[0]] = Math.floor(_x_source_fbounds2[dest_xy[0]]);
+    }
+
+
+    let row_byi;
+
+    // iterate using local variables instead?
+    //  may make for fewer ta lookups? speed things up that way?
+
     for (dest_xy[1] = 0; dest_xy[1] < height; dest_xy[1]++) {
+        source_fbounds[1] = dest_xy[1] * dest_to_source_ratio[1];
+        source_ibounds[1] = source_fbounds[1];
+        
+        source_fbounds[3] = source_fbounds[1] + dest_to_source_ratio[1];
+        source_ibounds[3] = Math.ceil(source_fbounds[3]);
+
+        source_i_any_coverage_size[1] = source_ibounds[3] - source_ibounds[1];
+        source_total_coverage_ibounds[1] = Math.ceil(source_fbounds[1]);
+        source_total_coverage_ibounds[3] = source_fbounds[3];
+
+        row_byi = source_ibounds[1] * source_bypr;
+        
         for (dest_xy[0] = 0; dest_xy[0] < width; dest_xy[0]++) {
 
-
-            source_fbounds[0] = dest_xy[0] * dest_to_source_ratio[0];
-            source_fbounds[1] = dest_xy[1] * dest_to_source_ratio[1];
-            source_fbounds[2] = source_fbounds[0] + dest_to_source_ratio[0];
-            source_fbounds[3] = source_fbounds[1] + dest_to_source_ratio[1];
+            //source_fbounds[0] = dest_xy[0] * dest_to_source_ratio[0];
+            source_fbounds[0] = _x_source_fbounds0[dest_xy[0]];
+            source_fbounds[2] = _x_source_fbounds2[dest_xy[0]];
+           // source_fbounds[2] = source_fbounds[0] + dest_to_source_ratio[0];
 
             // And the total coverage bounds.
             //  will be useful for some things...
@@ -122,45 +172,46 @@ let each_source_dest_pixels_resized$inline = (source_colorspace, dest_size, call
 
             //source_farea = (source_fbounds[2] - )
 
-
             // Scale down the pixel location...
-            source_ibounds[0] = source_fbounds[0];
-            source_ibounds[1] = source_fbounds[1];
-            source_ibounds[2] = Math.ceil(source_fbounds[2]);
-            source_ibounds[3] = Math.ceil(source_fbounds[3]);
+            //source_ibounds[0] = source_fbounds[0];
+            //source_ibounds[2] = Math.ceil(source_fbounds[2]);
+
+            source_ibounds[0] = _x_source_ibounds0[dest_xy[0]];
+            source_ibounds[2] = _x_source_ibounds2[dest_xy[0]];
+            
 
             // then the any coverage area...
 
             // does it cover other pixels / proportions in those other pixels?
 
             // Still reasonably fast - yet slowing down from before....
-            source_i_any_coverage_size[0] = source_ibounds[2] - source_ibounds[0];
-            source_i_any_coverage_size[1] = source_ibounds[3] - source_ibounds[1];
+            //source_i_any_coverage_size[0] = source_ibounds[2] - source_ibounds[0];
+            source_i_any_coverage_size[0] = _x_source_i_any_coverage_size[dest_xy[0]];
+            byi_read = _x_byi_read[dest_xy[0]] + row_byi;
 
-            byi_read = source_ibounds[0] * bypp + source_ibounds[1] * source_bypr;
+            //source_total_coverage_ibounds[0] = Math.ceil(source_fbounds[0]);
+            //source_total_coverage_ibounds[2] = source_fbounds[2];
 
-            source_total_coverage_ibounds[0] = Math.ceil(source_fbounds[0]);
-            source_total_coverage_ibounds[1] = Math.ceil(source_fbounds[1]);
-            source_total_coverage_ibounds[2] = source_fbounds[2];
-            source_total_coverage_ibounds[3] = source_fbounds[3];
+            source_total_coverage_ibounds[0] = _x_source_i_total_coverage_l[dest_xy[0]];
+            source_total_coverage_ibounds[2] = _x_source_i_total_coverage_r[dest_xy[0]];
 
             callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, byi_read);
-
             
             dest_byi += bypp;
         }
     }
 
-
-
 }
+
+// Non-inline version faster here too? Seeing that on some smaller image resizes.
+//  Inline version faster for larger image resizes (or after more runs) so going for that
 
 each_source_dest_pixels_resized = each_source_dest_pixels_resized$inline;
 
 // each_source_dest_pixels_resized_limited_further_info in C++, with callbacks (using function pointers I suppose on the C++ level)
 
 
-
+// Could make a further inlined / optimized / precalced version of this too.
 let each_source_dest_pixels_resized_limited_further_info = (source_colorspace, dest_size, callback) => {
     // This actually calculates the weights.
 
@@ -289,7 +340,7 @@ let each_source_dest_pixels_resized_limited_further_info$inline = (source_colors
 
 
     let dest_byi = 0;
-    const dest_xy = new Int16Array(2);
+    //const dest_xy = new Int16Array(2);
     [width, height, bypp, bypr, bipp, bipr] = dest_colorspace;
 
 
@@ -304,14 +355,19 @@ let each_source_dest_pixels_resized_limited_further_info$inline = (source_colors
     //  Or refer to it.
     //  
 
+    // Could make a version of this that does precalculations.
 
 
-    for (dest_xy[1] = 0; dest_xy[1] < height; dest_xy[1]++) {
+    let x, y;
+
+
+    //for (dest_xy[1] = 0; dest_xy[1] < height; dest_xy[1]++) {
+    for (y = 0; y < height; y++) {
 
         // Can optimize with calculations done just using y.
 
 
-        source_fbounds[1] = dest_xy[1] * dest_to_source_ratio[1];
+        source_fbounds[1] = y * dest_to_source_ratio[1];
         source_fbounds[3] = source_fbounds[1] + dest_to_source_ratio[1];
         source_ibounds[1] = source_fbounds[1];
         source_ibounds[3] = Math.ceil(source_fbounds[3]);
@@ -319,11 +375,14 @@ let each_source_dest_pixels_resized_limited_further_info$inline = (source_colors
         source_total_coverage_ibounds[1] = Math.ceil(source_fbounds[1]);
         source_total_coverage_ibounds[3] = source_fbounds[3];
 
+        source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
+        source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+        if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
+        if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
 
-        for (dest_xy[0] = 0; dest_xy[0] < width; dest_xy[0]++) {
-            source_fbounds[0] = dest_xy[0] * dest_to_source_ratio[0];
+        for (x = 0; x < width; x++) {
+            source_fbounds[0] = x * dest_to_source_ratio[0];
             source_fbounds[2] = source_fbounds[0] + dest_to_source_ratio[0];
-            
 
             // And the total coverage bounds.
             //  will be useful for some things...
@@ -334,9 +393,7 @@ let each_source_dest_pixels_resized_limited_further_info$inline = (source_colors
 
             // Scale down the pixel location...
             source_ibounds[0] = source_fbounds[0];
-            
             source_ibounds[2] = Math.ceil(source_fbounds[2]);
-            
 
             // then the any coverage area...
 
@@ -344,13 +401,13 @@ let each_source_dest_pixels_resized_limited_further_info$inline = (source_colors
 
             // Still reasonably fast - yet slowing down from before....
             source_i_any_coverage_size[0] = source_ibounds[2] - source_ibounds[0];
-            
-
             byi_read = source_ibounds[0] * bypp + source_ibounds[1] * source_bypr;
 
             source_total_coverage_ibounds[0] = Math.ceil(source_fbounds[0]);
-            
             source_total_coverage_ibounds[2] = source_fbounds[2];
+
+            edge_distances_proportions_of_total[1] = source_edge_distances[1] / fpx_area;
+            edge_distances_proportions_of_total[3] = source_edge_distances[3] / fpx_area;
 
             //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, byi_read);
 
@@ -360,14 +417,13 @@ let each_source_dest_pixels_resized_limited_further_info$inline = (source_colors
                 // 1x2 - won't need to provide as much info back.
     
                 // only the top and bottom proportions matter here.
-                source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
-                source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+                //source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
+                //source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
     
-                if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
-                if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
+                
     
-                edge_distances_proportions_of_total[1] = source_edge_distances[1] / dest_to_source_ratio[1];
-                edge_distances_proportions_of_total[3] = source_edge_distances[3] / dest_to_source_ratio[1];
+                //edge_distances_proportions_of_total[1] = source_edge_distances[1] / dest_to_source_ratio[1];
+                //edge_distances_proportions_of_total[3] = source_edge_distances[3] / dest_to_source_ratio[1];
     
                 // dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read
                 callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, undefined, byi_read);
@@ -385,14 +441,14 @@ let each_source_dest_pixels_resized_limited_further_info$inline = (source_colors
                 callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, undefined, byi_read);
             } else if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 2) {
                 source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
-                source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
+                //source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
                 source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
-                source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+                //source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
     
                 if (source_edge_distances[0] === 0) source_edge_distances[0] = 1;
-                if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
+                //if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
                 if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
-                if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
+                //if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
     
                 corner_areas_proportions_of_total[0] = source_edge_distances[0] * source_edge_distances[1] / fpx_area;
                 corner_areas_proportions_of_total[1] = source_edge_distances[2] * source_edge_distances[1] / fpx_area;
@@ -404,19 +460,19 @@ let each_source_dest_pixels_resized_limited_further_info$inline = (source_colors
             } else {
     
                 source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
-                source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
+                //source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
                 source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
-                source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+                //source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
     
                 if (source_edge_distances[0] === 0) source_edge_distances[0] = 1;
-                if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
+                //if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
                 if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
-                if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
+                //if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
     
                 edge_distances_proportions_of_total[0] = source_edge_distances[0] / fpx_area;
-                edge_distances_proportions_of_total[1] = source_edge_distances[1] / fpx_area;
+                //edge_distances_proportions_of_total[1] = source_edge_distances[1] / fpx_area;
                 edge_distances_proportions_of_total[2] = source_edge_distances[2] / fpx_area;
-                edge_distances_proportions_of_total[3] = source_edge_distances[3] / fpx_area;
+                //edge_distances_proportions_of_total[3] = source_edge_distances[3] / fpx_area;
     
                 edge_segment_areas_proportion_of_total_area[0] = source_edge_distances[0] * source_edge_distances[1] / fpx_area;
                 edge_segment_areas_proportion_of_total_area[1] = source_edge_distances[2] * source_edge_distances[1] / fpx_area;
@@ -428,90 +484,10 @@ let each_source_dest_pixels_resized_limited_further_info$inline = (source_colors
             dest_byi += bypp;
         }
     }
-
-
-    /*
-
-
-    each_source_dest_pixels_resized(source_colorspace, dest_size, (dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, byi_read) => {
-        if (source_i_any_coverage_size[0] === 1 && source_i_any_coverage_size[1] === 1) {
-            callback(dest_byi, source_i_any_coverage_size, undefined, undefined, byi_read);
-        } else if (source_i_any_coverage_size[0] === 1 && source_i_any_coverage_size[1] === 2) {
-            // 1x2 - won't need to provide as much info back.
-
-            // only the top and bottom proportions matter here.
-            source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
-            source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
-
-            if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
-            if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
-
-            edge_distances_proportions_of_total[1] = source_edge_distances[1] / dest_to_source_ratio[1];
-            edge_distances_proportions_of_total[3] = source_edge_distances[3] / dest_to_source_ratio[1];
-
-            // dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read
-            callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, undefined, byi_read);
-            //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, undefined, edge_distances_proportions_of_total, undefined, byi_read);
-        } else if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 1) {
-            source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
-            source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
-
-            if (source_edge_distances[0] === 0) source_edge_distances[0] = 1;
-            if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
-
-            edge_distances_proportions_of_total[0] = source_edge_distances[0] / dest_to_source_ratio[0];
-            edge_distances_proportions_of_total[2] = source_edge_distances[2] / dest_to_source_ratio[0];
-
-            callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, undefined, byi_read);
-        } else if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 2) {
-            source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
-            source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
-            source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
-            source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
-
-            if (source_edge_distances[0] === 0) source_edge_distances[0] = 1;
-            if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
-            if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
-            if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
-
-            corner_areas_proportions_of_total[0] = source_edge_distances[0] * source_edge_distances[1] / fpx_area;
-            corner_areas_proportions_of_total[1] = source_edge_distances[2] * source_edge_distances[1] / fpx_area;
-            corner_areas_proportions_of_total[2] = source_edge_distances[0] * source_edge_distances[3] / fpx_area;
-            corner_areas_proportions_of_total[3] = source_edge_distances[2] * source_edge_distances[3] / fpx_area;
-
-            callback(dest_byi, source_i_any_coverage_size, undefined, corner_areas_proportions_of_total, byi_read);
-            //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, undefined, undefined, corner_areas_proportions_of_total, byi_read);
-        } else {
-
-            source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
-            source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
-            source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
-            source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
-
-            if (source_edge_distances[0] === 0) source_edge_distances[0] = 1;
-            if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
-            if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
-            if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
-
-            edge_distances_proportions_of_total[0] = source_edge_distances[0] / fpx_area;
-            edge_distances_proportions_of_total[1] = source_edge_distances[1] / fpx_area;
-            edge_distances_proportions_of_total[2] = source_edge_distances[2] / fpx_area;
-            edge_distances_proportions_of_total[3] = source_edge_distances[3] / fpx_area;
-
-            edge_segment_areas_proportion_of_total_area[0] = source_edge_distances[0] * source_edge_distances[1] / fpx_area;
-            edge_segment_areas_proportion_of_total_area[1] = source_edge_distances[2] * source_edge_distances[1] / fpx_area;
-            edge_segment_areas_proportion_of_total_area[2] = source_edge_distances[0] * source_edge_distances[3] / fpx_area;
-            edge_segment_areas_proportion_of_total_area[3] = source_edge_distances[2] * source_edge_distances[3] / fpx_area;
-
-            callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, edge_segment_areas_proportion_of_total_area, byi_read);
-        }
-    });
-
-    */
 }
 
-
-//each_source_dest_pixels_resized_limited_further_info = each_source_dest_pixels_resized_limited_further_info$inline;
+// May be better for the larger pixel buffers.
+each_source_dest_pixels_resized_limited_further_info = each_source_dest_pixels_resized_limited_further_info$inline;
 //  Seems like it varies performance depending on circumstances.
 
 // Could try more inlining...?
@@ -874,15 +850,11 @@ let read_gt3x3_weight_write_24bipp = (ta_source, bypr, byi_read, source_i_any_co
         g += ta_source[byi_read++] * edge_distances_proportions_of_total[2];
         b += ta_source[byi_read++] * edge_distances_proportions_of_total[2];
     }
-
-
     byi_read = byi_tl + end_vmiddle * bypr;
     // then the bottom vrow
-
     r += ta_source[byi_read++] * corner_weights_ltrb[2];
     g += ta_source[byi_read++] * corner_weights_ltrb[2];
     b += ta_source[byi_read++] * corner_weights_ltrb[2];
-
     // loop through the middle section of the top row.
     //x = 1;
 
@@ -899,6 +871,19 @@ let read_gt3x3_weight_write_24bipp = (ta_source, bypr, byi_read, source_i_any_co
     b += ta_source[byi_read++] * corner_weights_ltrb[3];
 
     //console.log('[r, g, b]', [r, g, b]);
+
+    if (false && (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255)) {
+
+        //console.log('byi_read', byi_read);
+
+        console.log('[r, g, b]', [r, g, b]);
+        console.log('[bypr, byi_read, source_i_any_coverage_size]', [bypr, byi_read, source_i_any_coverage_size]);
+        console.log('[edge_distances_proportions_of_total, corner_weights_ltrb, fpx_area_recip]', [edge_distances_proportions_of_total, corner_weights_ltrb, fpx_area_recip]);
+
+        console.trace();
+        throw 'stop';
+
+    }
 
     ta_dest[dest_byi] = Math.round(r);
     ta_dest[dest_byi + 1] = Math.round(g);
@@ -992,7 +977,7 @@ let read_gt3x3_weight_write_24bipp = (ta_source, bypr, byi_read, source_i_any_co
 
 // Faster using some local variables and not only using tas and their positions.
 let resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, dest_size, ta_dest) => {
-    console.log('resize_ta_colorspace_24bipp$subpixel');
+    //console.log('resize_ta_colorspace_24bipp$subpixel');
     // Simplified this function.
     //  Seems like a small perf cost with the extra function calls used.
     //   Could optimize - not setting any weights when its 1x1, not doing the measurements.
@@ -1189,7 +1174,32 @@ let resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, dest_s
     }
 }
 
-let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest_size, ta_dest) => {
+
+// Still has bug - may need to change back to 'general' algorithm.
+//  Can go back to separating out iteration
+//   (may even help optimization???)
+//   Create a more optimized iterator too that does precalculation.
+//    Only will call the larger pixel merge operations too.
+
+
+
+// So will go back to the iteration with the weights provided.
+//  
+
+
+
+
+
+
+// Hard to work out why this attempt has gone wrong.
+//  Could be to do with some precision maths / rounding errors? Some misconception somewhere.
+
+// Can see about precalculating x and y values for the iteration?
+//  Then adapting / inlining that function.
+
+
+
+let __attempt__resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest_size, ta_dest) => {
     // Non-callback iteration.
     console.log('resize_ta_colorspace_24bipp$superpixel');
 
@@ -1276,7 +1286,7 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
         //  Maybe that's all we need.
 
         f_source_x = i_dest_x * f_px_w;
-        f_source_r = f_source_x + f_px_w;
+        f_source_r = (i_dest_x + 1) * f_px_w;
         i_source_l = Math.floor(f_source_x);
         i_source_r = Math.ceil(f_source_r);
         //i_source_lr_crossover = i_source_l + 1;
@@ -1287,7 +1297,7 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
 
         left_edge_dist = f_source_x - i_source_l;
         if (left_edge_dist === 0) left_edge_dist = 1;
-        right_edge_dist = f_source_x - i_source_l;
+        right_edge_dist = i_source_r - f_source_r;
         if (right_edge_dist === 0) right_edge_dist = 1;
 
         ta_left_edge_segment_proportions[i_dest_x] = (left_edge_dist) * fpx_area_recip;
@@ -1319,7 +1329,7 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
         //  Maybe that's all we need.
 
         f_source_y = i_dest_y * f_px_h;
-        f_source_b = f_source_y + f_px_h;
+        f_source_b = (i_dest_y + 1) * f_px_h;
         i_source_t = Math.floor(f_source_y);
         i_source_b = Math.ceil(f_source_b);
         //i_source_tb_crossover = i_source_t + 1;
@@ -1330,7 +1340,7 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
 
         top_edge_dist = f_source_y - i_source_t;
         if (top_edge_dist === 0) top_edge_dist = 1;
-        bottom_edge_dist = f_source_b - i_source_b;
+        bottom_edge_dist = i_source_b - f_source_b;
         if (bottom_edge_dist === 0) bottom_edge_dist = 1;
 
         ta_top_edge_segment_proportions[i_dest_y] = (top_edge_dist) * fpx_area_recip;
@@ -1477,6 +1487,8 @@ let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest
 
                 }
             } else {
+
+                //console.log('[i_dest_x, i_dest_y]', [i_dest_x, i_dest_y]);
                 read_gt3x3_weight_write_24bipp(ta_source, source_bypr, byi_source, source_i_any_coverage_size, ta_ltrb_edge_props, ta_ltrb_corner_props, fpx_area_recip, ta_dest, byi_write);
             }
 
@@ -1718,7 +1730,28 @@ let resize_ta_colorspace_24bipp$subpixel$ta4byis = (ta_source, source_colorspace
 
 
 // resize_ta_colorspace_24bipp$general
+const resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
+    const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
+    const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
+    const fpx_area_recip = 1 / (dest_to_source_ratio[0] * dest_to_source_ratio[1]);
 
+
+    each_source_dest_pixels_resized_limited_further_info(source_colorspace, dest_size, (dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read) => {
+        if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 2) {
+            read_2x2_weight_write_24bipp(ta_source, bypr, byi_read, opt_ta_dest, dest_byi, corner_areas_proportions_of_total);
+        } else if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 3) {
+            read_2x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
+        } else if (source_i_any_coverage_size[0] === 3 && source_i_any_coverage_size[1] === 2) {
+            read_3x2_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
+        } else if (source_i_any_coverage_size[0] === 3 && source_i_any_coverage_size[1] === 3) {
+            read_3x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
+        } else {
+            read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
+        }
+        
+    });
+
+}
 
 const resize_ta_colorspace_24bipp$general = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
 

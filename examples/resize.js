@@ -161,7 +161,7 @@ const run_examples = (gfx_server, erte_ale, westminster_bridge) => obs((next, co
             return pb_res;
         }],
 
-        false,
+        //false,
 
         ['resize_westminster_bridge_0p95', () => {
             // simpler type of resizing, should make use of all having total pixel coverage special case.
