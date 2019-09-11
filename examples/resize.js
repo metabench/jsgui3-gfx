@@ -92,6 +92,77 @@ const run_examples = (gfx_server, erte_ale, westminster_bridge) => obs((next, co
 
         // Larger fn calls help warm-up / V8 optimizing things.
 
+        
+
+        ['resize_erte_ale_0p1', () => {
+            // simpler type of resizing, should make use of all having total pixel coverage special case.
+            // will go over the 32x32 virtual pixel view...
+            //  maybe virtual pixel view is a useful abstraction here too...?
+
+            // any optimization for iterating over virtual pixel space?
+            //  
+
+            //console.log('resize_32x32_24bipp_pastel_to_16x16');
+            let scale = 0.1;
+            let new_size = new Int16Array([Math.round(erte_ale.size[0] * scale), Math.round(erte_ale.size[1] * scale)]);
+
+            //const new_size = new Int16Array([16, 16]);
+            performance.mark('I');
+            const pb_res = erte_ale.new_resized(new_size);
+            performance.mark('J');
+            performance.measure('I to J', 'I', 'J');
+            return pb_res;
+            
+
+        }],
+        ['resize_westminster_bridge_0p2', () => {
+            // simpler type of resizing, should make use of all having total pixel coverage special case.
+
+            // will go over the 32x32 virtual pixel view...
+            //  maybe virtual pixel view is a useful abstraction here too...?
+
+            // any optimization for iterating over virtual pixel space?
+            //  
+
+            // Not so quick at 631ms... but that's still quite good for JS.
+
+            //console.log('resize_32x32_24bipp_pastel_to_16x16');
+            let scale = 0.2;
+            let new_size = new Int16Array([Math.round(westminster_bridge.size[0] * scale), Math.round(westminster_bridge.size[1] * scale)]);
+
+            //const new_size = new Int16Array([16, 16]);
+            performance.mark('K');
+            const pb_res = westminster_bridge.new_resized(new_size);
+            performance.mark('L');
+            performance.measure('K to L', 'K', 'L');
+            return pb_res;
+        }],
+
+        ['resize_westminster_bridge_0p1', () => {
+            // simpler type of resizing, should make use of all having total pixel coverage special case.
+
+            // will go over the 32x32 virtual pixel view...
+            //  maybe virtual pixel view is a useful abstraction here too...?
+
+            // any optimization for iterating over virtual pixel space?
+            //  
+
+            // Not so quick at 631ms... but that's still quite good for JS.
+
+            //console.log('resize_32x32_24bipp_pastel_to_16x16');
+            let scale = 0.1;
+            let new_size = new Int16Array([Math.round(westminster_bridge.size[0] * scale), Math.round(westminster_bridge.size[1] * scale)]);
+
+            //const new_size = new Int16Array([16, 16]);
+            performance.mark('M');
+            const pb_res = westminster_bridge.new_resized(new_size);
+            performance.mark('N');
+            performance.measure('M to N', 'M', 'N');
+            return pb_res;
+        }],
+
+        false,
+
         ['resize_westminster_bridge_0p95', () => {
             // simpler type of resizing, should make use of all having total pixel coverage special case.
 
@@ -202,28 +273,6 @@ const run_examples = (gfx_server, erte_ale, westminster_bridge) => obs((next, co
 
 
         
-
-        ['resize_erte_ale_0p1', () => {
-            // simpler type of resizing, should make use of all having total pixel coverage special case.
-            // will go over the 32x32 virtual pixel view...
-            //  maybe virtual pixel view is a useful abstraction here too...?
-
-            // any optimization for iterating over virtual pixel space?
-            //  
-
-            //console.log('resize_32x32_24bipp_pastel_to_16x16');
-            let scale = 0.1;
-            let new_size = new Int16Array([Math.round(erte_ale.size[0] * scale), Math.round(erte_ale.size[1] * scale)]);
-
-            //const new_size = new Int16Array([16, 16]);
-            performance.mark('I');
-            const pb_res = erte_ale.new_resized(new_size);
-            performance.mark('J');
-            performance.measure('I to J', 'I', 'J');
-            return pb_res;
-            
-
-        }],
         
 
         //false,
