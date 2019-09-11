@@ -317,7 +317,7 @@ let each_source_dest_pixels_resized_limited_further_info$inline = (source_colors
     const source_edge_distances = new Float32Array(4);
     //const source_corner_areas = new Float32Array(4);
     const edge_distances_proportions_of_total = new Float32Array(4);
-    const edge_segment_areas_proportion_of_total_area = new Float32Array(4);
+    //const edge_segment_areas_proportion_of_total_area = new Float32Array(4);
     const corner_areas_proportions_of_total = new Float32Array(4);
     const fpx_area = dest_to_source_ratio[0] * dest_to_source_ratio[1];
 
@@ -360,6 +360,9 @@ let each_source_dest_pixels_resized_limited_further_info$inline = (source_colors
 
     let x, y;
 
+    // could have next source pixel pos
+    //  use it for bounds of the current pixel
+
 
     //for (dest_xy[1] = 0; dest_xy[1] < height; dest_xy[1]++) {
     for (y = 0; y < height; y++) {
@@ -379,6 +382,9 @@ let each_source_dest_pixels_resized_limited_further_info$inline = (source_colors
         source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
         if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
         if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
+
+        edge_distances_proportions_of_total[1] = source_edge_distances[1] / fpx_area;
+        edge_distances_proportions_of_total[3] = source_edge_distances[3] / fpx_area;
 
         for (x = 0; x < width; x++) {
             source_fbounds[0] = x * dest_to_source_ratio[0];
@@ -403,83 +409,99 @@ let each_source_dest_pixels_resized_limited_further_info$inline = (source_colors
             source_i_any_coverage_size[0] = source_ibounds[2] - source_ibounds[0];
             byi_read = source_ibounds[0] * bypp + source_ibounds[1] * source_bypr;
 
-            source_total_coverage_ibounds[0] = Math.ceil(source_fbounds[0]);
-            source_total_coverage_ibounds[2] = source_fbounds[2];
-
-            edge_distances_proportions_of_total[1] = source_edge_distances[1] / fpx_area;
-            edge_distances_proportions_of_total[3] = source_edge_distances[3] / fpx_area;
+            
 
             //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, byi_read);
 
             if (source_i_any_coverage_size[0] === 1 && source_i_any_coverage_size[1] === 1) {
                 callback(dest_byi, source_i_any_coverage_size, undefined, undefined, byi_read);
-            } else if (source_i_any_coverage_size[0] === 1 && source_i_any_coverage_size[1] === 2) {
-                // 1x2 - won't need to provide as much info back.
-    
-                // only the top and bottom proportions matter here.
-                //source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
-                //source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
-    
-                
-    
-                //edge_distances_proportions_of_total[1] = source_edge_distances[1] / dest_to_source_ratio[1];
-                //edge_distances_proportions_of_total[3] = source_edge_distances[3] / dest_to_source_ratio[1];
-    
-                // dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read
-                callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, undefined, byi_read);
-                //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, undefined, edge_distances_proportions_of_total, undefined, byi_read);
-            } else if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 1) {
-                source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
-                source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
-    
-                if (source_edge_distances[0] === 0) source_edge_distances[0] = 1;
-                if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
-    
-                edge_distances_proportions_of_total[0] = source_edge_distances[0] / dest_to_source_ratio[0];
-                edge_distances_proportions_of_total[2] = source_edge_distances[2] / dest_to_source_ratio[0];
-    
-                callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, undefined, byi_read);
-            } else if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 2) {
-                source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
-                //source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
-                source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
-                //source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
-    
-                if (source_edge_distances[0] === 0) source_edge_distances[0] = 1;
-                //if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
-                if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
-                //if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
-    
-                corner_areas_proportions_of_total[0] = source_edge_distances[0] * source_edge_distances[1] / fpx_area;
-                corner_areas_proportions_of_total[1] = source_edge_distances[2] * source_edge_distances[1] / fpx_area;
-                corner_areas_proportions_of_total[2] = source_edge_distances[0] * source_edge_distances[3] / fpx_area;
-                corner_areas_proportions_of_total[3] = source_edge_distances[2] * source_edge_distances[3] / fpx_area;
-    
-                callback(dest_byi, source_i_any_coverage_size, undefined, corner_areas_proportions_of_total, byi_read);
-                //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, undefined, undefined, corner_areas_proportions_of_total, byi_read);
+
+
             } else {
-    
-                source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
-                //source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
-                source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
-                //source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
-    
-                if (source_edge_distances[0] === 0) source_edge_distances[0] = 1;
-                //if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
-                if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
-                //if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
-    
-                edge_distances_proportions_of_total[0] = source_edge_distances[0] / fpx_area;
-                //edge_distances_proportions_of_total[1] = source_edge_distances[1] / fpx_area;
-                edge_distances_proportions_of_total[2] = source_edge_distances[2] / fpx_area;
-                //edge_distances_proportions_of_total[3] = source_edge_distances[3] / fpx_area;
-    
-                edge_segment_areas_proportion_of_total_area[0] = source_edge_distances[0] * source_edge_distances[1] / fpx_area;
-                edge_segment_areas_proportion_of_total_area[1] = source_edge_distances[2] * source_edge_distances[1] / fpx_area;
-                edge_segment_areas_proportion_of_total_area[2] = source_edge_distances[0] * source_edge_distances[3] / fpx_area;
-                edge_segment_areas_proportion_of_total_area[3] = source_edge_distances[2] * source_edge_distances[3] / fpx_area;
-    
-                callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, edge_segment_areas_proportion_of_total_area, byi_read);
+
+                source_total_coverage_ibounds[0] = Math.ceil(source_fbounds[0]);
+                source_total_coverage_ibounds[2] = source_fbounds[2];
+
+                
+
+                if (source_i_any_coverage_size[0] === 1 && source_i_any_coverage_size[1] === 2) {
+                    // 1x2 - won't need to provide as much info back.
+        
+                    // only the top and bottom proportions matter here.
+                    //source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
+                    //source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+        
+                    
+        
+                    //edge_distances_proportions_of_total[1] = source_edge_distances[1] / dest_to_source_ratio[1];
+                    //edge_distances_proportions_of_total[3] = source_edge_distances[3] / dest_to_source_ratio[1];
+        
+                    // dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read
+                    callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, undefined, byi_read);
+                    //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, undefined, edge_distances_proportions_of_total, undefined, byi_read);
+                } else {
+                    source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
+                    source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
+        
+                    if (source_edge_distances[0] === 0) source_edge_distances[0] = 1;
+                    if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
+
+                    if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 1) {
+                        //source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
+                        //source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
+            
+                        //if (source_edge_distances[0] === 0) source_edge_distances[0] = 1;
+                        //if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
+            
+                        edge_distances_proportions_of_total[0] = source_edge_distances[0] / dest_to_source_ratio[0];
+                        edge_distances_proportions_of_total[2] = source_edge_distances[2] / dest_to_source_ratio[0];
+            
+                        callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, undefined, byi_read);
+                    } else if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 2) {
+                        //source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
+                        //source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
+                        //source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
+                        //source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+            
+                        //if (source_edge_distances[0] === 0) source_edge_distances[0] = 1;
+                        //if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
+                        //if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
+                        //if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
+            
+                        corner_areas_proportions_of_total[0] = source_edge_distances[0] * source_edge_distances[1] / fpx_area;
+                        corner_areas_proportions_of_total[1] = source_edge_distances[2] * source_edge_distances[1] / fpx_area;
+                        corner_areas_proportions_of_total[2] = source_edge_distances[0] * source_edge_distances[3] / fpx_area;
+                        corner_areas_proportions_of_total[3] = source_edge_distances[2] * source_edge_distances[3] / fpx_area;
+            
+                        callback(dest_byi, source_i_any_coverage_size, undefined, corner_areas_proportions_of_total, byi_read);
+                        //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, undefined, undefined, corner_areas_proportions_of_total, byi_read);
+                    } else {
+            
+                        //source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
+                        //source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
+                        //source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
+                        //source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+            
+                        //if (source_edge_distances[0] === 0) source_edge_distances[0] = 1;
+                        //if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
+                        //if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
+                        //if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
+            
+                        edge_distances_proportions_of_total[0] = source_edge_distances[0] / fpx_area;
+                        //edge_distances_proportions_of_total[1] = source_edge_distances[1] / fpx_area;
+                        edge_distances_proportions_of_total[2] = source_edge_distances[2] / fpx_area;
+                        //edge_distances_proportions_of_total[3] = source_edge_distances[3] / fpx_area;
+
+
+            
+                        corner_areas_proportions_of_total[0] = source_edge_distances[0] * source_edge_distances[1] / fpx_area;
+                        corner_areas_proportions_of_total[1] = source_edge_distances[2] * source_edge_distances[1] / fpx_area;
+                        corner_areas_proportions_of_total[2] = source_edge_distances[0] * source_edge_distances[3] / fpx_area;
+                        corner_areas_proportions_of_total[3] = source_edge_distances[2] * source_edge_distances[3] / fpx_area;
+            
+                        callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read);
+                    }
+                }
             }
             dest_byi += bypp;
         }
@@ -488,6 +510,11 @@ let each_source_dest_pixels_resized_limited_further_info$inline = (source_colors
 
 // May be better for the larger pixel buffers.
 each_source_dest_pixels_resized_limited_further_info = each_source_dest_pixels_resized_limited_further_info$inline;
+
+
+// A varsion using more local variables, passing up to 9 params, could work well here.
+
+
 //  Seems like it varies performance depending on circumstances.
 
 // Could try more inlining...?
@@ -872,6 +899,8 @@ let read_gt3x3_weight_write_24bipp = (ta_source, bypr, byi_read, source_i_any_co
 
     //console.log('[r, g, b]', [r, g, b]);
 
+    /*
+
     if (false && (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255)) {
 
         //console.log('byi_read', byi_read);
@@ -884,6 +913,7 @@ let read_gt3x3_weight_write_24bipp = (ta_source, bypr, byi_read, source_i_any_co
         throw 'stop';
 
     }
+    */
 
     ta_dest[dest_byi] = Math.round(r);
     ta_dest[dest_byi + 1] = Math.round(g);
@@ -1730,8 +1760,9 @@ let resize_ta_colorspace_24bipp$subpixel$ta4byis = (ta_source, source_colorspace
 
 
 // resize_ta_colorspace_24bipp$general
-const resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
-    const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
+let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
+    //const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
+    const bypr = source_colorspace[3];
     const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
     const fpx_area_recip = 1 / (dest_to_source_ratio[0] * dest_to_source_ratio[1]);
 
@@ -1750,8 +1781,255 @@ const resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, de
         }
         
     });
-
 }
+
+let resize_ta_colorspace_24bipp$superpixel$inline = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
+    //const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
+    //const bypr = source_colorspace[3];
+    const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
+    const fpx_area_recip = 1 / (dest_to_source_ratio[0] * dest_to_source_ratio[1]);
+
+
+
+
+
+    //const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
+    const source_edge_distances = new Float32Array(4);
+    //const source_corner_areas = new Float32Array(4);
+    const edge_distances_proportions_of_total = new Float32Array(4);
+    //const edge_segment_areas_proportion_of_total_area = new Float32Array(4);
+    const corner_areas_proportions_of_total = new Float32Array(4);
+    const fpx_area = dest_to_source_ratio[0] * dest_to_source_ratio[1];
+
+
+    //  ------------
+
+
+    let [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
+    const source_bypr = bypr;
+    const dest_colorspace = new Int32Array([dest_size[0], dest_size[1], bypp, bypp * dest_size[0], bipp, bipp * dest_size[0]]);
+
+
+    //const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
+    const source_fbounds = new Float32Array(4);
+    const source_ibounds = new Int16Array(4);
+    const source_i_any_coverage_size = new Int16Array(2);
+    const source_total_coverage_ibounds = new Int16Array(4);
+    let byi_read;
+
+
+
+    let dest_byi = 0;
+    //const dest_xy = new Int16Array(2);
+    [width, height, bypp, bypr, bipp, bipr] = dest_colorspace;
+
+
+    // Storing calculated values from the previous x?
+    //  Precalculating an array of different variables for all x values.
+    //  Then all y values are iterated so no benefit from precalc.
+    //   edges etc
+
+    // A lot more could be precalculated and then referenced.
+
+    // Read a set of values from a larger ta for each x?
+    //  Or refer to it.
+    //  
+
+    // Could make a version of this that does precalculations.
+
+
+    let x, y;
+
+    // could have next source pixel pos
+    //  use it for bounds of the current pixel
+
+
+    //for (dest_xy[1] = 0; dest_xy[1] < height; dest_xy[1]++) {
+    for (y = 0; y < height; y++) {
+
+        // Can optimize with calculations done just using y.
+
+
+        source_fbounds[1] = y * dest_to_source_ratio[1];
+        source_fbounds[3] = source_fbounds[1] + dest_to_source_ratio[1];
+        source_ibounds[1] = source_fbounds[1];
+        source_ibounds[3] = Math.ceil(source_fbounds[3]);
+        source_i_any_coverage_size[1] = source_ibounds[3] - source_ibounds[1];
+        source_total_coverage_ibounds[1] = Math.ceil(source_fbounds[1]);
+        source_total_coverage_ibounds[3] = source_fbounds[3];
+
+        source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
+        source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+        if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
+        if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
+
+        edge_distances_proportions_of_total[1] = source_edge_distances[1] / fpx_area;
+        edge_distances_proportions_of_total[3] = source_edge_distances[3] / fpx_area;
+
+        for (x = 0; x < width; x++) {
+            source_fbounds[0] = x * dest_to_source_ratio[0];
+            source_fbounds[2] = source_fbounds[0] + dest_to_source_ratio[0];
+
+            // And the total coverage bounds.
+            //  will be useful for some things...
+            // Total coverage size as well
+
+            //source_farea = (source_fbounds[2] - )
+
+
+            // Scale down the pixel location...
+            source_ibounds[0] = source_fbounds[0];
+            source_ibounds[2] = Math.ceil(source_fbounds[2]);
+
+            // then the any coverage area...
+
+            // does it cover other pixels / proportions in those other pixels?
+
+            // Still reasonably fast - yet slowing down from before....
+            source_i_any_coverage_size[0] = source_ibounds[2] - source_ibounds[0];
+            byi_read = source_ibounds[0] * bypp + source_ibounds[1] * source_bypr;
+
+            
+
+            //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, byi_read);
+
+            if (source_i_any_coverage_size[0] === 1 && source_i_any_coverage_size[1] === 1) {
+                //callback(dest_byi, source_i_any_coverage_size, undefined, undefined, byi_read);
+
+
+            } else {
+
+                source_total_coverage_ibounds[0] = Math.ceil(source_fbounds[0]);
+                source_total_coverage_ibounds[2] = source_fbounds[2];
+
+                
+
+                if (source_i_any_coverage_size[0] === 1 && source_i_any_coverage_size[1] === 2) {
+                    // 1x2 - won't need to provide as much info back.
+        
+                    // only the top and bottom proportions matter here.
+                    //source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
+                    //source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+        
+                    
+        
+                    //edge_distances_proportions_of_total[1] = source_edge_distances[1] / dest_to_source_ratio[1];
+                    //edge_distances_proportions_of_total[3] = source_edge_distances[3] / dest_to_source_ratio[1];
+        
+                    // dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read
+                    //callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, undefined, byi_read);
+                    //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, undefined, edge_distances_proportions_of_total, undefined, byi_read);
+                } else {
+                    source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
+                    source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
+        
+                    if (source_edge_distances[0] === 0) source_edge_distances[0] = 1;
+                    if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
+
+                    if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 1) {
+                        //source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
+                        //source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
+            
+                        //if (source_edge_distances[0] === 0) source_edge_distances[0] = 1;
+                        //if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
+            
+                        edge_distances_proportions_of_total[0] = source_edge_distances[0] / dest_to_source_ratio[0];
+                        edge_distances_proportions_of_total[2] = source_edge_distances[2] / dest_to_source_ratio[0];
+            
+                        //callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, undefined, byi_read);
+                    } else if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 2) {
+                        //source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
+                        //source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
+                        //source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
+                        //source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+            
+                        //if (source_edge_distances[0] === 0) source_edge_distances[0] = 1;
+                        //if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
+                        //if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
+                        //if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
+            
+                        corner_areas_proportions_of_total[0] = source_edge_distances[0] * source_edge_distances[1] / fpx_area;
+                        corner_areas_proportions_of_total[1] = source_edge_distances[2] * source_edge_distances[1] / fpx_area;
+                        corner_areas_proportions_of_total[2] = source_edge_distances[0] * source_edge_distances[3] / fpx_area;
+                        corner_areas_proportions_of_total[3] = source_edge_distances[2] * source_edge_distances[3] / fpx_area;
+            
+                        //callback(dest_byi, source_i_any_coverage_size, undefined, corner_areas_proportions_of_total, byi_read);
+                        //callback(dest_xy, dest_byi, source_fbounds, source_ibounds, source_i_any_coverage_size, source_total_coverage_ibounds, source_edge_distances, undefined, undefined, corner_areas_proportions_of_total, byi_read);
+
+
+                        read_2x2_weight_write_24bipp(ta_source, bypr, byi_read, opt_ta_dest, dest_byi, corner_areas_proportions_of_total);
+                    } else {
+            
+                        //source_edge_distances[0] = source_total_coverage_ibounds[0] - source_fbounds[0];
+                        //source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
+                        //source_edge_distances[2] = source_fbounds[2] - source_total_coverage_ibounds[2];
+                        //source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
+            
+                        //if (source_edge_distances[0] === 0) source_edge_distances[0] = 1;
+                        //if (source_edge_distances[1] === 0) source_edge_distances[1] = 1;
+                        //if (source_edge_distances[2] === 0) source_edge_distances[2] = 1;
+                        //if (source_edge_distances[3] === 0) source_edge_distances[3] = 1;
+            
+                        edge_distances_proportions_of_total[0] = source_edge_distances[0] / fpx_area;
+                        //edge_distances_proportions_of_total[1] = source_edge_distances[1] / fpx_area;
+                        edge_distances_proportions_of_total[2] = source_edge_distances[2] / fpx_area;
+                        //edge_distances_proportions_of_total[3] = source_edge_distances[3] / fpx_area;
+
+
+            
+                        corner_areas_proportions_of_total[0] = source_edge_distances[0] * source_edge_distances[1] / fpx_area;
+                        corner_areas_proportions_of_total[1] = source_edge_distances[2] * source_edge_distances[1] / fpx_area;
+                        corner_areas_proportions_of_total[2] = source_edge_distances[0] * source_edge_distances[3] / fpx_area;
+                        corner_areas_proportions_of_total[3] = source_edge_distances[2] * source_edge_distances[3] / fpx_area;
+            
+                        //callback(dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read);
+
+                        if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 3) {
+                            read_2x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
+                        } else if (source_i_any_coverage_size[0] === 3 && source_i_any_coverage_size[1] === 2) {
+                            read_3x2_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
+                        } else if (source_i_any_coverage_size[0] === 3 && source_i_any_coverage_size[1] === 3) {
+                            read_3x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
+                        } else {
+                            read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
+                        }
+                    }
+                }
+            }
+            dest_byi += bypp;
+        }
+    }
+
+
+
+
+
+    /*
+
+    each_source_dest_pixels_resized_limited_further_info(source_colorspace, dest_size, (dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read) => {
+        if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 2) {
+            read_2x2_weight_write_24bipp(ta_source, bypr, byi_read, opt_ta_dest, dest_byi, corner_areas_proportions_of_total);
+        } else if (source_i_any_coverage_size[0] === 2 && source_i_any_coverage_size[1] === 3) {
+            read_2x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
+        } else if (source_i_any_coverage_size[0] === 3 && source_i_any_coverage_size[1] === 2) {
+            read_3x2_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
+        } else if (source_i_any_coverage_size[0] === 3 && source_i_any_coverage_size[1] === 3) {
+            read_3x3_weight_write_24bipp(ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
+        } else {
+            read_gt3x3_weight_write_24bipp(ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
+        }
+        
+    });
+    */
+}
+
+resize_ta_colorspace_24bipp$superpixel = resize_ta_colorspace_24bipp$superpixel$inline;
+
+// Can try a super-inlined version of superpixel.
+//  It would use 9 local variables for the edges, inner weight, and corners.
+
+
+
 
 const resize_ta_colorspace_24bipp$general = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
 

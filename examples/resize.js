@@ -164,6 +164,7 @@ const run_examples = (gfx_server, erte_ale, westminster_bridge) => obs((next, co
         //false,
 
         ['resize_westminster_bridge_0p95', () => {
+            console.log('resize_westminster_bridge_0p95');
             // simpler type of resizing, should make use of all having total pixel coverage special case.
 
             // will go over the 32x32 virtual pixel view...
@@ -187,6 +188,7 @@ const run_examples = (gfx_server, erte_ale, westminster_bridge) => obs((next, co
         }],
         ['resize_westminster_bridge_1p05', () => {
             // simpler type of resizing, should make use of all having total pixel coverage special case.
+            console.log('resize_westminster_bridge_1p05');
 
             // will go over the 32x32 virtual pixel view...
             //  maybe virtual pixel view is a useful abstraction here too...?
@@ -239,6 +241,7 @@ const run_examples = (gfx_server, erte_ale, westminster_bridge) => obs((next, co
         //  Shrinking (by a small amount?) may be a lot slower.
 
         ['resize_erte_ale_1p22', () => {
+            console.log('resize_erte_ale_1p22');
             // simpler type of resizing, should make use of all having total pixel coverage special case.
 
             // will go over the 32x32 virtual pixel view...
