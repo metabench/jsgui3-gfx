@@ -2220,13 +2220,13 @@ let resize_ta_colorspace_24bipp$superpixel$inline$locals = (ta_source, source_co
     let edge_l, edge_t, edge_r, edge_b;
 
     //const source_corner_areas = new Float32Array(4);
-    const edge_distances_proportions_of_total = new Float32Array(4);
+    //const edge_distances_proportions_of_total = new Float32Array(4);
 
     let edge_p_l, edge_p_t, edge_p_r, edge_p_b;
 
 
     //const edge_segment_areas_proportion_of_total_area = new Float32Array(4);
-    const corner_areas_proportions_of_total = new Float32Array(4);
+    //const corner_areas_proportions_of_total = new Float32Array(4);
 
     let corner_p_tl, corner_p_tr, corner_p_bl, corner_p_br;
 
@@ -2298,6 +2298,9 @@ let resize_ta_colorspace_24bipp$superpixel$inline$locals = (ta_source, source_co
 
         fbounds_t = y * fpxh;
         fbounds_b = fbounds_t + fpxh;
+        //fbounds_b = (fbounds_t = y * fpxh) + fpxh;
+
+
         ibounds_t = Math.floor(fbounds_t);
         ibounds_b = Math.ceil(fbounds_b);
 
@@ -2318,6 +2321,9 @@ let resize_ta_colorspace_24bipp$superpixel$inline$locals = (ta_source, source_co
         //source_edge_distances[1] = source_total_coverage_ibounds[1] - source_fbounds[1];
         //source_edge_distances[3] = source_fbounds[3] - source_total_coverage_ibounds[3];
 
+
+        //edge_t = total_coverage_t - fbounds_t || 1;
+        //edge_b = fbounds_b - total_coverage_b || 1;
 
         edge_t = total_coverage_t - fbounds_t;
         edge_b = fbounds_b - total_coverage_b;
@@ -2381,10 +2387,14 @@ let resize_ta_colorspace_24bipp$superpixel$inline$locals = (ta_source, source_co
             total_coverage_l = Math.ceil(fbounds_l);
             total_coverage_r = Math.floor(fbounds_r);
 
+            //edge_l = total_coverage_l - fbounds_l || 1; // to much of a hack, compares as strings.
+            //edge_r = fbounds_r - total_coverage_r || 1;
             edge_l = total_coverage_l - fbounds_l;
             edge_r = fbounds_r - total_coverage_r;
             if (edge_l === 0) edge_l = 1;
             if (edge_r === 0) edge_r = 1;
+            //edge_l === 0 ? edge_l = 1;
+
 
             //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
 
