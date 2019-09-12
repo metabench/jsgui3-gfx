@@ -724,6 +724,32 @@ const read_3x2_weight_write_24bipp = (ta_source, bypr, byi_read, edge_distances_
 }
 
 
+const read_3x2_weight_write_24bipp$locals = (ta_source, bypr, byi_read, 
+    edge_p_l, edge_p_t, edge_p_r, edge_p_b, 
+    corner_p_tl, corner_p_tr, corner_p_bl, corner_p_br,
+    ta_dest, dest_byi) => {
+    const bypp = 3;
+
+
+    let byi_tl = byi_read;
+
+    let byi_tm = byi_tl + bypp, byi_tr = byi_tm + bypp;
+    let byi_bl = byi_tm + bypr, byi_bm = byi_bl + bypp, byi_br = byi_bm + bypp;
+
+    // r component
+    ta_dest[dest_byi] =     ta_source[byi_tl++] * corner_p_tl + ta_source[byi_tm++] * edge_p_t + ta_source[byi_tr++] * corner_p_tr +
+                            ta_source[byi_bl++] * corner_p_bl + ta_source[byi_bm++] * edge_p_b + ta_source[byi_br++] * corner_p_br;
+
+    ta_dest[dest_byi + 1] = ta_source[byi_tl++] * corner_p_tl + ta_source[byi_tm++] * edge_p_t + ta_source[byi_tr++] * corner_p_tr +
+                            ta_source[byi_bl++] * corner_p_bl + ta_source[byi_bm++] * edge_p_b + ta_source[byi_br++] * corner_p_br;
+                            
+    ta_dest[dest_byi + 2] = ta_source[byi_tl++] * corner_p_tl + ta_source[byi_tm++] * edge_p_t + ta_source[byi_tr++] * corner_p_tr +
+                            ta_source[byi_bl++] * corner_p_bl + ta_source[byi_bm++] * edge_p_b + ta_source[byi_br++] * corner_p_br;
+    
+
+}
+
+
 const read_2x3_weight_write_24bipp = (ta_source, bypr, byi_read, edge_distances_proportions_of_total, corner_weights_ltrb, ta_dest, dest_byi) => {
     const bypp = 3;
 
@@ -773,6 +799,7 @@ let read_2x3_weight_write_24bipp$locals = (ta_source, bypr, byi_read,
     
 
 }
+
 
 // read_3x3_weight_write_24bipp
 const read_3x3_weight_write_24bipp = (ta_source, bypr, byi_read, edge_weights, corner_weights_ltrb, fpx_area_recip, ta_dest, dest_byi) => {
@@ -2455,6 +2482,13 @@ let resize_ta_colorspace_24bipp$superpixel$inline$locals = (ta_source, source_co
                     } else if (any_coverage_w === 3 && any_coverage_h === 2) {
                         //read_3x2_weight_write_24bipp(ta_source, source_bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
                         //read_3x2_weight_write_24bipp$locals(ta_source, source_bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, opt_ta_dest, dest_byi);
+
+
+                        read_3x2_weight_write_24bipp$locals(ta_source, source_bypr, byi_read,
+                            edge_p_l, edge_p_t, edge_p_r, edge_p_b,
+                            corner_p_tl, corner_p_tr, corner_p_bl, corner_p_br,
+                            opt_ta_dest, dest_byi);
+
                     } else if (any_coverage_w === 3 && any_coverage_h === 3) {
                         //read_3x3_weight_write_24bipp(ta_source, source_bypr, byi_read, edge_distances_proportions_of_total, corner_areas_proportions_of_total, fpx_area_recip, opt_ta_dest, dest_byi);
 
