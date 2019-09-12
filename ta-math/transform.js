@@ -2388,10 +2388,10 @@ let resize_ta_colorspace_24bipp$superpixel$inline$locals = (ta_source, source_co
 
             //console.log('source_i_any_coverage_size', source_i_any_coverage_size);
 
-            corner_p_tl = edge_l * edge_t / fpx_area;
-            corner_p_tr = edge_r * edge_t / fpx_area;
-            corner_p_bl = edge_l * edge_b / fpx_area;
-            corner_p_br = edge_r * edge_b / fpx_area;
+            corner_p_tl = edge_l * edge_p_t;
+            corner_p_tr = edge_r * edge_p_t;
+            corner_p_bl = edge_l * edge_p_b;
+            corner_p_br = edge_r * edge_p_b;
 
 
             if (any_coverage_w > 3 ||  any_coverage_h > 3) {
