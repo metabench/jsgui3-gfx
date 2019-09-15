@@ -25,6 +25,12 @@
 
 
 
+// Then being able to pass the ta_math function override, or part of it backwards into the core?
+
+
+
+
+
 const lang = require('lang-mini');
 
 const {
