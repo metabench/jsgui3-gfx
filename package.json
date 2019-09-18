@@ -10,7 +10,7 @@
   },
   "devDependencies": {
     "fnlfs": "^0.0.16",
-    "jsgui3-gfx-server": "0.0.22"
+    "jsgui3-gfx-server": "0.0.24"
   },
   "files": [
     "pixel-buffer-core.js",
@@ -29,5 +29,5 @@
     "type": "git",
     "url": "https://github.com/metabench/jsgui3-gfx.git"
   },
-  "version": "0.0.26"
+  "version": "0.0.28"
 }

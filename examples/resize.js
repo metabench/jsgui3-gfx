@@ -431,8 +431,8 @@ const run_examples = (gfx_server, erte_ale, westminster_bridge) => obs((next, co
         }
         // console.log(JSON.stringify(myObject, null, 4));
 
-        const json_res = JSON.stringify(res_all_egs, null, 4);
-        console.log('res_all_egs', json_res);
+        //const json_res = JSON.stringify(res_all_egs, null, 4);
+        //console.log('res_all_egs', json_res);
 
         // Then processing for the examples...
         //  Want to compute the total weights for each of them.
@@ -442,20 +442,22 @@ const run_examples = (gfx_server, erte_ale, westminster_bridge) => obs((next, co
 
         // Also, corners shouldn't have heigher 
 
+        /*
+
         each(res_all_egs, (res, name) => {
             const {weights, pos, size} = res;
 
-            console.log('[pos, size]', [pos, size]);
-            console.log('name', name);
+            //console.log('[pos, size]', [pos, size]);
+            //console.log('name', name);
             //console.log('t_weight', t_weight);
-            console.log('weights', weights);
+            //console.log('weights', weights);
 
-            let t_weight = 0;
-            each(weights, weight => t_weight += weight);
-
-            console.log('t_weight', t_weight);
+            //let t_weight = 0;
+            //each(weights, weight => t_weight += weight);
+            //console.log('t_weight', t_weight);
 
         })
+        */
 
     })();
 });
@@ -468,14 +470,19 @@ if (require.main === module) {
             performance.clearMarks();
         });
         obs.observe({ entryTypes: ['measure'] });
-    
-        const gfx_server = require('jsgui3-gfx-server')
+        const gfx_server = require('jsgui3-gfx-server');
 
-        const erte_ale = await gfx_server.load_pixel_buffer('../source_images/Erte Ale Volcano.jpg');
-        const westminster_bridge = await gfx_server.load_pixel_buffer('../source_images/Ultimate-Travel-Guide-to-London.jpg');
+        // creata a non-server PB from the one we load...
+        // new PB(pb)
 
+        const erte_ale = new Pixel_Buffer(await gfx_server.load_pixel_buffer('../source_images/Erte Ale Volcano.jpg'));
+        const westminster_bridge = new Pixel_Buffer(await gfx_server.load_pixel_buffer('../source_images/Ultimate-Travel-Guide-to-London.jpg'));
     
         // load the Erte Ale image.
+
+        //console.log('erte_ale', erte_ale);
+        //console.log('Pixel_Buffer', Pixel_Buffer);
+        //throw 'stop';
     
     
         const obs_run_examples = run_examples(gfx_server, erte_ale, westminster_bridge);

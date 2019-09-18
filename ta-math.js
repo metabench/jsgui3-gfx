@@ -192,74 +192,56 @@ const ___colorspace_fields = ['width', 'height', 'bytes_per_pixel', 'bytes_per_r
     ???transform
 */
 
+//const copy = require('./ta-math/copy');
+//const info = require('./ta-math/info');
+//const read = require('./ta-math/read');
+//const transform = require('./ta-math/transform');
+//const write = require('./ta-math/write');
+
+// Want to improve overriding behaviour.
+//  Be able to get a new instance of ta_math, then apply overrides to that...
 const copy = require('./ta-math/copy');
 const info = require('./ta-math/info');
 const read = require('./ta-math/read');
 const transform = require('./ta-math/transform');
 const write = require('./ta-math/write');
 
-
-
-// Want to improve overriding behaviour.
-//  Be able to get a new instance of ta_math, then apply overrides to that...
-
-const get_instance = () => {
-    const copy = require('./ta-math/copy').get_instance();
-    const info = require('./ta-math/info').get_instance();
-    const read = require('./ta-math/read').get_instance();
-    const transform = require('./ta-math/transform').get_instance();
-    const write = require('./ta-math/write').get_instance();
-
-        
-    const {copy_rect_to_same_size_8bipp, copy_rect_to_same_size_24bipp, copy_ta_byte_range, unaligned_copy_rect_1to4bypp, unaligned_copy_rect_1bypp_to_3bypp,
-        dest_aligned_copy_rect_1to4bypp} = copy;
-
-    const {overlapping_bounds} = info;
-
-    const {fill_solid_rect_by_bounds} = write;
-
-    const {read_1x2_rect, read_2x1_rect, read_2x2_rect, read_px} = read;
-
-    const {resize_ta_colorspace} = transform;
-
-
-
-    const override = (submodule_name, fn_name, fn) => {
-
-        if (submodule_name === 'transform') {
-            transform.override(fn_name, fn);
-        }
-
-        //if (fn_name === 'read_gt3x3_weight_write_24bipp') {
-        //    read_gt3x3_weight_write_24bipp = fn;
-        //}
-
-    }
-
-    return {
-        overlapping_bounds: overlapping_bounds,
-        copy_rect_to_same_size_8bipp: copy_rect_to_same_size_8bipp,
-        copy_rect_to_same_size_24bipp: copy_rect_to_same_size_24bipp,
-        copy_ta_byte_range: copy_ta_byte_range,
-        unaligned_copy_rect_1to4bypp: unaligned_copy_rect_1to4bypp,
-        unaligned_copy_rect_1bypp_to_3bypp: unaligned_copy_rect_1bypp_to_3bypp,
-        dest_aligned_copy_rect_1to4bypp: dest_aligned_copy_rect_1to4bypp,
-        fill_solid_rect_by_bounds: fill_solid_rect_by_bounds,
-        read_1x2_rect: read_1x2_rect,
-        read_2x1_rect: read_2x1_rect,
-        read_2x2_rect: read_2x2_rect,
-        read_px: read_px,
-        read_pixel: read_px,
     
-        resize_ta_colorspace: resize_ta_colorspace,
-        override: override,
+const {copy_rect_to_same_size_8bipp, copy_rect_to_same_size_24bipp, copy_ta_byte_range, unaligned_copy_rect_1to4bypp, unaligned_copy_rect_1bypp_to_3bypp,
+    dest_aligned_copy_rect_1to4bypp} = copy;
 
-        get_instance: get_instance
-    };
+const {overlapping_bounds} = info;
+
+const {fill_solid_rect_by_bounds} = write;
+
+const {read_1x2_rect, read_2x1_rect, read_2x2_rect, read_px} = read;
+const {resize_ta_colorspace} = transform;
 
 
+module.exports = {
+    copy: copy,
+    info: info,
+    read: read,
+    transform: transform,
+    write: write,
+
+
+    overlapping_bounds: overlapping_bounds,
+    copy_rect_to_same_size_8bipp: copy_rect_to_same_size_8bipp,
+    copy_rect_to_same_size_24bipp: copy_rect_to_same_size_24bipp,
+    copy_ta_byte_range: copy_ta_byte_range,
+    unaligned_copy_rect_1to4bypp: unaligned_copy_rect_1to4bypp,
+    unaligned_copy_rect_1bypp_to_3bypp: unaligned_copy_rect_1bypp_to_3bypp,
+    dest_aligned_copy_rect_1to4bypp: dest_aligned_copy_rect_1to4bypp,
+    fill_solid_rect_by_bounds: fill_solid_rect_by_bounds,
+    read_1x2_rect: read_1x2_rect,
+    read_2x1_rect: read_2x1_rect,
+    read_2x2_rect: read_2x2_rect,
+    read_px: read_px,
+    read_pixel: read_px,
+
+    resize_ta_colorspace: resize_ta_colorspace//,
+    //override: override,
+
+    //get_instance: get_instance
 }
-
-
-
-module.exports = get_instance();

@@ -49,13 +49,15 @@ console.log('pre load gfx_server');
 const gfx_server = require('jsgui3-gfx-server');
 console.log('post load gfx_server');
 
+
+// or ta-math
 // Copy the data over to and from a standard pixel buffer (non-server version)?
 
 const gfx = require('../gfx');
 
-const {Pixel_Buffer} = gfx;
+const Pixel_Buffer = gfx.Pixel_Buffer.get_instance();
 
-const Server_Pixel_Buffer = gfx_server.Pixel_Buffer;
+
 
 
 

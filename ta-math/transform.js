@@ -41,7 +41,7 @@ const get_instance = () => {
 
 
     // Make an inline version?
-    let each_source_dest_pixels_resized = (source_colorspace, dest_size, callback) => {
+    const __each_source_dest_pixels_resized = (source_colorspace, dest_size, callback) => {
         // Includes both partial and any (total and partial) pixel coverage areas in the source.
 
         const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
@@ -96,7 +96,7 @@ const get_instance = () => {
 
 
     // Make this the precalc-x version?
-    let each_source_dest_pixels_resized$inline = (source_colorspace, dest_size, callback) => {
+    const each_source_dest_pixels_resized$inline = (source_colorspace, dest_size, callback) => {
         let [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
         const source_bypr = bypr;
         const dest_colorspace = new Int32Array([dest_size[0], dest_size[1], bypp, bypp * dest_size[0], bipp, bipp * dest_size[0]]);
@@ -217,7 +217,7 @@ const get_instance = () => {
 
 
     // Could make a further inlined / optimized / precalced version of this too.
-    let each_source_dest_pixels_resized_limited_further_info = (source_colorspace, dest_size, callback) => {
+    const __each_source_dest_pixels_resized_limited_further_info = (source_colorspace, dest_size, callback) => {
         // This actually calculates the weights.
 
         // dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read
@@ -311,7 +311,7 @@ const get_instance = () => {
 
 
 
-    let each_source_dest_pixels_resized_limited_further_info$inline = (source_colorspace, dest_size, callback) => {
+    const each_source_dest_pixels_resized_limited_further_info$inline = (source_colorspace, dest_size, callback) => {
         // This actually calculates the weights.
 
         // dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read
@@ -567,7 +567,7 @@ const get_instance = () => {
     //  Longer inline function probably won't have same performance hit in C++, as it's already compiled.
 
 
-    let copy_px_24bipp = (ta_source, byi_read, ta_dest, byi_write) => {
+    const copy_px_24bipp = (ta_source, byi_read, ta_dest, byi_write) => {
         ta_dest[byi_write] = ta_source[byi_read++];
         ta_dest[byi_write + 1] = ta_source[byi_read++];
         ta_dest[byi_write + 2] = ta_source[byi_read++];
@@ -596,14 +596,14 @@ const get_instance = () => {
 
     // C++ overhead could make these functions too slow.
 
-    let read_1x2_weight_write_24bipp = (ta_source, bypr, byi_read, ta_dest, byi_write, weight_t, weight_b) => {
+    const read_1x2_weight_write_24bipp = (ta_source, bypr, byi_read, ta_dest, byi_write, weight_t, weight_b) => {
         let byi_read_below = byi_read + bypr;
         ta_dest[byi_write] = weight_t * ta_source[byi_read++] + weight_b * ta_source[byi_read_below++];
         ta_dest[byi_write + 1] = weight_t * ta_source[byi_read++] + weight_b * ta_source[byi_read_below++];
         ta_dest[byi_write + 2] = weight_t * ta_source[byi_read++] + weight_b * ta_source[byi_read_below++];
     }
 
-    let read_1x2_weight_write_24bipp$ta4byis = (ta_source, ta4byis, ta_dest, byi_write, weight_t, weight_b) => {
+    const read_1x2_weight_write_24bipp$ta4byis = (ta_source, ta4byis, ta_dest, byi_write, weight_t, weight_b) => {
         //let byi_read_below = byi_read + bypr;
         ta_dest[byi_write] = weight_t * ta_source[ta4byis[0]++] + weight_b * ta_source[ta4byis[2]++];
         ta_dest[byi_write + 1] = weight_t * ta_source[ta4byis[0]++] + weight_b * ta_source[ta4byis[2]++];
@@ -611,13 +611,13 @@ const get_instance = () => {
     }
 
 
-    let read_2x1_weight_write_24bipp = (ta_source, byi_read, ta_dest, byi_write, weight_l, weight_r) => {
+    const read_2x1_weight_write_24bipp = (ta_source, byi_read, ta_dest, byi_write, weight_l, weight_r) => {
         let byi_read_right = byi_read + 3;
         ta_dest[byi_write] = weight_l * ta_source[byi_read++] + weight_r * ta_source[byi_read_right++];
         ta_dest[byi_write + 1] = weight_l * ta_source[byi_read++] + weight_r * ta_source[byi_read_right++];
         ta_dest[byi_write + 2] = weight_l * ta_source[byi_read++] + weight_r * ta_source[byi_read_right++];
     }
-    let read_2x1_weight_write_24bipp$ta4byis = (ta_source, ta4byis, ta_dest, byi_write, weight_l, weight_r) => {
+    const read_2x1_weight_write_24bipp$ta4byis = (ta_source, ta4byis, ta_dest, byi_write, weight_l, weight_r) => {
         //let byi_read_right = byi_read + 3;
         ta_dest[byi_write] = weight_l * ta_source[ta4byis[0]++] + weight_r * ta_source[ta4byis[1]++];
         ta_dest[byi_write + 1] = weight_l * ta_source[ta4byis[0]++] + weight_r * ta_source[ta4byis[1]++];
@@ -627,7 +627,7 @@ const get_instance = () => {
     // Faster to give it a ta of the byi_write indexes?
     //  Seems not. 
 
-    let read_2x2_weight_write_24bipp = (ta_source, bypr, byi_read, ta_dest, byi_write, corner_weights_ltrb) => {
+    const read_2x2_weight_write_24bipp = (ta_source, bypr, byi_read, ta_dest, byi_write, corner_weights_ltrb) => {
         let byi_read_right = byi_read + 3;
         let byi_read_below = byi_read + bypr;
         let byi_read_below_right = byi_read_below + 3;
@@ -636,7 +636,7 @@ const get_instance = () => {
         ta_dest[byi_write + 2] = corner_weights_ltrb[0] * ta_source[byi_read++] + corner_weights_ltrb[1] * ta_source[byi_read_right++] + corner_weights_ltrb[2] * ta_source[byi_read_below++] + corner_weights_ltrb[3] * ta_source[byi_read_below_right++];
     }
 
-    let read_2x2_weight_write_24bipp$locals = (ta_source, source_bypr, byi_read, 
+    const read_2x2_weight_write_24bipp$locals = (ta_source, source_bypr, byi_read, 
         corner_p_tl, corner_p_tr, corner_p_bl, corner_p_br,                    
         ta_dest, byi_write) => {
         let byi_read_right = byi_read + 3;
@@ -651,7 +651,7 @@ const get_instance = () => {
     // Does not actually work out to be faster.
     //  Not sure why. Maybe the values here do optimize well as local variables.
 
-    let read_2x2_weight_write_24bipp$ta4byis = (ta_source, ta4byis, ta_dest, byi_write, corner_weights_ltrb) => {
+    const read_2x2_weight_write_24bipp$ta4byis = (ta_source, ta4byis, ta_dest, byi_write, corner_weights_ltrb) => {
         //let byi_read_right = byi_read + 3;
         //let byi_read_below = byi_read + bypr;
         //let byi_read_below_right = byi_read_below + 3;
@@ -662,7 +662,7 @@ const get_instance = () => {
 
 
     // Now it's got slower taking these 2 ints in the params.
-    let read_2x2_weight_write_24bipp$2_weight_ints = (ta_source, bypr, byi_read, ta_dest, byi_write, ta_lt_props) => {
+    const read_2x2_weight_write_24bipp$2_weight_ints = (ta_source, bypr, byi_read, ta_dest, byi_write, ta_lt_props) => {
 
         // Calculate them each time???
 
@@ -779,7 +779,7 @@ const get_instance = () => {
 
     }
 
-    let read_2x3_weight_write_24bipp$locals = (ta_source, bypr, byi_read, 
+    const read_2x3_weight_write_24bipp$locals = (ta_source, bypr, byi_read, 
         edge_p_l, edge_p_t, edge_p_r, edge_p_b, 
         corner_p_tl, corner_p_tr, corner_p_bl, corner_p_br,
         ta_dest, dest_byi) => {
@@ -940,7 +940,7 @@ const get_instance = () => {
     //let x, y;
 
 
-    let read_gt3x3_weight_write_24bipp = (ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_weights_ltrb, fpx_area_recip, ta_dest, dest_byi) => {
+    const read_gt3x3_weight_write_24bipp = (ta_source, bypr, byi_read, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_weights_ltrb, fpx_area_recip, ta_dest, dest_byi) => {
         const byi_tl = byi_read;
         //byi_read = byi_tl;
         let r = 0, g = 0, b = 0;
@@ -1037,7 +1037,7 @@ const get_instance = () => {
 
 
 
-    let read_gt3x3_weight_write_24bipp$locals = (ta_source, bypr, byi_read, 
+    const read_gt3x3_weight_write_24bipp$locals = (ta_source, bypr, byi_read, 
         //source_i_any_coverage_size,
         any_coverage_w, any_coverage_h,
         //edge_distances_proportions_of_total,
@@ -1228,7 +1228,7 @@ const get_instance = () => {
 
 
     // Faster using some local variables and not only using tas and their positions.
-    let resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, dest_size, ta_dest) => {
+    const resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, dest_size, ta_dest) => {
         //console.log('resize_ta_colorspace_24bipp$subpixel');
         // Simplified this function.
         //  Seems like a small perf cost with the extra function calls used.
@@ -1753,7 +1753,7 @@ const get_instance = () => {
 
     // Inlining the copy / read-merge-write functions could speed it up...
 
-    let resize_ta_colorspace_24bipp$subpixel$ta4byis = (ta_source, source_colorspace, dest_size, ta_dest) => {
+    const resize_ta_colorspace_24bipp$subpixel$ta4byis = (ta_source, source_colorspace, dest_size, ta_dest) => {
 
         // Simplified this function.
         //  Seems like a small perf cost with the extra function calls used.
@@ -1982,7 +1982,7 @@ const get_instance = () => {
 
 
     // resize_ta_colorspace_24bipp$general
-    let resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
+    const __resize_ta_colorspace_24bipp$superpixel = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
         //const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
         const bypr = source_colorspace[3];
         const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
@@ -2008,7 +2008,7 @@ const get_instance = () => {
 
     // Could make more totalling inline version with inlining of the copy-merge-write operations.
 
-    let resize_ta_colorspace_24bipp$superpixel$inline = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
+    const __resize_ta_colorspace_24bipp$superpixel$inline = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
         //const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
         //const bypr = source_colorspace[3];
         const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
@@ -2215,7 +2215,7 @@ const get_instance = () => {
 
     // Now this inline, non-callback function can be made in C++ without needing functions pointers.
 
-    let resize_ta_colorspace_24bipp$superpixel$inline$locals = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
+    const resize_ta_colorspace_24bipp$superpixel$inline$locals = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
         //const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
         //const bypr = source_colorspace[3];
         const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
@@ -2545,7 +2545,7 @@ const get_instance = () => {
     }
 
 
-    let resize_ta_colorspace_24bipp$superpixel$inline$locals$inline = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
+    const resize_ta_colorspace_24bipp$superpixel$inline$locals$inline = (ta_source, source_colorspace, dest_size, opt_ta_dest) => {
 
         const ta_dest = opt_ta_dest;
         //const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
@@ -2975,9 +2975,9 @@ const get_instance = () => {
 
     // Inlining provides uncertain benefits...
 
-    resize_ta_colorspace_24bipp$superpixel$inline$locals = resize_ta_colorspace_24bipp$superpixel$inline$locals$inline;
-    resize_ta_colorspace_24bipp$superpixel$inline = resize_ta_colorspace_24bipp$superpixel$inline$locals;
-    resize_ta_colorspace_24bipp$superpixel = resize_ta_colorspace_24bipp$superpixel$inline;
+    //resize_ta_colorspace_24bipp$superpixel$inline$locals = resize_ta_colorspace_24bipp$superpixel$inline$locals$inline;
+    //resize_ta_colorspace_24bipp$superpixel$inline = resize_ta_colorspace_24bipp$superpixel$inline$locals;
+    const resize_ta_colorspace_24bipp$superpixel = resize_ta_colorspace_24bipp$superpixel$inline$locals$inline;
 
     // Can try a super-inlined version of superpixel.
     //  It would use 9 local variables for the edges, inner weight, and corners.
@@ -3222,7 +3222,7 @@ const get_instance = () => {
     }
 
 
-    let read_fpx_weight_write_24bipp = (dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read) => {
+    const read_fpx_weight_write_24bipp = (dest_byi, source_i_any_coverage_size, edge_distances_proportions_of_total, corner_areas_proportions_of_total, byi_read) => {
 
 
 
@@ -3404,11 +3404,6 @@ const get_instance = () => {
             resize_ta_colorspace_24bipp$superpixel = fn;
         }
     }
-
-
-
-
-
 
 
     return {
