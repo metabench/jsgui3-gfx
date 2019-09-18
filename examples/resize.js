@@ -480,7 +480,7 @@ if (require.main === module) {
     
         // load the Erte Ale image.
 
-        //console.log('erte_ale', erte_ale);
+        //console.log('erte_ale.ta', erte_ale.ta);
         //console.log('Pixel_Buffer', Pixel_Buffer);
         //throw 'stop';
     

@@ -943,6 +943,9 @@ class Pixel_Buffer_Core {
 
                 }
             }
+            if (spec.ta) {
+                ta = new Uint8ClampedArray(spec.ta);
+            }
             // Size could more logically be its dimensions.
 
             if (spec.size) {
