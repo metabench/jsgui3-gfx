@@ -1379,6 +1379,13 @@ class Pixel_Buffer_Core {
         //console.trace();
         //throw 'stop';
 
+        // Make an optimized convolution function.
+        //  Will also have multi-layer convolution system.
+
+        // ta_math convolution. Not using another pb as the window. Doing it directly using optimized and inline algorithm.
+        //  likely to use a conceptual window but moved around with maths / algebra.
+
+
 
 
 
@@ -3710,7 +3717,6 @@ if (require.main === module) {
 
                     pb.set_pixel(ta_pos, 1);
 
-
                     // Will do individual set pixel and get pixel functions.
                     //  Treat input using truthy or falsy.
 
@@ -3725,9 +3731,7 @@ if (require.main === module) {
             for (var c = 0; c < l; c++) {
                 const res_eg = await examples[c]();
                 console.log('res_eg ' + c + ':', res_eg);
-            }
-
-
+            }y
             lg('End run examples');
 
         }

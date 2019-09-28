@@ -389,13 +389,26 @@ const get_instance = () => {
 
     }
 
+    const each_pixel_in_colorspace = (colorspace, callback) => {
+        const [width, height, bypp, bypr, bipp, bipr] = colorspace;
+        let byi = 0;
+        const xy = new Int16Array(2);
+        for (xy[1] = 0; xy[1] < height; xy[1]++) {
+            for (xy[0] = 0; xy[0] < width; xy[0]++) {
+                callback(xy, byi);
+                byi += bypp;
+            }
+        }
+    }
+
     return {
         read_2x2_rect: read_2x2_rect,
         read_1x2_rect: read_1x2_rect,
         read_2x1_rect: read_2x1_rect,
         read_merged_vfpx_24bipp: read_merged_vfpx_24bipp,
         read_merged_vfpx: read_merged_vfpx,
-        get_instance: get_instance
+        get_instance: get_instance,
+        each_pixel_in_colorspace: each_pixel_in_colorspace
     }
     
 

@@ -349,6 +349,14 @@ All get and set operations are done by coordinates, and it then remaps to the co
 0.0.25 - Optimization and code clarity.
   
 
+Next:
+
+Improved convolutions.
+Multi-core conv
+Dist conv
+Multi-layer conv
+
+
 
 
     

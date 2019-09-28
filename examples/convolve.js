@@ -26,11 +26,9 @@ const Convolution = require('../convolution');
 // Then the examples will use a proper example runner structure. Won't be all that complex, will allow observation of examples.
 //  
 const {Pixel_Buffer} = require('../gfx');
-
-
 const new_gauss_conv_kernel = require('../own_ver/gaussian-convolution-kernel/gck');
 
-const run_examples = (gfx_server) => obs((next, complete, error) => {
+const run_examples = (gfx_server, erte_ale, westminster_bridge) => obs((next, complete, error) => {
     const pb_24bipp_color_square = create.generate_color_square();
     const pb_8bipp_patch = (() => {
         const res = create.patch_1();
@@ -57,6 +55,13 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
         value: gkernel
     });
 
+
+    const gkernel5 = new_gauss_conv_kernel(5, 3);
+    const conv_gauss_5_sigma_3 = new Convolution({
+        size: [5, 5],
+        value: gkernel5
+    });
+
     // Initialise sample objects...
 
     // and examples in an array, with names.
@@ -81,9 +86,23 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
             return res;
 
         }],
-        ['eg_2', () => {
+        ['blur_westminster_bridge_gauss_3_sigma_1p6', () => {
             //return pb_dest;
+            performance.mark('C');
+            const res = westminster_bridge.new_convolved(conv_gauss_3_sigma_1p6);
+            performance.mark('D');
+            performance.measure('C to D', 'C', 'D');
+            return res;
         }],
+        ['blur_westminster_bridge_conv_gauss_5_sigma_3', () => {
+            //return pb_dest;
+            performance.mark('E');
+            const res = westminster_bridge.new_convolved(conv_gauss_5_sigma_3);
+            performance.mark('F');
+            performance.measure('E to F', 'E', 'F');
+            return res;
+        }],
+        false,
         ['eg_3', () => {
             //return pb_dest;
         }]
@@ -95,31 +114,50 @@ const run_examples = (gfx_server) => obs((next, complete, error) => {
 
     (async() => {
         for (let c = 0; c < l_examples; c++) {
-            [eg_name, fn_example] = examples[c];
-            res_eg = fn_example();
-            if (res_eg instanceof Pixel_Buffer) {
-                await fnlfs.ensure_directory_exists('./output/' + eg_mod_name + '/');
-                await gfx_server.save_pixel_buffer('./output/' + eg_mod_name + '/' + eg_name + '.png', res_eg, {
-                    format: 'png'
-                });
+
+            if (examples[c]) {
+                [eg_name, fn_example] = examples[c];
+                res_eg = fn_example();
+                if (res_eg instanceof Pixel_Buffer) {
+                    await fnlfs.ensure_directory_exists('./output/' + eg_mod_name + '/');
+                    await gfx_server.save_pixel_buffer('./output/' + eg_mod_name + '/' + eg_name + '.png', res_eg, {
+                        format: 'png'
+                    });
+                }
+            } else {
+                break;
             }
+
+            
+            
+
         }
     })();
 });
 
 if (require.main === module) {
 
-    const obs = new PerformanceObserver((items) => {
-        console.log(items.getEntries()[0].duration, 'ms');
-        performance.clearMarks();
-    });
-    obs.observe({ entryTypes: ['measure'] });
+    (async () => {
+        const obs = new PerformanceObserver((items) => {
+            console.log(items.getEntries()[0].duration, 'ms');
+            performance.clearMarks();
+        });
+        obs.observe({ entryTypes: ['measure'] });
+    
+        const gfx_server = require('jsgui3-gfx-server');
+        const erte_ale = new Pixel_Buffer(await gfx_server.load_pixel_buffer('../source_images/Erte Ale Volcano.jpg'));
+        const westminster_bridge = new Pixel_Buffer(await gfx_server.load_pixel_buffer('../source_images/Ultimate-Travel-Guide-to-London.jpg'));
+    
+        // load the Erte Ale image.
+    
+        //console.log('erte_ale.ta', erte_ale.ta);
+        //console.log('Pixel_Buffer', Pixel_Buffer);
+        //throw 'stop';
+    
+    
+        const obs_run_examples = run_examples(gfx_server, erte_ale, westminster_bridge);
+    })();
 
-    const gfx_server = require('jsgui3-gfx-server')
-    const obs_run_examples = run_examples(gfx_server);
-
-    obs_run_examples.on('next', e_example => {
-
-    })
+    
 
 }

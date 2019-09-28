@@ -5,83 +5,6 @@
 //  the destination size is aligned with the ta_source_bounds
 //   could check that previously in a more generalised copy_rect function.
 
-
-/*
-
-// Somewhat slower than copying whole rows like above.
-const _direct_unaligned_copy_rect_1bypp_to_3bypp = (ta_source, ta_dest, bypr_source, bypr_dest, ta_source_bounds, ta_dest_pos) => {
-    // x and y iteration.
-
-    let x, y;
-    const source_bytes_per_pixel = 1;
-    const dest_bytes_per_pixel = 3;
-
-    const bounds_row_width = ta_source_bounds[2] - ta_source_bounds[0];
-
-    //const bytes_per_bounds_row = bytes_per_pixel * bounds_row_width;
-
-    //console.log('bypr_source', bypr_source);
-    //console.log('bypr_dest', bypr_dest);
-
-    
-
-
-
-    const byi_read_start = (ta_source_bounds[0] * source_bytes_per_pixel) + (ta_source_bounds[1] * bypr_source);
-    const byi_dest_start = (ta_dest_pos[0] * dest_bytes_per_pixel) + (ta_dest_pos[1] * bypr_dest);
-
-    //console.log('byi_read_start', byi_read_start);
-    //console.log('byi_dest_start', byi_dest_start);
-
-    let byi_read = byi_read_start, byi_write = byi_dest_start;
-
-    const bytes_source_row_jump = bypr_source - (bounds_row_width * source_bytes_per_pixel);
-    const bytes_dest_row_jump = bypr_dest - (bounds_row_width * dest_bytes_per_pixel);
-
-
-    for (y = ta_source_bounds[1]; y < ta_source_bounds[3]; y++) {
-        //console.log('byi_read, byi_write', [byi_read, byi_write]);
-        for (x = ta_source_bounds[1]; x < ta_source_bounds[3]; x++) {
-            //console.log('byi_read, byi_write', [byi_read, byi_write]);
-
-            // set the pixel.
-            ta_dest[byi_write++] = ta_source[byi_read];
-            ta_dest[byi_write++] = ta_source[byi_read];
-            ta_dest[byi_write++] = ta_source[byi_read++];
-
-            //copy_ta_byte_range(ta_source, ta_dest, byi_read, byi_write, bytes_per_bounds_row);
-
-            // use row jumping?
-
-            //byi_read += bypr_source;
-            //byi_write += bypr_dest;
-    
-            // use the sopy row function?
-            //  worth giving it a try.
-    
-            // Can use the full row copy procedure.
-    
-            //copy_ta_byte_range
-        }
-        // use row jump numbers here.
-
-        byi_read += bytes_source_row_jump;
-        byi_write += bytes_dest_row_jump;
-
-    }
-
-}
-
-const unaligned_copy_rect_1bypp_to_3bypp = _direct_unaligned_copy_rect_1bypp_to_3bypp
-*/
-
-// copy from ta_colorspace to ta_byi
-
-// Different reference methods
-//  Pixels by x,y and colorspace
-//  Byte index
-
-
 const get_instance = () => {
 
     const copy_ta_byte_range = (ta_source, ta_dest, byte_idx_source_start, byte_idx_dest_start, length) => {
@@ -176,8 +99,6 @@ const get_instance = () => {
     //  Will do xy iteration having been given the source bounds and the dest pos?
     
     
-    
-    
     // Use byte indexes?
     
     // bytes_pre_row source
@@ -190,8 +111,6 @@ const get_instance = () => {
     
     const dest_aligned_copy_rect_1to4bypp = (ta_source, ta_dest, bypr_source, bytes_per_pixel, ta_source_bounds) => {
         let y;
-    
-    
     
         // check ta_dest.length meets expectation?
     
@@ -206,15 +125,10 @@ const get_instance = () => {
     
         // calculate the start index for both the source and the dest.
     
-        
-    
-    
         const bounds_row_width = ta_source_bounds[2] - ta_source_bounds[0];
         const bypr_dest = bounds_row_width * bytes_per_pixel;
         //console.log('bounds_row_width', bounds_row_width);
         const bytes_per_bounds_row = bytes_per_pixel * bounds_row_width;
-    
-    
         const byi_read_start = (ta_source_bounds[0] * bytes_per_pixel) + (ta_source_bounds[1] * bypr_source);
         //const byi_dest_start = (bytes_per_pixel) + (ta_dest_pos[1] * bypr_dest);
         const byi_dest_start = 0;
@@ -242,7 +156,6 @@ const get_instance = () => {
             //copy_ta_byte_range
         }
     }
-    
     
     // Worth writing and using some copy algorithms. Further work on supporting abstractions / data.
     
@@ -287,8 +200,6 @@ const get_instance = () => {
     
         //console.log('bytes_per_bounds_row', bytes_per_bounds_row);
     
-    
-    
         for (y = ta_source_bounds[1]; y < ta_source_bounds[3]; y++) {
             //console.log('byi_read, byi_write', [byi_read, byi_write]);
             copy_ta_byte_range(ta_source, ta_dest, byi_read, byi_write, bytes_per_bounds_row);
@@ -304,8 +215,28 @@ const get_instance = () => {
             //copy_ta_byte_range
         }
     }
-    
+        
+    const copy_px_to_ta_dest_byi = (ta_source, source_colorspace, source_xy, ta_dest, byi_dest) => {
+        const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
 
+        if (bipp === 24) {
+            let byi_read = source_xy[0] * bypp + source_xy[1] * bypr;
+            ta_dest[byi_dest] = ta_source[byi_read++];
+            ta_dest[byi_dest + 1] = ta_source[byi_read++];
+            ta_dest[byi_dest + 2] = ta_source[byi_read++];
+
+        } else {
+            console.trace();
+            throw 'NYI';
+        }
+    }
+
+        
+    const copy_px_24bipp = (ta_source, byi_read, ta_dest, byi_write) => {
+        ta_dest[byi_write] = ta_source[byi_read++];
+        ta_dest[byi_write + 1] = ta_source[byi_read++];
+        ta_dest[byi_write + 2] = ta_source[byi_read++];
+    }
 
 
     return {
@@ -315,7 +246,9 @@ const get_instance = () => {
         copy_rect_to_same_size_24bipp: copy_rect_to_same_size_24bipp,
         copy_rect_to_same_size_8bipp: copy_rect_to_same_size_8bipp,
         copy_ta_byte_range: copy_ta_byte_range,
-        get_instance: get_instance
+        get_instance: get_instance,
+        copy_px_to_ta_dest_byi: copy_px_to_ta_dest_byi,
+        copy_px_24bipp: copy_px_24bipp
     };
 }
 
