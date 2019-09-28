@@ -1,5 +1,11 @@
 
 
+// transforms for other bpp images too...
+
+// 8 bipp image greyscales
+
+
+
 const copy_px_to_ta_dest_byi = (ta_source, source_colorspace, source_xy, ta_dest, byi_dest) => {
     const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
 
@@ -27,7 +33,6 @@ const each_pixel_in_colorspace = (colorspace, callback) => {
         }
     }
 }
-
 
 // Make an inline version?
 const __each_source_dest_pixels_resized = (source_colorspace, dest_size, callback) => {
@@ -1419,43 +1424,9 @@ const __resize_ta_colorspace_24bipp$subpixel = (ta_source, source_colorspace, de
 
 // Faster using some local variables and not only using tas and their positions.
 const resize_ta_colorspace_24bipp$subpixel$inline = (ta_source, source_colorspace, dest_size, ta_dest) => {
-    //console.log('resize_ta_colorspace_24bipp$subpixel');
-    // Simplified this function.
-    //  Seems like a small perf cost with the extra function calls used.
-    //   Could optimize - not setting any weights when its 1x1, not doing the measurements.
-
-    // C++ versions of the functions that run in here would be of use.
-    //  May also be better to use functions for single pixel , 2x1 etc read-merge-write operations.
-    //   Would make this function significantly shorter overall, and act more as a function dispatcher.
-
-    //const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
-
     const source_bypp = source_colorspace[2];
     const source_bypr = source_colorspace[3];
-
-
-    //const dest_colorspace = new Int32Array([dest_size[0], dest_size[1], bypp, bypp * dest_size[0], bipp, bipp * dest_size[0]]);
-    //const dest_to_source_ratio = new Float32Array([source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]]);
-
-
-    // Could work well precalculating y values, then looking them up.
-    //  Meaning values that depend on y.
-
-    // Then only when it's corners do we need to do a calculation with them.
-
-    //  The proportions could even be in integer thousanths...?
-
-    // So the total area of 1 px would be 1000000
-    //  Floating point fractions seem easiest here.
-    //  and always just calculate the other proportion as 1-a?
-
-    
-
-
-    // Calculations suh as 1-x may be faster than looking up from memory / array.
-
     const [f_px_w, f_px_h] = [source_colorspace[0] / dest_size[0], source_colorspace[1] / dest_size[1]];
-
 
     let f_source_x, f_source_r;
     let i_source_l, i_source_lr_crossover;
@@ -1471,17 +1442,17 @@ const resize_ta_colorspace_24bipp$subpixel$inline = (ta_source, source_colorspac
     const ta_left_proportions = new Float32Array(dest_size[0]);
     const ta_top_proportions = new Float32Array(dest_size[1]);
 
-    const ta_source_x = new Int16Array(dest_size[0]);
-    const ta_source_y = new Int16Array(dest_size[1]);
+    //const ta_source_x = new Int16Array(dest_size[0]);
+    //const ta_source_y = new Int16Array(dest_size[1]);
 
     const ta_source_x_byi_component = new Int32Array(dest_size[0]);
-    const ta_source_y_byi_component = new Int32Array(dest_size[1]);
+    //const ta_source_y_byi_component = new Int32Array(dest_size[1]);
 
     // all the edges and corners / proportions as local variables.
 
     
 
-
+    
     for (i_dest_x = 0; i_dest_x < dest_size[0]; i_dest_x++) {
 
         // Calc proportion l and proportion r.
@@ -1492,64 +1463,17 @@ const resize_ta_colorspace_24bipp$subpixel$inline = (ta_source, source_colorspac
         i_source_l = Math.floor(f_source_x);
         i_source_lr_crossover = i_source_l + 1;
 
-        ta_source_x[i_dest_x] = i_source_l;
+        //ta_source_x[i_dest_x] = i_source_l;
         ta_source_x_byi_component[i_dest_x] = i_source_l * source_bypp;
 
 
         if (f_source_r < i_source_lr_crossover || i_source_l === f_source_x) {
             ta_left_proportions[i_dest_x] = 1;
         } else {
-            //1 - (f_source_r - i_source_lr_crossover) / f_px_w;
-
             ta_left_proportions[i_dest_x] = (i_source_lr_crossover - f_source_x) / f_px_w;
         }
         //ta_left_proportions[x] = 
     }
-
-
-    // we only really need to values to calculate all corner weightings as well.
-    //  left edge proportion, top edge proportion. multiply the proportions, it should work...
-
-    for (i_dest_y = 0; i_dest_y < dest_size[1]; i_dest_y++) {
-
-        // Calc proportion l and proportion r.
-        //  Maybe that's all we need.
-
-        f_source_y = i_dest_y * f_px_h;
-        f_source_b = f_source_y + f_px_h;
-        i_source_t = Math.floor(f_source_y);
-        i_source_tb_crossover = i_source_t + 1;
-
-        ta_source_y[i_dest_y] = i_source_t;
-        ta_source_y_byi_component[i_dest_y] = i_source_t * source_bypr;
-
-
-        if (f_source_b < i_source_tb_crossover || i_source_t === f_source_y) {
-            ta_top_proportions[i_dest_y] = 1;
-        } else {
-            //1 - (f_source_r - i_source_lr_crossover) / f_px_w;
-
-            ta_top_proportions[i_dest_y] = (i_source_tb_crossover - f_source_y) / f_px_h;
-        }
-        //ta_left_proportions[x] = 
-    }
-    // then do the normal nested loop yx iteration
-    //  will look up values to calculate...
-
-    //  then will write inline directly?
-    //   may be best to use copy-weight-write functions first.
-    //    ones that take number params for weights, done simply?
-
-    // edge proportion typed array is probably better / faster.
-
-
-    //let l_prop, t_prop, r_prop, b_prop;
-
-    //const ta_ltrb_edge_props = new Float32Array(4);
-
-    // //const [width, height, bypp, bypr, bipp, bipr] = source_colorspace;
-
-    // keep recalculating the source byte index?
 
     let byi_source;
     let byi_write = 0;
@@ -1565,18 +1489,31 @@ const resize_ta_colorspace_24bipp$subpixel$inline = (ta_source, source_colorspac
     let edge_l, edge_t, edge_r, edge_b;
     let corner_tl, corner_tr, corner_bl, corner_br;
 
+    let y_byi;
 
     // Had bug, fixed...
     for (i_dest_y = 0; i_dest_y < dest_size[1]; i_dest_y++) {
 
+        f_source_y = i_dest_y * f_px_h;
+        f_source_b = f_source_y + f_px_h;
+        i_source_t = Math.floor(f_source_y);
+        i_source_tb_crossover = i_source_t + 1;
 
+        //ta_source_y[i_dest_y] = i_source_t;
+        y_byi = i_source_t * source_bypr;
+
+
+        if (f_source_b < i_source_tb_crossover || i_source_t === f_source_y) {
+            ta_top_proportions[i_dest_y] = 1;
+        } else {
+            //1 - (f_source_r - i_source_lr_crossover) / f_px_w;
+            ta_top_proportions[i_dest_y] = (i_source_tb_crossover - f_source_y) / f_px_h;
+        }
         //ta_ltrb_edge_props[1] = ta_top_proportions[i_dest_y];
         //ta_ltrb_edge_props[3] = 1 - ta_top_proportions[i_dest_y];
 
         edge_t = ta_top_proportions[i_dest_y];
         edge_b = 1 - ta_top_proportions[i_dest_y];
-
-
         //ta_tl_weight_props[1] = t_prop;
         for (i_dest_x = 0; i_dest_x < dest_size[0]; i_dest_x++) {
             //ta_ltrb_edge_props[0] = ta_left_proportions[i_dest_x];
@@ -1584,7 +1521,7 @@ const resize_ta_colorspace_24bipp$subpixel$inline = (ta_source, source_colorspac
             edge_l = ta_left_proportions[i_dest_x];
             edge_r = 1 - ta_left_proportions[i_dest_x];
 
-            byi_source = ta_source_x_byi_component[i_dest_x] + ta_source_y_byi_component[i_dest_y];
+            byi_source = ta_source_x_byi_component[i_dest_x] + y_byi;
 
             //ta_byi_reads[0] = ta_source_x_byi_component[i_dest_x] + ta_source_y_byi_component[i_dest_y];
             //  a typed array of the source byte indexes?
@@ -1593,9 +1530,9 @@ const resize_ta_colorspace_24bipp$subpixel$inline = (ta_source, source_colorspac
                 if (edge_t === 1) {
                     //copy_px_24bipp(ta_source, byi_source, ta_dest, byi_write);
 
-                    ta_dest[byi_write] = ta_source[byi_source++];
-                    ta_dest[byi_write + 1] = ta_source[byi_source++];
-                    ta_dest[byi_write + 2] = ta_source[byi_source++];
+                    ta_dest[byi_write++] = ta_source[byi_source++];
+                    ta_dest[byi_write++] = ta_source[byi_source++];
+                    ta_dest[byi_write++] = ta_source[byi_source++];
 
                     
 
@@ -1605,9 +1542,9 @@ const resize_ta_colorspace_24bipp$subpixel$inline = (ta_source, source_colorspac
                     //read_1x2_weight_write_24bipp(ta_source, source_bypr, byi_source, ta_dest, byi_write, ta_ltrb_edge_props[1], ta_ltrb_edge_props[3]);
 
                     byi_read_below = byi_source + source_bypr;
-                    ta_dest[byi_write] = edge_t * ta_source[byi_source++] + edge_b * ta_source[byi_read_below++];
-                    ta_dest[byi_write + 1] = edge_t * ta_source[byi_source++] + edge_b * ta_source[byi_read_below++];
-                    ta_dest[byi_write + 2] = edge_t * ta_source[byi_source++] + edge_b * ta_source[byi_read_below++];
+                    ta_dest[byi_write++] = edge_t * ta_source[byi_source++] + edge_b * ta_source[byi_read_below++];
+                    ta_dest[byi_write++] = edge_t * ta_source[byi_source++] + edge_b * ta_source[byi_read_below++];
+                    ta_dest[byi_write++] = edge_t * ta_source[byi_source++] + edge_b * ta_source[byi_read_below++];
 
                 }
             } else {
@@ -1616,9 +1553,9 @@ const resize_ta_colorspace_24bipp$subpixel$inline = (ta_source, source_colorspac
                     //read_2x1_weight_write_24bipp(ta_source, byi_source, ta_dest, byi_write, ta_ltrb_edge_props[0], ta_ltrb_edge_props[2]);
 
                     byi_read_right = byi_source + 3;
-                    ta_dest[byi_write] = edge_l * ta_source[byi_source++] + edge_r * ta_source[byi_read_right++];
-                    ta_dest[byi_write + 1] = edge_l * ta_source[byi_source++] + edge_r * ta_source[byi_read_right++];
-                    ta_dest[byi_write + 2] = edge_l * ta_source[byi_source++] + edge_r * ta_source[byi_read_right++];
+                    ta_dest[byi_write++] = edge_l * ta_source[byi_source++] + edge_r * ta_source[byi_read_right++];
+                    ta_dest[byi_write++] = edge_l * ta_source[byi_source++] + edge_r * ta_source[byi_read_right++];
+                    ta_dest[byi_write++] = edge_l * ta_source[byi_source++] + edge_r * ta_source[byi_read_right++];
 
                 } else {
                     //ta_tl_weight_props[0] = l_prop;
@@ -1635,9 +1572,9 @@ const resize_ta_colorspace_24bipp$subpixel$inline = (ta_source, source_colorspac
                     byi_read_right = byi_source + 3;
                     byi_read_below = byi_source + source_bypr;
                     byi_read_below_right = byi_read_below + 3;
-                    ta_dest[byi_write] = corner_tl * ta_source[byi_source++] + corner_tr * ta_source[byi_read_right++] + corner_bl * ta_source[byi_read_below++] + corner_br * ta_source[byi_read_below_right++];
-                    ta_dest[byi_write + 1] = corner_tl * ta_source[byi_source++] + corner_tr * ta_source[byi_read_right++] + corner_bl * ta_source[byi_read_below++] + corner_br * ta_source[byi_read_below_right++];
-                    ta_dest[byi_write + 2] = corner_tl * ta_source[byi_source++] + corner_tr * ta_source[byi_read_right++] + corner_bl * ta_source[byi_read_below++] + corner_br * ta_source[byi_read_below_right++];
+                    ta_dest[byi_write++] = corner_tl * ta_source[byi_source++] + corner_tr * ta_source[byi_read_right++] + corner_bl * ta_source[byi_read_below++] + corner_br * ta_source[byi_read_below_right++];
+                    ta_dest[byi_write++] = corner_tl * ta_source[byi_source++] + corner_tr * ta_source[byi_read_right++] + corner_bl * ta_source[byi_read_below++] + corner_br * ta_source[byi_read_below_right++];
+                    ta_dest[byi_write++] = corner_tl * ta_source[byi_source++] + corner_tr * ta_source[byi_read_right++] + corner_bl * ta_source[byi_read_below++] + corner_br * ta_source[byi_read_below_right++];
 
                     // need the typed array of corner weights?
                     //  function was going much slower with the $2_weight_ints version.
@@ -1652,7 +1589,7 @@ const resize_ta_colorspace_24bipp$subpixel$inline = (ta_source, source_colorspac
                     // Then inlining the read_2x2_weight_write_24bipp function could speed it up?
                 }
             }
-            byi_write += 3;
+            //byi_write += 3;
         }
     }
 }
@@ -3626,7 +3563,9 @@ const resize_ta_colorspace = (ta_source, source_colorspace, dest_size, opt_ta_de
 
 module.exports = {
     resize_ta_colorspace: resize_ta_colorspace,
-    resize_ta_colorspace_24bipp: resize_ta_colorspace_24bipp//,
+    resize_ta_colorspace_24bipp: resize_ta_colorspace_24bipp,
+    resize_ta_colorspace_24bipp$subpixel: resize_ta_colorspace_24bipp$subpixel
+    //,
     //override: override,
     //get_instance: get_instance
 }
