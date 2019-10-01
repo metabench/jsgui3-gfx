@@ -278,8 +278,6 @@ const get_instance = () => {
 
     }
 
-
-
     const read_merged_vfpx_24bipp = (ta_source, colorspace, vfpx) => {
 
         // Other version of algo that bypasses the vfpx?
