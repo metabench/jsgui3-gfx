@@ -357,6 +357,11 @@ const Pixel_Buffer_Painter = require('./pixel-buffer-painter');
 
 
 let ta_math = require('./ta-math')
+
+// And convolution functions in ta_math.
+
+// 
+
 let {resize_ta_colorspace, copy_rect_to_same_size_8bipp, copy_rect_to_same_size_24bipp, dest_aligned_copy_rect_1to4bypp} = ta_math;
 
 class Pixel_Buffer_Core {
@@ -1334,15 +1339,57 @@ class Pixel_Buffer_Core {
     //  may be worth making pb.xy_center_px
     //   xy being a better abbreviation for the data structure and what it is. 2 characters long as well.
 
+    // Will do this in a more purely mathematical way.
+    //  The conv and byte index references can be calculated and stored outside of the image itself.
+    //   Then getting the pixels can be done in a nicely optimized way.
+
+    // Iteration within the fully in bounds region would be useful.
+    //  Then a more complex algo for the bounds areas, but will not be called as frequently.
+    //   Could calc the bounds values pre iteration.
+
+
+    // The math part needs to handle the details.
+
+    // See if the conv math can be expressed simply, using functions...
+    // 
+    // Also worth trying a high-memory version that precalculates all referenced byte indexes in a large array.
+    //  Maybe arrange them next to their weights.
+    // Definitely looking into memory-expansive optimizations.
+    //  Usefulness may depend on the architecture.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     new_convolved(convolution) {
+
+        console.log('convolution', convolution);
+        console.log('convolution.size', convolution.size);
+        console.log('convolution.num_px', convolution.num_px);
+
+        // Will use special case algos for 3x3 (and 5x5)
+        //  Would be a good way to start boundary handling.
+
+
+
+
+
+
+
+        
         // same size, same bpp.
         //  blank copy.
 
-        const res = new this.constructor({
-            size: this.size,
-            bits_per_pixel: this.bits_per_pixel
-        });
+        const res = this.blank_copy();
 
         // find the center_pos within the convolution.
         //  pos_center? coords_center? xy_center?

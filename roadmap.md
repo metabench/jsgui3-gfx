@@ -409,3 +409,10 @@ Multi-layer conv
 
   
 
+
+0.0.32 - New Roadmap - will make ta_math core.
+  Then more specialised / specific / optimized functions will be off in some files and folders.
+  Aim: efficient and comprehensive core file
+    Some more generalised (8, 24, 24 bipp)
+      Some work on even more generalised and flexibile options, including bits per channel, and general code to read and write pixel values within some arrangements that for the moment are just theoretical.
+

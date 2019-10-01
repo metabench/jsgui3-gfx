@@ -4,6 +4,7 @@
 
 // 8 bipp image greyscales
 
+// load convolve in here.
 
 
 const copy_px_to_ta_dest_byi = (ta_source, source_colorspace, source_xy, ta_dest, byi_dest) => {
@@ -3560,6 +3561,19 @@ const resize_ta_colorspace = (ta_source, source_colorspace, dest_size, opt_ta_de
         throw 'unsupported bipp: ' + bipp;
     }
 }
+
+
+
+
+// convolve maths here too?
+
+// in separate file for the moment...
+
+
+
+
+
+
 
 module.exports = {
     resize_ta_colorspace: resize_ta_colorspace,
