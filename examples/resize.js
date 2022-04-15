@@ -470,7 +470,11 @@ if (require.main === module) {
             performance.clearMarks();
         });
         obs.observe({ entryTypes: ['measure'] });
+
+        // Would be best not to have the example need this (probably).
+
         const gfx_server = require('jsgui3-gfx-server');
+        //  Depends on gfx server working. gfx server depends on gfx
 
         // creata a non-server PB from the one we load...
         // new PB(pb)

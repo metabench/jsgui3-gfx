@@ -287,7 +287,7 @@ const {
 
 const Pixel_Pos_List = require('./pixel-pos-list');
 
-const oext = require('obext')();
+const oext = require('obext');
 
 const {ro, prop} = oext;
 
@@ -357,6 +357,10 @@ const Pixel_Buffer_Painter = require('./pixel-buffer-painter');
 
 
 let ta_math = require('./ta-math')
+
+// ta_math has become more of a low level implementation, which then is to be integrated into the JS OOP.
+
+
 
 // And convolution functions in ta_math.
 
@@ -3617,7 +3621,7 @@ return a.every((val, i) => val === b[i]);
             return this;
         }
         if (this.bytes_per_pixel === 3) {
-            var res = new this.constructor({
+            const res = new this.constructor({
                 'size': this.size,
                 'bits_per_pixel': 8
             });
@@ -3633,7 +3637,7 @@ return a.every((val, i) => val === b[i]);
             return res;
         }
         if (this.bytes_per_pixel === 4) {
-            var res = new this.constructor({
+            const res = new this.constructor({
                 'size': this.size,
                 'bits_per_pixel': 8
             });
@@ -3718,7 +3722,7 @@ module.exports = Pixel_Buffer_Core;
 
 if (require.main === module) {
     const lg = console.log;
-    const Pixel_Buffer_Core = get_instance();
+    //const Pixel_Buffer_Core = get_instance();
 
     (async() => {
 
@@ -3770,6 +3774,7 @@ if (require.main === module) {
                     // if ... == true.
 
                     lg('End example 0');
+                    return pb;
 
                 }
             ]
@@ -3778,7 +3783,7 @@ if (require.main === module) {
             for (var c = 0; c < l; c++) {
                 const res_eg = await examples[c]();
                 console.log('res_eg ' + c + ':', res_eg);
-            }y
+            };
             lg('End run examples');
 
         }

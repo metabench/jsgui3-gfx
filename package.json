@@ -3,16 +3,24 @@
   "main": "gfx.js",
   "license": "MIT",
   "dependencies": {
-    "lang-mini": "^0.0.22",
-    "fnl": "^0.0.20",
+    "esbuild": "^0.14.36",
+    "fnl": "^0.0.21",
     "gaussian-convolution-kernel": "^1.0.0",
-    "obext": "^0.0.19",
+    "lang-mini": "^0.0.25",
+    "obext": "^0.0.23",
     "ta-tensor": "^0.0.4"
   },
   "devDependencies": {
-    "fnlfs": "^0.0.20",
-    "jsgui3-gfx-server": "0.0.28"
+    "fnlfs": "^0.0.24"
+    
   },
+  "comments": [
+    "jsgui3 gfx server does not work so well as a dev dependency.",
+    {
+      "jsgui3-gfx-server": "0.0.33"
+    }
+
+  ],
   "files": [
     "pixel-buffer-core.js",
     "pixel-buffer-enh.js",
@@ -30,5 +38,5 @@
     "type": "git",
     "url": "https://github.com/metabench/jsgui3-gfx.git"
   },
-  "version": "0.0.35"
+  "version": "0.0.36"
 }
