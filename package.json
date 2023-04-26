@@ -3,15 +3,16 @@
   "main": "gfx.js",
   "license": "MIT",
   "dependencies": {
-    "esbuild": "^0.14.36",
-    "fnl": "^0.0.21",
-    "gaussian-convolution-kernel": "^1.0.0",
-    "lang-mini": "^0.0.25",
-    "obext": "^0.0.23",
+    "esbuild": "^0.17.18",
+    "fnl": "^0.0.23",
+    "lang-mini": "^0.0.29",
+    "jsgui3-gfx-core": "^0.0.3",
+    "jsgui3-gfx-formats": "^0.0.9",
+    "obext": "^0.0.24",
     "ta-tensor": "^0.0.4"
   },
   "devDependencies": {
-    "fnlfs": "^0.0.24"
+    "fnlfs": "^0.0.27"
     
   },
   "comments": [
@@ -38,5 +39,5 @@
     "type": "git",
     "url": "https://github.com/metabench/jsgui3-gfx.git"
   },
-  "version": "0.0.36"
+  "version": "0.0.37"
 }

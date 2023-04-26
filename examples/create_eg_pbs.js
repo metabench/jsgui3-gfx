@@ -45,9 +45,6 @@ const {
     jpeg
 } = formats;
 
-console.log('pre load gfx_server');
-const gfx_server = require('jsgui3-gfx-server');
-console.log('post load gfx_server');
 
 
 // or ta-math
@@ -725,6 +722,8 @@ if (require.main === module) {
         //  Likely to be able to perform a load more functions in high speed.
         //  Then look into doing them faster still.
 
+        const gfx_formats = require('jsgui3-gfx-formats');
+
         
         const obs = new PerformanceObserver((items) => {
             console.log(items.getEntries()[0].duration, 'ms');
@@ -750,10 +749,41 @@ if (require.main === module) {
         // looks OK so far....
 
         await fnlfs.ensure_directory_exists('./output/create_eg_pbs/');
-        await gfx.save_pixel_buffer('./output/create_eg_pbs/patch1.png', tp1, {
+
+
+
+        const save_pixel_buffer = async(path, pixel_buffer, options) => {
+            // Create the file from it....
+
+            // Use the gfx-formats system.
+
+            const {format} = options;
+
+            if (format === 'png') {
+                const png_format = format.png;
+
+                
+
+
+            } else if (format === 'jpg' || format === 'jpeg') {
+
+            } else {
+                console.trace();
+                throw 'Incorrect format: ' + format;
+            }
+
+
+
+
+        }
+
+
+
+
+        await save_pixel_buffer('./output/create_eg_pbs/patch1.png', tp1, {
             format: 'png'
         });
-        await gfx.save_pixel_buffer('./output/create_eg_pbs/color_square.png', color_square, {
+        await save_pixel_buffer('./output/create_eg_pbs/color_square.png', color_square, {
             format: 'png'
         });
 

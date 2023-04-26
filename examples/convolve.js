@@ -235,12 +235,9 @@ const run_examples = (gfx_server, erte_ale, westminster_bridge) => obs((next, co
         //  Want to compute the total weights for each of them.
         //   They should add up to 1.
 
-
-
         // Also, corners shouldn't have heigher 
 
         /*
-
         each(res_all_egs, (res, name) => {
             const {weights, pos, size} = res;
 
